@@ -29,8 +29,8 @@
 #ifndef RGPH_H_INCLUDED
 #define RGPH_H_INCLUDED
 
-#include <rhph_defs.h>
-#include <rhph_hash.h>
-#include <rhph_graph.h>
+#include <rgph_defs.h>
+#include <rgph_hash.h>
+#include <rgph_graph.h>
 
 #endif /* !RGPH_H_INCLUDED */
