@@ -280,6 +280,7 @@ peel_graph(edge<T,R> *edges, size_t nkeys, oedge<T,R> *oedges, T *order)
 	return end;
 }
 
+// XXX check whether promotion rules break the code when min_width < sizeof(int)
 inline size_t
 data_width(size_t size, size_t min_width)
 {
@@ -482,10 +483,11 @@ rgph_build_graph(struct rgph_graph *g,
     rgph_entry_iterator_t keys, void *state, unsigned long seed)
 {
 	const int r = graph_rank(g->flags);
-	const size_t esz = edge_size(r, g->nverts, 0); // data_width(nverts) !
-	const size_t osz = oedge_size(r, g->nverts, 0);
+	const size_t width = data_width(g->nverts, 0);
 
 	if (!(g->flags & ZEROED)) {
+		const size_t esz = edge_size(r, g->nverts, 0);
+		const size_t osz = oedge_size(r, g->nverts, 0);
 		memset(g->order, 0, esz * g->nkeys);
 		memset(g->edges, 0, esz * g->nkeys);
 		memset(g->oedges, 0, osz * g->nverts);
@@ -494,7 +496,7 @@ rgph_build_graph(struct rgph_graph *g,
 	g->flags &= ~ZEROED;
 
 #define SELECT(r, w) (8 * (r) + (w))
-	switch (SELECT(r, esz)) {
+	switch (SELECT(r, width)) {
 		case SELECT(2, 1):
 			return build_graph<uint8_t,2>(g, keys, state, seed);
 		case SELECT(3, 1):
