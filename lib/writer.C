@@ -131,9 +131,9 @@ struct hash {
 	hashit(bool_selector<false>, const void *key, size_t keylen) {
 		H h[3];
 		func(key, keylen, seed, h);
-		hashes[0] = h[0];
-		hashes[1] = h[1];
-		hashes[2] = h[2];
+		hashes[0] = (T)h[0];
+		hashes[1] = (T)h[1];
+		hashes[2] = (T)h[2];
 		return hashes;
 	}
 };
