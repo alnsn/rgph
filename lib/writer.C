@@ -54,6 +54,8 @@
  */
 namespace {
 
+template<bool C> struct bool_selector {};
+
 template<class T, int R>
 struct edge {
 	T verts[R]; // v0, v1 (and v2, if R==3).
@@ -74,7 +76,36 @@ struct oedge {
 	T edge;
 };
 
-template<bool C> struct bool_selector {};
+struct entry_iterator {
+	rgph_entry_iterator_t iter;
+	void *state;
+	struct rgph_entry *cur;
+
+	entry_iterator(rgph_entry_iterator_t i, void *s)
+		: iter(i)
+		, state(s)
+		, cur(NULL)
+	{}
+
+	struct rgph_entry *get() {
+		if (cur == NULL)
+			cur = iter(state);
+		assert(p != NULL);
+		return cur;
+	}
+
+	void operator++() {
+		cur = NULL;
+	}
+
+	struct rgph_entry *operator->() {
+		return get();
+	}
+
+	const rgph_entry &operator*() {
+		return *get();
+	}
+};
 
 template<class T, class S, class H>
 struct hash {
@@ -223,7 +254,8 @@ init_graph(Iter keys, size_t nkeys, Hash hash, size_t nverts,
 	assert(partsz > 1 && (nverts % R) == 0);
 
 	for (T i = 0; i < nkeys; ++i, ++keys) {
-		const T *verts = hash(keys->key, keys->keylen);
+		const rgph_entry &ent = *keys;
+		const T *verts = hash(ent.key, ent.keylen);
 		for (size_t r = 0; r < R; ++r)
 			edges[i].verts[r] = (verts[r] % partsz) + r * partsz;
 		add_edge(oedges, i, edges[i].verts);
@@ -317,32 +349,6 @@ graph_rank(unsigned int flags)
 	return (flags & RGPH_RANK_MASK) == RGPH_RANK2 ? 2 : 3;
 }
 
-// XXX
-struct key_val_iter {
-	key_val_iter(rgph_entry_iterator_t i, void *s)
-		: iter(i)
-		, state(s)
-		, cur(i(s))
-	{}
-
-	void operator++() {
-		cur = iter(state);
-	}
-
-	struct rgph_entry *operator->() {
-		return cur;
-	}
-
-	rgph_entry_iterator_t iter;
-	void *state;
-	struct rgph_entry *cur;
-};
-
-enum {
-	PUBLIC_FLAGS = 0x3ff,
-	ZEROED = 0x40000000
-};
-
 } // namespace
 
 struct rgph_graph {
@@ -354,6 +360,11 @@ struct rgph_graph {
 	unsigned int flags;
 };
 
+enum {
+	PUBLIC_FLAGS = 0x3ff,
+	ZEROED = 0x40000000
+};
+
 template<class T, int R>
 static int
 build_graph(struct rgph_graph *g,
@@ -363,7 +374,7 @@ build_graph(struct rgph_graph *g,
 	typedef oedge<T,R> oedge_t;
 	edge_t *edges = (edge_t *)g->edges;
 	oedge_t *oedges = (oedge_t *)g->oedges;
-	key_val_iter iter(keys, state);
+	entry_iterator iter(keys, state);
 
 	switch (g->flags & RGPH_HASH_MASK) {
 		case RGPH_HASH_JENKINS2:
