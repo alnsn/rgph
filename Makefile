@@ -2,7 +2,7 @@ SRC=	lib/writer.C
 TESTS=	tests/t_rgph.c
 ALL=	librgph.so
 
-CFLAGS+=	-DNDEBUG
+CFLAGS+=	-Wall -DNDEBUG
 SHLDFLAGS=	-fPIC -shared
 
 all: ${ALL}
