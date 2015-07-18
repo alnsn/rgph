@@ -27,6 +27,7 @@
  * SUCH DAMAGE.
  */
 
+ #include <assert.h>
  #include <stddef.h>
 
 /*
@@ -139,6 +140,43 @@ remove_vertex(oedge<T,3> *oedges, T v0, T *order, size_t end)
 		remove_edge(oedges, e, v1, v0, v2);
 		remove_edge(oedges, e, v2, v0, v1);
 		order[--end] = e;
+	}
+
+	return end;
+}
+
+template<class Iter, class Hash, class T, int R>
+void
+build_graph(Iter keys, size_t nkeys, Hash hash, size_t nverts,
+    edge<T,R> *edges, oedge<T,R> *oedges)
+{
+	// Partition size of an R-partite R-graph.
+	const T partsz = nverts / R;
+	assert(partsz > 1 && (nverts % R) == 0);
+
+	for (size_t i = 0; i < nkeys; ++i, ++keys) {
+		const T *verts = hash(keys->key, keys->keylen);
+		for (size_t r = 0; r < R; ++r)
+			edges[i].verts[r] = (verts[r] % partsz) + r * partsz;
+		for (size_t r = 0; r < R; ++r)
+			add_edge(oedges, i, edges[i].verts);
+	}
+}
+
+template<class T, int R>
+size_t
+peel_graph(edge<T,R> *edges, size_t nkeys,
+    oedge<T,R> *oedges, size_t nverts, T *order)
+{
+	size_t end = nkeys;
+
+	for (size_t i = 0; i < nkeys; ++i)
+		end = remove_vertex(oedges, i, order, end);
+
+	for (size_t i = nkeys; i > 0 && i > end; --i) {
+		const edge<T,R> *e = edges[order[i-1]];
+		for (size_t r = 0; r < R; ++r)
+			end = remove_vertex(oedges, e->verts[r], order, end);
 	}
 
 	return end;
