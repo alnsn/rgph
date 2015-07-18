@@ -48,7 +48,7 @@ struct edge {
 /*
  * Data type for a valid oriented edge (v0, v1, v2), v1 < v2.
  * The first vertex v0 is implicit and is determined by an index
- * of the corresponding element in the state->oedges array.
+ * of the corresponding element in the oedges array.
  * If the degree of v0 is greater than 1, other members don't make
  * sense because they're a result of XORing multiple random values.
  */
