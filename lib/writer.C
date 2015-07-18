@@ -61,10 +61,8 @@ struct oedge {
 
 template<class T>
 inline void
-add_remove_edge(oedge<T,2> *oedges, int delta, T e, const T *verts)
+add_remove_edge(oedge<T,2> *oedges, int delta, T e, T v0, T v1)
 {
-	const T v0 = verts[0];
-	const T v1 = verts[1];
 
 	oedges[v0].verts[0] ^= v1;
 	oedges[v0].degree += delta;
@@ -75,18 +73,14 @@ template<class T>
 inline void
 remove_edge(oedge<T,2> *oedges, T e, T v0, T v1)
 {
-	const T verts[2] = { v0, v1 };
 
-	return add_remove_edge(oedges, -1, e, verts);
+	return add_remove_edge(oedges, -1, e, v0, v1);
 }
 
 template<class T>
 inline void
-add_remove_edge(oedge<T,3> *oedges, int delta, T e, const T *verts)
+add_remove_edge(oedge<T,3> *oedges, int delta, T e, T v0, T v1, T v2)
 {
-	const T v0 = verts[0];
-	const T v1 = verts[1];
-	const T v2 = verts[2];
 
 	oedges[v0].verts[v1 < v2 ? 0 : 1] ^= v1;
 	oedges[v0].verts[v1 < v2 ? 1 : 0] ^= v2;
@@ -98,17 +92,27 @@ template<class T>
 inline void
 remove_edge(oedge<T,3> *oedges, T e, T v0, T v1, T v2)
 {
-	const T verts[3] = { v0, v1, v2 };
 
-	return add_remove_edge(oedges, -1, e, verts);
+	return add_remove_edge(oedges, -1, e, v0, v1, v2);
 }
 
-template<class T, int R>
+template<class T>
 inline void
-add_edge(oedge<T,R> *oedges, T e, const T *verts)
+add_edge(oedge<T,2> *oedges, T e, const T *verts)
 {
 
-	return add_remove_edge(oedges, 1, e, verts);
+	add_remove_edge(oedges, 1, e, verts[0], verts[1]);
+	add_remove_edge(oedges, 1, e, verts[1], verts[0]);
+}
+
+template<class T>
+inline void
+add_edge(oedge<T,3> *oedges, T e, const T *verts)
+{
+
+	add_remove_edge(oedges, 1, e, verts[0], verts[1], verts[2]);
+	add_remove_edge(oedges, 1, e, verts[1], verts[0], verts[2]);
+	add_remove_edge(oedges, 1, e, verts[2], verts[0], verts[1]);
 }
 
 template<class T>
@@ -158,8 +162,7 @@ build_graph(Iter keys, size_t nkeys, Hash hash, size_t nverts,
 		const T *verts = hash(keys->key, keys->keylen);
 		for (size_t r = 0; r < R; ++r)
 			edges[i].verts[r] = (verts[r] % partsz) + r * partsz;
-		for (size_t r = 0; r < R; ++r)
-			add_edge(oedges, i, edges[i].verts);
+		add_edge(oedges, i, edges[i].verts);
 	}
 }
 
