@@ -41,7 +41,7 @@ namespace {
 
 template<class T, int R>
 struct edge {
-	T verts[R];
+	T verts[R]; // v0, v1 (and v2, if R==3).
 	T idx; // XXX
 };
 
@@ -54,7 +54,7 @@ struct edge {
  */
 template<class T, int R>
 struct oedge {
-	T verts[R-1]; // v1 (and v2, if R==3).
+	T overts[R-1]; // v1 (and v2, if R==3).
 	T degree;     // Degree of v0.
 	T edge;
 };
@@ -64,7 +64,7 @@ inline void
 add_remove_oedge(oedge<T,2> *oedges, int delta, T e, T v0, T v1)
 {
 
-	oedges[v0].verts[0] ^= v1;
+	oedges[v0].overts[0] ^= v1;
 	oedges[v0].degree += delta;
 	oedges[v0].edge ^= e;
 }
@@ -82,8 +82,8 @@ inline void
 add_remove_oedge(oedge<T,3> *oedges, int delta, T e, T v0, T v1, T v2)
 {
 
-	oedges[v0].verts[v1 < v2 ? 0 : 1] ^= v1;
-	oedges[v0].verts[v1 < v2 ? 1 : 0] ^= v2;
+	oedges[v0].overts[v1 < v2 ? 0 : 1] ^= v1;
+	oedges[v0].overts[v1 < v2 ? 1 : 0] ^= v2;
 	oedges[v0].degree += delta;
 	oedges[v0].edge ^= e;
 }
@@ -122,7 +122,7 @@ remove_vertex(oedge<T,2> *oedges, T v0, T *order, size_t end)
 
 	if (oedges[v0].degree == 1) {
 		const T e = oedges[v0].edge;
-		const T v1 = oedges[v0].verts[0];
+		const T v1 = oedges[v0].overts[0];
 		oedges[v0].degree = 0;
 		remove_oedge(oedges, e, v1, v0);
 		order[--end] = e;
@@ -138,8 +138,8 @@ remove_vertex(oedge<T,3> *oedges, T v0, T *order, size_t end)
 
 	if (oedges[v0].degree == 1) {
 		const T e = oedges[v0].edge;
-		const T v1 = oedges[v0].verts[0];
-		const T v2 = oedges[v0].verts[1];
+		const T v1 = oedges[v0].overts[0];
+		const T v2 = oedges[v0].overts[1];
 		oedges[v0].degree = 0;
 		remove_oedge(oedges, e, v1, v0, v2);
 		remove_oedge(oedges, e, v2, v0, v1);
