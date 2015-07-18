@@ -61,7 +61,7 @@ struct oedge {
 
 template<class T>
 inline void
-add_remove_edge(oedge<T,2> *oedges, int delta, T e, T v0, T v1)
+add_remove_oedge(oedge<T,2> *oedges, int delta, T e, T v0, T v1)
 {
 
 	oedges[v0].verts[0] ^= v1;
@@ -74,12 +74,12 @@ inline void
 remove_edge(oedge<T,2> *oedges, T e, T v0, T v1)
 {
 
-	return add_remove_edge(oedges, -1, e, v0, v1);
+	return add_remove_oedge(oedges, -1, e, v0, v1);
 }
 
 template<class T>
 inline void
-add_remove_edge(oedge<T,3> *oedges, int delta, T e, T v0, T v1, T v2)
+add_remove_oedge(oedge<T,3> *oedges, int delta, T e, T v0, T v1, T v2)
 {
 
 	oedges[v0].verts[v1 < v2 ? 0 : 1] ^= v1;
@@ -90,10 +90,10 @@ add_remove_edge(oedge<T,3> *oedges, int delta, T e, T v0, T v1, T v2)
 
 template<class T>
 inline void
-remove_edge(oedge<T,3> *oedges, T e, T v0, T v1, T v2)
+remove_oedge(oedge<T,3> *oedges, T e, T v0, T v1, T v2)
 {
 
-	return add_remove_edge(oedges, -1, e, v0, v1, v2);
+	return add_remove_oedge(oedges, -1, e, v0, v1, v2);
 }
 
 template<class T>
@@ -101,8 +101,8 @@ inline void
 add_edge(oedge<T,2> *oedges, T e, const T *verts)
 {
 
-	add_remove_edge(oedges, 1, e, verts[0], verts[1]);
-	add_remove_edge(oedges, 1, e, verts[1], verts[0]);
+	add_remove_oedge(oedges, 1, e, verts[0], verts[1]);
+	add_remove_oedge(oedges, 1, e, verts[1], verts[0]);
 }
 
 template<class T>
@@ -110,9 +110,9 @@ inline void
 add_edge(oedge<T,3> *oedges, T e, const T *verts)
 {
 
-	add_remove_edge(oedges, 1, e, verts[0], verts[1], verts[2]);
-	add_remove_edge(oedges, 1, e, verts[1], verts[0], verts[2]);
-	add_remove_edge(oedges, 1, e, verts[2], verts[0], verts[1]);
+	add_remove_oedge(oedges, 1, e, verts[0], verts[1], verts[2]);
+	add_remove_oedge(oedges, 1, e, verts[1], verts[0], verts[2]);
+	add_remove_oedge(oedges, 1, e, verts[2], verts[0], verts[1]);
 }
 
 template<class T>
@@ -124,7 +124,7 @@ remove_vertex(oedge<T,2> *oedges, T v0, T *order, size_t end)
 		const T e = oedges[v0].edge;
 		const T v1 = oedges[v0].verts[0];
 		oedges[v0].degree = 0;
-		remove_edge(oedges, e, v1, v0);
+		remove_oedge(oedges, e, v1, v0);
 		order[--end] = e;
 	}
 
@@ -141,8 +141,8 @@ remove_vertex(oedge<T,3> *oedges, T v0, T *order, size_t end)
 		const T v1 = oedges[v0].verts[0];
 		const T v2 = oedges[v0].verts[1];
 		oedges[v0].degree = 0;
-		remove_edge(oedges, e, v1, v0, v2);
-		remove_edge(oedges, e, v2, v0, v1);
+		remove_oedge(oedges, e, v1, v0, v2);
+		remove_oedge(oedges, e, v2, v0, v1);
 		order[--end] = e;
 	}
 
