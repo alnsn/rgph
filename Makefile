@@ -2,7 +2,11 @@ SRC=	lib/writer.C
 TESTS=	tests/t_rgph.c
 ALL=	librgph.so
 
-CFLAGS+=	-Wall -DNDEBUG
+# Comment this line out to debug.
+CFLAGS+=	-DNDEBUG 
+
+CXXOFF+=	-nostdinc++ -fno-exceptions -fno-rtti
+CFLAGS+=	-Wall -Ilib ${CXXOFF}
 SHLDFLAGS=	-fPIC -shared
 
 all: ${ALL}
