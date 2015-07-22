@@ -27,8 +27,17 @@
  * SUCH DAMAGE.
  */
 
- #include <assert.h>
- #include <stddef.h>
+/*
+ * If you're wonderning about coding style, it's documented in
+ * /usr/share/misc/style which can be found online at this address
+ * http://cvsweb.netbsd.org/bsdweb.cgi/src/share/misc/style
+ */
+
+#include <assert.h>
+#include <stddef.h>
+#include <stdlib.h>
+
+#include "rgph.h"
 
 /*
  * The algorithm below is based on paper
@@ -55,7 +64,7 @@ struct edge {
 template<class T, int R>
 struct oedge {
 	T overts[R-1]; // v1 (and v2, if R==3).
-	T degree;     // Degree of v0.
+	T degree;      // Degree of v0.
 	T edge;
 };
 
@@ -168,8 +177,7 @@ build_graph(Iter keys, size_t nkeys, Hash hash, size_t nverts,
 
 template<class T, int R>
 size_t
-peel_graph(edge<T,R> *edges, size_t nkeys,
-    oedge<T,R> *oedges, size_t nverts, T *order)
+peel_graph(edge<T,R> *edges, size_t nkeys, oedge<T,R> *oedges, T *order)
 {
 	size_t end = nkeys;
 
