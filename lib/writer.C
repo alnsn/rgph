@@ -40,7 +40,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-#include "rgph.h"
+#include "rgph_graph.h"
 
 /*
  * The algorithm below is based on paper

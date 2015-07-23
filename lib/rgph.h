@@ -26,8 +26,8 @@
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
-#ifndef RGPH_H_INCLUDED
-#define RGPH_H_INCLUDED
+#ifndef RGPH_GRAPH_H_INCLUDED
+#define RGPH_GRAPH_H_INCLUDED
 
 #ifdef __cplusplus
 extern "C" {
@@ -37,4 +37,4 @@ extern "C" {
 }
 #endif
 
-#endif /* RGPH_H_INCLUDED */
+#endif /* RGPH_GRAPH_H_INCLUDED */
