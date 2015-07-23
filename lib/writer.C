@@ -34,7 +34,10 @@
  */
 
 #include <assert.h>
+#include <errno.h>
+#include <limits.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <stdlib.h>
 
 #include "rgph.h"
@@ -51,7 +54,7 @@ namespace {
 template<class T, int R>
 struct edge {
 	T verts[R]; // v0, v1 (and v2, if R==3).
-	T idx; // XXX
+	T index; // XXX
 };
 
 /*
@@ -167,7 +170,7 @@ build_graph(Iter keys, size_t nkeys, Hash hash, size_t nverts,
 	const T partsz = nverts / R;
 	assert(partsz > 1 && (nverts % R) == 0);
 
-	for (size_t i = 0; i < nkeys; ++i, ++keys) {
+	for (T i = 0; i < nkeys; ++i, ++keys) {
 		const T *verts = hash(keys->key, keys->keylen);
 		for (size_t r = 0; r < R; ++r)
 			edges[i].verts[r] = (verts[r] % partsz) + r * partsz;
@@ -185,9 +188,9 @@ peel_graph(edge<T,R> *edges, size_t nkeys, oedge<T,R> *oedges, T *order)
 		end = remove_vertex(oedges, i, order, end);
 
 	for (size_t i = nkeys; i > 0 && i > end; --i) {
-		const edge<T,R> *e = edges[order[i-1]];
+		const edge<T,R> &e = edges[order[i-1]];
 		for (size_t r = 0; r < R; ++r)
-			end = remove_vertex(oedges, e->verts[r], order, end);
+			end = remove_vertex(oedges, e.verts[r], order, end);
 	}
 
 	return end;

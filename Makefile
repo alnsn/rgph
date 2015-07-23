@@ -1,21 +1,26 @@
-SRC=	lib/writer.C
+OBJ=	lib/writer.o lib/jenkins2.o
 TESTS=	tests/t_rgph.c
-ALL=	librgph.so
+ALL=	librgph.so # XXX .dylib on MacOS
 
-# Comment this line out to debug.
-CFLAGS+=	-DNDEBUG 
+# Comment these lines to debug.
+CFLAGS+=	-DNDEBUG
+CXXFLAGS+=	-DNDEBUG
 
-CXXOFF+=	-nostdinc++ -fno-exceptions -fno-rtti
-CFLAGS+=	-Wall -Ilib ${CXXOFF}
-SHLDFLAGS=	-fPIC -shared
+WARNS?=		-Wall
+PIEOPTS?=	-fPIE
+C99OPTS?=	-std=c99
+CXXOPTS?=	-nostdinc++ -fno-exceptions -fno-rtti
+CFLAGS+=	-O2 -fPIC ${PIEOPTS} ${WARNS} -Ilib ${C99OPTS}
+CXXFLAGS+=	-O2 -fPIC ${PIEOPTS} ${WARNS} -Ilib ${CXXOPTS}
+SHLDFLAGS=	-O2 -fPIC ${PIEOPTS} -shared
 
 all: ${ALL}
 
-librgph.so: ${SRC}
-	${CC} ${CFLAGS} ${SHLDFLAGS} ${SRC} -o librgph.so
+librgph.so: ${OBJ}
+	${CC} ${OBJ} ${SHLDFLAGS} -o librgph.so
 
 t_rgph: ${TESTS}
 	${CC} ${CFLAGS} -fPIC -Ilib ${TESTS} -L. -lrgph -o t_rgph
 
 clean:
-	rm -f ${ALL} test.rgph
+	rm -f ${OBJ} ${ALL}
