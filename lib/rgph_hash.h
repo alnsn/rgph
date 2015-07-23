@@ -32,10 +32,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-/*
- * XXX rgph_jenkins2_afNN_* can be made weak aliases to rgph_jenkins2_fNN_*.
- */
-
 /* Scalar 32bit hashes for fixed width types. */
 uint32_t rgph_u32_jenkins2_u8 (uint8_t  value, uint32_t seed);
 uint32_t rgph_u32_jenkins2_u16(uint16_t value, uint32_t seed);
@@ -61,17 +57,17 @@ void rgph_u32x3_jenkins2_f32(float    value, uint32_t seed, uint32_t h[3]);
 void rgph_u32x3_jenkins2_f64(double   value, uint32_t seed, uint32_t h[3]);
 
 /* Vector 32bit x3 hashes for arrays. */
-void rgph_u32x3_jenkins2_u8a(const uint8_t * restrict key,
+void rgph_u32x3_jenkins2_u8a(const uint8_t *  key,
     size_t len, uint32_t seed, uint32_t h[3]);
-void rgph_u32x3_jenkins2_u16a(const uint16_t * restrict key,
+void rgph_u32x3_jenkins2_u16a(const uint16_t *  key,
     size_t len, uint32_t seed, uint32_t h[3]);
-void rgph_u32x3_jenkins2_u32a(const uint32_t * restrict key,
+void rgph_u32x3_jenkins2_u32a(const uint32_t *  key,
     size_t len, uint32_t seed, uint32_t h[3]);
-void rgph_u32x3_jenkins2_u64a(const uint64_t * restrict key,
+void rgph_u32x3_jenkins2_u64a(const uint64_t *  key,
     size_t len, uint32_t seed, uint32_t h[3]);
-void rgph_u32x3_jenkins2_f32a(const float * restrict key,
+void rgph_u32x3_jenkins2_f32a(const float *  key,
     size_t len, uint32_t seed, uint32_t h[3]);
-void rgph_u32x3_jenkins2_f64a(const double * restrict key,
+void rgph_u32x3_jenkins2_f64a(const double *  key,
     size_t len, uint32_t seed, uint32_t h[3]);
 
 #endif /* FILE_RGPH_HASH_H_INCLUDED */
