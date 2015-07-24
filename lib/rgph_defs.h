@@ -26,35 +26,29 @@
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
-#ifndef RGPH_GRAPH_H_INCLUDED
-#define RGPH_GRAPH_H_INCLUDED
+#ifndef RGPH_DEFS_H_INCLUDED
+#define RGPH_DEFS_H_INCLUDED
 
-#include <stddef.h>
+/* RGPH_HASH_DEFAULT | RGPH_RANK3 | RGPH_ALGO_DEFAULT | RGPH_INDEX_DEFAULT */
+#define	RGPH_DEFAULT       0
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#define	RGPH_HASH_MASK     0x1f
+#define	RGPH_HASH_DEFAULT  0
+#define	RGPH_HASH_JENKINS2 1
+#define	RGPH_HASH_JENKINS3 2
+#define	RGPH_HASH_MURMUR3  3
 
-struct rgph_graph;
+#define	RGPH_RANK_MASK     0x20
+#define	RGPH_RANK2         0x20
+#define	RGPH_RANK3         0
 
-struct rgph_entry {
-	const void *key;
-	size_t keylen;
-	void *data;
-	size_t datalen;
-	size_t index; // XXX
-};
+#define	RGPH_ALGO_MASK     0xc0
+#define	RGPH_ALGO_DEFAULT  0
+#define	RGPH_ALGO_CHM      0x40
+#define	RGPH_ALGO_BDZ      0x80
 
-typedef struct rgph_entry * (*rgph_entry_iterator_t)( void *);
+#define	RGPH_INDEX_MASK    0x300
+#define	RGPH_INDEX_DEFAULT 0
+#define	RGPH_INDEX_XXX     0x100
 
-struct rgph_graph *rgph_alloc_graph(size_t, int);
-void rgph_free_graph(struct rgph_graph *);
-
-int rgph_build_graph(struct rgph_graph *,
-    rgph_entry_iterator_t, void *, unsigned int);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif /* !RGPH_GRAPH_H_INCLUDED */
+#endif /* !RGPH_DEFS_H_INCLUDED */

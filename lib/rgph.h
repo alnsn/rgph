@@ -26,35 +26,11 @@
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
-#ifndef RGPH_GRAPH_H_INCLUDED
-#define RGPH_GRAPH_H_INCLUDED
+#ifndef RGPH_H_INCLUDED
+#define RGPH_H_INCLUDED
 
-#include <stddef.h>
+#include <rhph_defs.h>
+#include <rhph_hash.h>
+#include <rhph_graph.h>
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-struct rgph_graph;
-
-struct rgph_entry {
-	const void *key;
-	size_t keylen;
-	void *data;
-	size_t datalen;
-	size_t index; // XXX
-};
-
-typedef struct rgph_entry * (*rgph_entry_iterator_t)( void *);
-
-struct rgph_graph *rgph_alloc_graph(size_t, int);
-void rgph_free_graph(struct rgph_graph *);
-
-int rgph_build_graph(struct rgph_graph *,
-    rgph_entry_iterator_t, void *, unsigned int);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif /* !RGPH_GRAPH_H_INCLUDED */
+#endif /* !RGPH_H_INCLUDED */

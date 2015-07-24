@@ -39,7 +39,10 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 
+#include "rgph_defs.h"
+#include "rgph_hash.h"
 #include "rgph_graph.h"
 
 /*
@@ -72,6 +75,20 @@ struct oedge {
 };
 
 template<class T>
+struct hash {
+	mutable T hashes[3];
+	T seed;
+	hash(T s)
+		: seed(s)
+	{}
+
+	const T *operator()(const void *key, size_t keylen) const {
+		rgph_u32x3_jenkins2_u8a((const uint8_t *)key, keylen, seed, hashes);
+		return hashes;
+	}
+};
+
+template<class T>
 inline void
 add_remove_oedge(oedge<T,2> *oedges, int delta, T e, T v0, T v1)
 {
@@ -98,6 +115,14 @@ add_remove_oedge(oedge<T,3> *oedges, int delta, T e, T v0, T v1, T v2)
 	oedges[v0].overts[v1 < v2 ? 1 : 0] ^= v2;
 	oedges[v0].degree += delta;
 	oedges[v0].edge ^= e;
+}
+
+template<class T>
+inline void
+remove_oedge(oedge<T,2> *oedges, T e, T v0, T v1)
+{
+
+	return add_remove_oedge(oedges, -1, e, v0, v1);
 }
 
 template<class T>
@@ -197,3 +222,135 @@ peel_graph(edge<T,R> *edges, size_t nkeys, oedge<T,R> *oedges, T *order)
 }
 
 } // namespace
+
+struct rgph_graph {
+	size_t nkeys;
+	size_t nverts;
+	void *order;
+	void *edges;
+	void *oedges;
+	unsigned int flags;
+};
+
+struct key_val_iter {
+	key_val_iter(rgph_entry_iterator_t i, void *s)
+		: iter(i)
+		, state(s)
+		, cur(i(s))
+	{}
+
+	void operator++() {
+		cur = iter(state);
+	}
+
+	struct rgph_entry *operator->() {
+		return cur;
+	}
+
+	rgph_entry_iterator_t iter;
+	void *state;
+	struct rgph_entry *cur;
+};
+
+enum {
+	PUBLIC_FLAGS = 0x3ff,
+	ZEROED = 0x40000000
+};
+
+extern "C"
+void
+rgph_free_graph(struct rgph_graph *g)
+{
+
+	free(g->oedges);
+	free(g->edges);
+	free(g->order);
+	free(g);
+}
+
+extern "C"
+struct rgph_graph *
+rgph_alloc_graph(size_t nkeys, int flags)
+{
+	struct rgph_graph *g;
+	size_t nverts, esz, osz;
+	int save_errno;
+	int r;
+
+	if (flags & ~PUBLIC_FLAGS) {
+		errno = EINVAL;
+		return NULL;
+	}
+
+	r = (flags & RGPH_RANK_MASK) == RGPH_RANK2 ? 2 : 3;
+	// XXX nverts overflow check.
+	nverts = (r == 2) ? 2 * nkeys + (nkeys + 7) / 8
+	                  : 1 * nkeys + (nkeys + 3) / 4;
+	nverts = (nverts + (r - 1)) / r * r; // Round up.
+	if (nverts < 24)
+		nverts = 24;
+
+	g = (struct rgph_graph *)calloc(sizeof(*g), 1);
+	if (g == NULL)
+		return NULL;
+
+	g->nkeys = 0;
+	g->nverts = 0;
+	g->order = NULL;
+	g->edges = NULL;
+	g->oedges = NULL;
+	g->flags = flags;
+
+	// XXX other sizes of T
+	esz = (r == 2) ? sizeof(edge<uint32_t,2>)
+	               : sizeof(edge<uint32_t,3>);
+	osz = (r == 2) ? sizeof(oedge<uint32_t,2>)
+	               : sizeof(oedge<uint32_t,3>);
+
+	g->order = calloc(esz, nkeys);
+	if (g->order == NULL)
+		goto err;
+
+	g->edges = calloc(esz, nkeys);
+	if (g->edges == NULL)
+		goto err;
+
+	g->oedges = calloc(osz, nverts);
+	if (g->oedges == NULL)
+		goto err;
+
+	g->nkeys = nkeys;
+	g->nverts = nverts;
+	g->flags |= ZEROED; // calloc
+
+	return g;
+err:
+	save_errno = errno;
+	rgph_free_graph(g);
+	errno = save_errno;
+	return NULL;
+}
+
+extern "C"
+int
+rgph_build_graph(struct rgph_graph *g,
+    rgph_entry_iterator_t keys, void *state, unsigned int seed)
+{
+	// XXX
+	edge<uint32_t,3> *edges = (edge<uint32_t,3> *)g->edges;
+	oedge<uint32_t,3> *oedges = (oedge<uint32_t,3> *)g->oedges;
+	hash<uint32_t> hashes(seed);
+	key_val_iter iter(keys, state);
+
+	if (!(g->flags & ZEROED)) {
+		// XXX
+		memset(g->order, 0, 1);
+		memset(g->edges, 0, 1);
+		memset(g->oedges, 0, 1);
+	}
+
+	g->flags &= ~ZEROED;
+
+	build_graph(iter, g->nkeys, hashes, g->nverts, edges, oedges);
+	return peel_graph(edges, g->nkeys, oedges, (uint32_t *)g->order) != 0;
+}
