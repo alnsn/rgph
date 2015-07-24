@@ -32,6 +32,10 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /* Scalar 32bit hashes for fixed width types. */
 uint32_t rgph_u32_jenkins2_u8 (uint8_t  value, uint32_t seed);
 uint32_t rgph_u32_jenkins2_u16(uint16_t value, uint32_t seed);
@@ -70,4 +74,8 @@ void rgph_u32x3_jenkins2_f32a(const float *  key,
 void rgph_u32x3_jenkins2_f64a(const double *  key,
     size_t len, uint32_t seed, uint32_t h[3]);
 
-#endif /* FILE_RGPH_HASH_H_INCLUDED */
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* !FILE_RGPH_HASH_H_INCLUDED */
