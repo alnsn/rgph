@@ -83,7 +83,27 @@ struct hash {
 	{}
 
 	const T *operator()(const void *key, size_t keylen) const {
-		rgph_u32x3_jenkins2_u8a((const uint8_t *)key, keylen, seed, hashes);
+		uint32_t h32[3];
+		rgph_u32x3_jenkins2_u8a((const uint8_t *)key, keylen,
+		    seed, h32);
+		hashes[0] = h32[0];
+		hashes[1] = h32[1];
+		hashes[2] = h32[2];
+		return hashes;
+	}
+};
+
+template<>
+struct hash<uint32_t> {
+	mutable uint32_t hashes[3];
+	uint32_t seed;
+	hash(uint32_t s)
+		: seed(s)
+	{}
+
+	const uint32_t *operator()(const void *key, size_t keylen) const {
+		rgph_u32x3_jenkins2_u8a((const uint8_t *)key, keylen,
+		    seed, hashes);
 		return hashes;
 	}
 };
@@ -188,7 +208,7 @@ remove_vertex(oedge<T,3> *oedges, T v0, T *order, size_t end)
 
 template<class Iter, class Hash, class T, int R>
 void
-build_graph(Iter keys, size_t nkeys, Hash hash, size_t nverts,
+init_graph(Iter keys, size_t nkeys, Hash hash, size_t nverts,
     edge<T,R> *edges, oedge<T,R> *oedges)
 {
 	// Partition size of an R-partite R-graph.
@@ -209,7 +229,7 @@ peel_graph(edge<T,R> *edges, size_t nkeys, oedge<T,R> *oedges, T *order)
 {
 	size_t end = nkeys;
 
-	for (size_t i = 0; i < nkeys; ++i)
+	for (T i = 0; i < nkeys; ++i)
 		end = remove_vertex(oedges, i, order, end);
 
 	for (size_t i = nkeys; i > 0 && i > end; --i) {
@@ -221,17 +241,95 @@ peel_graph(edge<T,R> *edges, size_t nkeys, oedge<T,R> *oedges, T *order)
 	return end;
 }
 
-} // namespace
+size_t
+data_width(size_t size, size_t min_width)
+{
 
-struct rgph_graph {
-	size_t nkeys;
-	size_t nverts;
-	void *order;
-	void *edges;
-	void *oedges;
-	unsigned int flags;
-};
+	if (size <= 0xffu && min_width <= 1)
+		return 1;
+	else if (size <= 0xffffu && min_width <= 2)
+		return 2;
+	else if (size <= 0xffffffffu && min_width <= 4)
+		return 4;
+	else
+		return 0;
+}
 
+size_t
+edge2_size(size_t nkeys, size_t min_width)
+{
+
+	switch (data_width(nkeys, min_width)) {
+		case 1: return sizeof(edge<uint8_t,2>);
+		case 2: return sizeof(edge<uint16_t,2>);
+		case 4: return sizeof(edge<uint32_t,2>);
+		default: return 0;
+	}
+}
+
+size_t
+edge3_size(size_t nkeys, size_t min_width)
+{
+
+	switch (data_width(nkeys, min_width)) {
+		case 1: return sizeof(edge<uint8_t,3>);
+		case 2: return sizeof(edge<uint16_t,3>);
+		case 4: return sizeof(edge<uint32_t,3>);
+		default: return 0;
+	}
+}
+
+size_t
+edge_size(int rank, size_t nkeys, size_t min_width)
+{
+
+	switch (rank) {
+		case 2: return edge2_size(nkeys, min_width);
+		case 3: return edge3_size(nkeys, min_width);
+		default: return 0;
+	}
+}
+
+size_t
+oedge2_size(size_t nverts, size_t min_width)
+{
+	switch (data_width(nverts, min_width)) {
+		case 1: return sizeof(oedge<uint8_t,2>);
+		case 2: return sizeof(oedge<uint16_t,2>);
+		case 4: return sizeof(oedge<uint32_t,2>);
+		default: return 0;
+	}
+}
+
+size_t
+oedge3_size(size_t nverts, size_t min_width)
+{
+	switch (data_width(nverts, min_width)) {
+		case 1: return sizeof(oedge<uint8_t,3>);
+		case 2: return sizeof(oedge<uint16_t,3>);
+		case 4: return sizeof(oedge<uint32_t,3>);
+		default: return 0;
+	}
+}
+
+size_t
+oedge_size(int rank, size_t nverts, size_t min_width)
+{
+
+	switch (rank) {
+		case 2: return edge2_size(nverts, min_width);
+		case 3: return edge3_size(nverts, min_width);
+		default: return 0;
+	}
+}
+
+int graph_rank(unsigned int flags)
+{
+
+	return (flags & RGPH_RANK_MASK) == RGPH_RANK2 ? 2 : 3;
+}
+
+// XXX
 struct key_val_iter {
 	key_val_iter(rgph_entry_iterator_t i, void *s)
 		: iter(i)
@@ -256,6 +354,32 @@ enum {
 	PUBLIC_FLAGS = 0x3ff,
 	ZEROED = 0x40000000
 };
+
+} // namespace
+
+struct rgph_graph {
+	size_t nkeys;
+	size_t nverts;
+	void *order;
+	void *edges;
+	void *oedges;
+	unsigned int flags;
+};
+
+template<class T, int R>
+static int
+build_graph(struct rgph_graph *g,
+    rgph_entry_iterator_t keys, void *state, unsigned int seed)
+{
+	typedef edge<T,R> edge_t;
+	typedef oedge<T,R> oedge_t;
+	edge_t *edges = (edge_t *)g->edges;
+	oedge_t *oedges = (oedge_t *)g->oedges;
+	hash<T> hashes(seed);
+	key_val_iter iter(keys, state);
+	init_graph(iter, g->nkeys, hashes, g->nverts, edges, oedges);
+	return peel_graph(edges, g->nkeys, oedges, (T *)g->order);
+}
 
 extern "C"
 void
@@ -282,13 +406,21 @@ rgph_alloc_graph(size_t nkeys, int flags)
 		return NULL;
 	}
 
-	r = (flags & RGPH_RANK_MASK) == RGPH_RANK2 ? 2 : 3;
+	r = graph_rank(flags);
 	// XXX nverts overflow check.
 	nverts = (r == 2) ? 2 * nkeys + (nkeys + 7) / 8
 	                  : 1 * nkeys + (nkeys + 3) / 4;
 	nverts = (nverts + (r - 1)) / r * r; // Round up.
 	if (nverts < 24)
 		nverts = 24;
+
+	esz = edge_size(r, nverts, 0); // data_width(nverts) !
+	osz = oedge_size(r, nverts, 0);
+
+	if (esz == 0 || osz == 0) {
+		errno = EINVAL;
+		return NULL;
+	}
 
 	g = (struct rgph_graph *)calloc(sizeof(*g), 1);
 	if (g == NULL)
@@ -300,12 +432,6 @@ rgph_alloc_graph(size_t nkeys, int flags)
 	g->edges = NULL;
 	g->oedges = NULL;
 	g->flags = flags;
-
-	// XXX other sizes of T
-	esz = (r == 2) ? sizeof(edge<uint32_t,2>)
-	               : sizeof(edge<uint32_t,3>);
-	osz = (r == 2) ? sizeof(oedge<uint32_t,2>)
-	               : sizeof(oedge<uint32_t,3>);
 
 	g->order = calloc(esz, nkeys);
 	if (g->order == NULL)
@@ -336,21 +462,35 @@ int
 rgph_build_graph(struct rgph_graph *g,
     rgph_entry_iterator_t keys, void *state, unsigned int seed)
 {
-	// XXX
-	edge<uint32_t,3> *edges = (edge<uint32_t,3> *)g->edges;
-	oedge<uint32_t,3> *oedges = (oedge<uint32_t,3> *)g->oedges;
-	hash<uint32_t> hashes(seed);
-	key_val_iter iter(keys, state);
+	const int r = graph_rank(g->flags);
+	const size_t esz = edge_size(r, g->nverts, 0); // data_width(nverts) !
+	const size_t osz = oedge_size(r, g->nverts, 0);
 
 	if (!(g->flags & ZEROED)) {
-		// XXX
-		memset(g->order, 0, 1);
-		memset(g->edges, 0, 1);
-		memset(g->oedges, 0, 1);
+		memset(g->order, 0, esz * g->nkeys);
+		memset(g->edges, 0, esz * g->nkeys);
+		memset(g->oedges, 0, osz * g->nverts);
 	}
 
 	g->flags &= ~ZEROED;
 
-	build_graph(iter, g->nkeys, hashes, g->nverts, edges, oedges);
-	return peel_graph(edges, g->nkeys, oedges, (uint32_t *)g->order) != 0;
+#define SELECT(r, w) (8 * (r) + (w))
+	switch (SELECT(r, esz)) {
+		case SELECT(2, 1):
+			return build_graph<uint8_t,2>(g, keys, state, seed);
+		case SELECT(3, 1):
+			return build_graph<uint8_t,3>(g, keys, state, seed);
+		case SELECT(2, 2):
+			return build_graph<uint16_t,2>(g, keys, state, seed);
+		case SELECT(3, 2):
+			return build_graph<uint16_t,3>(g, keys, state, seed);
+		case SELECT(2, 4):
+			return build_graph<uint32_t,2>(g, keys, state, seed);
+		case SELECT(3, 4):
+			return build_graph<uint32_t,3>(g, keys, state, seed);
+	    default:
+		errno = EINVAL;
+		return -1;
+	}
+#undef SELECT
 }
