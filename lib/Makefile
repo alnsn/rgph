@@ -6,11 +6,10 @@ CFLAGS+=	-DNDEBUG
 CXXFLAGS+=	-DNDEBUG
 
 WARNS?=		-Wall
-PIEOPTS?=	-fPIE
 C99OPTS?=	-std=c99
 CXXOPTS?=	-nostdinc++ -fno-exceptions -fno-rtti
-CFLAGS+=	-O2 -fPIC ${PIEOPTS} ${WARNS} -I. ${C99OPTS}
-CXXFLAGS+=	-O2 -fPIC ${PIEOPTS} ${WARNS} -I. ${CXXOPTS}
+CFLAGS+=	-O2 -fPIC ${WARNS} -I. ${C99OPTS}
+CXXFLAGS+=	-O2 -fPIC ${WARNS} -I. ${CXXOPTS}
 SHLDFLAGS=	-O2 -fPIC ${PIEOPTS} -shared
 
 all: ${ALL}
