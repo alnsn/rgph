@@ -395,7 +395,7 @@ struct rgph_graph *
 rgph_alloc_graph(size_t nkeys, int flags)
 {
 	struct rgph_graph *g;
-	size_t nverts, esz, osz;
+	size_t maxkeys, nverts, esz, osz;
 	int save_errno;
 	int r;
 
@@ -405,12 +405,24 @@ rgph_alloc_graph(size_t nkeys, int flags)
 	}
 
 	r = graph_rank(flags);
-	// XXX nverts overflow check.
+	maxkeys = (r == 2) ? UINT32_C(0x78787878) : UINT32_C(0xcccccccc);
+
+	/* Avoid an overflow when rounding up nverts. */
+	if (sizeof(nverts) == sizeof(uint32_t))
+		maxkeys -= r - 1;
+
+	if (nkeys == 0 || nkeys > maxkeys) {
+		errno = ERANGE;
+		return NULL;
+	}
+
 	nverts = (r == 2) ? 2 * nkeys + (nkeys + 7) / 8
 	                  : 1 * nkeys + (nkeys + 3) / 4;
 	nverts = (nverts + (r - 1)) / r * r; // Round up.
 	if (nverts < 24)
 		nverts = 24;
+
+	assert(nverts > nkeys);
 
 	esz = edge_size(r, nverts, 0); // data_width(nverts) !
 	osz = oedge_size(r, nverts, 0);
