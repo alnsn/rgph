@@ -52,7 +52,7 @@
 } while (/* CONSTCOND */0)
 
 inline void
-rgph_u32x3_jenkins2_u8(uint8_t value, uint32_t seed, uint32_t h[3])
+rgph_u32x3_jenkins2_u8(uint8_t value, uint32_t seed, uint32_t *h)
 {
 
 	h[0] = SEED1(seed);
@@ -65,7 +65,7 @@ rgph_u32x3_jenkins2_u8(uint8_t value, uint32_t seed, uint32_t h[3])
 }
 
 inline void
-rgph_u32x3_jenkins2_u16(uint16_t value, uint32_t seed, uint32_t h[3])
+rgph_u32x3_jenkins2_u16(uint16_t value, uint32_t seed, uint32_t *h)
 {
 
 	h[0] = SEED1(seed);
@@ -78,7 +78,7 @@ rgph_u32x3_jenkins2_u16(uint16_t value, uint32_t seed, uint32_t h[3])
 }
 
 inline void
-rgph_u32x3_jenkins2_u32(uint32_t value, uint32_t seed, uint32_t h[3])
+rgph_u32x3_jenkins2_u32(uint32_t value, uint32_t seed, uint32_t *h)
 {
 
 	h[0] = SEED1(seed);
@@ -91,7 +91,7 @@ rgph_u32x3_jenkins2_u32(uint32_t value, uint32_t seed, uint32_t h[3])
 }
 
 inline void
-rgph_u32x3_jenkins2_u64(uint64_t value, uint32_t seed, uint32_t h[3])
+rgph_u32x3_jenkins2_u64(uint64_t value, uint32_t seed, uint32_t *h)
 {
 
 	h[0] = SEED1(seed);
@@ -105,14 +105,14 @@ rgph_u32x3_jenkins2_u64(uint64_t value, uint32_t seed, uint32_t h[3])
 }
 
 inline void
-rgph_u32x3_jenkins2_f32(float value, uint32_t seed, uint32_t h[3])
+rgph_u32x3_jenkins2_f32(float value, uint32_t seed, uint32_t *h)
 {
 
 	rgph_u32x3_jenkins2_u32(f2u32(value), seed, h);
 }
 
 inline void
-rgph_u32x3_jenkins2_f64(double value, uint32_t seed, uint32_t h[3])
+rgph_u32x3_jenkins2_f64(double value, uint32_t seed, uint32_t *h)
 {
 
 	rgph_u32x3_jenkins2_u64(d2u64(value), seed, h);
@@ -251,7 +251,7 @@ rgph_u64_jenkins2_f64(double value, uint32_t seed)
 
 inline void
 rgph_u32x3_jenkins2_u8a(const uint8_t * restrict key,
-    size_t len, uint32_t seed, uint32_t h[3])
+    size_t len, uint32_t seed, uint32_t *h)
 {
 	const uint8_t *end = key + len;
 	int n = 0;
@@ -308,17 +308,52 @@ rgph_u32x3_jenkins2_u8a(const uint8_t * restrict key,
 }
 
 inline void
+rgph_u32x3_jenkins2_data(const void * restrict data,
+    size_t len, uint32_t seed, uint32_t *h)
+{
+	const uint8_t *key = (const uint8_t *)(const char *)data;
+
+	rgph_u32x3_jenkins2_u8a(key, len, seed, h);
+}
+
+uint32_t
+rgph_u32_jenkins2_data(const void * restrict data,
+    size_t len, uint32_t seed)
+{
+	const uint8_t *key = (const uint8_t *)(const char *)data;
+	uint32_t h[3];
+
+	rgph_u32x3_jenkins2_u8a(key, len, seed, h);
+	return h[0];
+}
+
+uint64_t
+rgph_u64_jenkins2_data(const void * restrict data,
+    size_t len, uint32_t seed)
+{
+	const uint8_t *key = (const uint8_t *)(const char *)data;
+	uint64_t res;
+	uint32_t h[3];
+
+	rgph_u32x3_jenkins2_u8a(key, len, seed, h);
+
+	res = h[1];
+	res = h[0] | (res << 32);
+	return res;
+}
+
+void
 rgph_u32x3_jenkins2_u16a(const uint16_t * restrict key,
-    size_t len, uint32_t seed, uint32_t h[3])
+    size_t len, uint32_t seed, uint32_t *h)
 {
 
-	return rgph_u32x3_jenkins2_u8a((const uint8_t *)key,
+	return rgph_u32x3_jenkins2_data((const void *)key,
 	    len * sizeof(key[0]), seed, h);
 }
 
-inline void
+void
 rgph_u32x3_jenkins2_u32a(const uint32_t * restrict key,
-    size_t len, uint32_t seed, uint32_t h[3])
+    size_t len, uint32_t seed, uint32_t *h)
 {
 	const uint32_t *end = key + len;
 
@@ -344,9 +379,9 @@ rgph_u32x3_jenkins2_u32a(const uint32_t * restrict key,
 	}
 }
 
-inline void
+void
 rgph_u32x3_jenkins2_u64a(const uint64_t * restrict key,
-    size_t len, uint32_t seed, uint32_t h[3])
+    size_t len, uint32_t seed, uint32_t *h)
 {
 	const uint64_t *end = key + len;
 	uint64_t a, b, c;
@@ -390,9 +425,9 @@ rgph_u32x3_jenkins2_u64a(const uint64_t * restrict key,
 	MIX(h[0], h[1], h[2]);
 }
 
-inline void
+void
 rgph_u32x3_jenkins2_f32a(const float * restrict key,
-    size_t len, uint32_t seed, uint32_t h[3])
+    size_t len, uint32_t seed, uint32_t *h)
 {
 	const float *end = key + len;
 
@@ -418,9 +453,9 @@ rgph_u32x3_jenkins2_f32a(const float * restrict key,
 	}
 }
 
-inline void
+void
 rgph_u32x3_jenkins2_f64a(const double * restrict key,
-    size_t len, uint32_t seed, uint32_t h[3])
+    size_t len, uint32_t seed, uint32_t *h)
 {
 	const double *end = key + len;
 	uint64_t a, b, c;

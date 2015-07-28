@@ -36,43 +36,42 @@
 extern "C" {
 #endif
 
+/* Generic scalar and x3 hashes for any data. */
+uint32_t rgph_u32_jenkins2_data(const void *, size_t, uint32_t);
+uint64_t rgph_u64_jenkins2_data(const void *, size_t, uint32_t);
+void rgph_u32x3_jenkins2_data(const void *, size_t, uint32_t, uint32_t *);
+
 /* Scalar 32bit hashes for fixed width types. */
-uint32_t rgph_u32_jenkins2_u8 (uint8_t  value, uint32_t seed);
-uint32_t rgph_u32_jenkins2_u16(uint16_t value, uint32_t seed);
-uint32_t rgph_u32_jenkins2_u32(uint32_t value, uint32_t seed);
-uint32_t rgph_u32_jenkins2_u64(uint64_t value, uint32_t seed);
-uint32_t rgph_u32_jenkins2_f32(float    value, uint32_t seed);
-uint32_t rgph_u32_jenkins2_f64(double   value, uint32_t seed);
+uint32_t rgph_u32_jenkins2_u8(uint8_t,   uint32_t);
+uint32_t rgph_u32_jenkins2_u16(uint16_t, uint32_t);
+uint32_t rgph_u32_jenkins2_u32(uint32_t, uint32_t);
+uint32_t rgph_u32_jenkins2_u64(uint64_t, uint32_t);
+uint32_t rgph_u32_jenkins2_f32(float,    uint32_t);
+uint32_t rgph_u32_jenkins2_f64(double,   uint32_t);
 
 /* Scalar 64bit hashes for fixed width types. */
-uint64_t rgph_u64_jenkins2_u8 (uint8_t  value, uint32_t seed);
-uint64_t rgph_u64_jenkins2_u16(uint16_t value, uint32_t seed);
-uint64_t rgph_u64_jenkins2_u32(uint32_t value, uint32_t seed);
-uint64_t rgph_u64_jenkins2_u64(uint64_t value, uint32_t seed);
-uint64_t rgph_u64_jenkins2_f32(float    value, uint32_t seed);
-uint64_t rgph_u64_jenkins2_f64(double   value, uint32_t seed);
+uint64_t rgph_u64_jenkins2_u8 (uint8_t,  uint32_t);
+uint64_t rgph_u64_jenkins2_u16(uint16_t, uint32_t);
+uint64_t rgph_u64_jenkins2_u32(uint32_t, uint32_t);
+uint64_t rgph_u64_jenkins2_u64(uint64_t, uint32_t);
+uint64_t rgph_u64_jenkins2_f32(float,    uint32_t);
+uint64_t rgph_u64_jenkins2_f64(double,   uint32_t);
 
 /* Vector 32bit x3 hashes for fixed width types. */
-void rgph_u32x3_jenkins2_u8 (uint8_t  value, uint32_t seed, uint32_t h[3]);
-void rgph_u32x3_jenkins2_u16(uint16_t value, uint32_t seed, uint32_t h[3]);
-void rgph_u32x3_jenkins2_u32(uint32_t value, uint32_t seed, uint32_t h[3]);
-void rgph_u32x3_jenkins2_u64(uint64_t value, uint32_t seed, uint32_t h[3]);
-void rgph_u32x3_jenkins2_f32(float    value, uint32_t seed, uint32_t h[3]);
-void rgph_u32x3_jenkins2_f64(double   value, uint32_t seed, uint32_t h[3]);
+void rgph_u32x3_jenkins2_u8 (uint8_t,  uint32_t, uint32_t *);
+void rgph_u32x3_jenkins2_u16(uint16_t, uint32_t, uint32_t *);
+void rgph_u32x3_jenkins2_u32(uint32_t, uint32_t, uint32_t *);
+void rgph_u32x3_jenkins2_u64(uint64_t, uint32_t, uint32_t *);
+void rgph_u32x3_jenkins2_f32(float,    uint32_t, uint32_t *);
+void rgph_u32x3_jenkins2_f64(double,   uint32_t, uint32_t *);
 
 /* Vector 32bit x3 hashes for arrays. */
-void rgph_u32x3_jenkins2_u8a(const uint8_t *  key,
-    size_t len, uint32_t seed, uint32_t h[3]);
-void rgph_u32x3_jenkins2_u16a(const uint16_t *  key,
-    size_t len, uint32_t seed, uint32_t h[3]);
-void rgph_u32x3_jenkins2_u32a(const uint32_t *  key,
-    size_t len, uint32_t seed, uint32_t h[3]);
-void rgph_u32x3_jenkins2_u64a(const uint64_t *  key,
-    size_t len, uint32_t seed, uint32_t h[3]);
-void rgph_u32x3_jenkins2_f32a(const float *  key,
-    size_t len, uint32_t seed, uint32_t h[3]);
-void rgph_u32x3_jenkins2_f64a(const double *  key,
-    size_t len, uint32_t seed, uint32_t h[3]);
+void rgph_u32x3_jenkins2_u8a(const uint8_t *,   size_t, uint32_t, uint32_t *);
+void rgph_u32x3_jenkins2_u16a(const uint16_t *, size_t, uint32_t, uint32_t *);
+void rgph_u32x3_jenkins2_u32a(const uint32_t *, size_t, uint32_t, uint32_t *);
+void rgph_u32x3_jenkins2_u64a(const uint64_t *, size_t, uint32_t, uint32_t *);
+void rgph_u32x3_jenkins2_f32a(const float *,    size_t, uint32_t, uint32_t *);
+void rgph_u32x3_jenkins2_f64a(const double *,   size_t, uint32_t, uint32_t *);
 
 #ifdef __cplusplus
 }

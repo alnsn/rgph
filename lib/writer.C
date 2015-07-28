@@ -74,11 +74,11 @@ struct oedge {
 	T edge;
 };
 
-template<bool C> struct bool_ {};
+template<bool C> struct bool_selector {};
 
 template<class T, class S, class H>
 struct hash {
-	typedef void (*func_t)(const uint8_t *, size_t, S, H *);
+	typedef void (*func_t)(const void *, size_t, S, H *);
 	func_t func;
 	T hashes[3];
 	S seed;
@@ -86,20 +86,21 @@ struct hash {
 	inline hash(func_t f, S s) : func(f), seed(s) {}
 
 
-	inline const T*
+	inline const T *
 	operator()(const void *key, size_t keylen) {
-		return this->impl(bool_<sizeof(T) == sizeof(H)>(), key, keylen);
+		bool_selector<(sizeof(T) == sizeof(H))> selector;
+		return this->impl(selector, key, keylen);
 	}
 
 	inline const T *
-	impl(bool_<true>, const void *key, size_t keylen) {
-		func((const uint8_t *)key, keylen, seed, hashes);
+	impl(bool_selector<true>, const void *key, size_t keylen) {
+		func(key, keylen, seed, hashes);
 		return hashes;
 	}
-	inline const T*
-	impl(bool_<false>, const void *key, size_t keylen) {
+	inline const T *
+	impl(bool_selector<false>, const void *key, size_t keylen) {
 		H h[3];
-		func((const uint8_t *)key, keylen, seed, h);
+		func(key, keylen, seed, h);
 		hashes[0] = h[0];
 		hashes[1] = h[1];
 		hashes[2] = h[2];
@@ -109,7 +110,7 @@ struct hash {
 
 template<class T, class S, class H>
 inline hash<T,S,H>
-make_hash(void (*func)(const uint8_t *, size_t, S, H *), unsigned int seed)
+make_hash(void (*func)(const void *, size_t, S, H *), unsigned int seed)
 {
 
 	return hash<T,S,H>(func, seed);
@@ -248,7 +249,7 @@ peel_graph(edge<T,R> *edges, size_t nkeys, oedge<T,R> *oedges, T *order)
 	return end;
 }
 
-size_t
+inline size_t
 data_width(size_t size, size_t min_width)
 {
 
@@ -262,7 +263,7 @@ data_width(size_t size, size_t min_width)
 		return 0;
 }
 
-size_t
+inline size_t
 edge2_size(size_t nkeys, size_t min_width)
 {
 
@@ -274,7 +275,7 @@ edge2_size(size_t nkeys, size_t min_width)
 	}
 }
 
-size_t
+inline size_t
 edge3_size(size_t nkeys, size_t min_width)
 {
 
@@ -286,7 +287,7 @@ edge3_size(size_t nkeys, size_t min_width)
 	}
 }
 
-size_t
+inline size_t
 edge_size(int rank, size_t nkeys, size_t min_width)
 {
 
@@ -297,7 +298,7 @@ edge_size(int rank, size_t nkeys, size_t min_width)
 	}
 }
 
-size_t
+inline size_t
 oedge2_size(size_t nverts, size_t min_width)
 {
 	switch (data_width(nverts, min_width)) {
@@ -308,7 +309,7 @@ oedge2_size(size_t nverts, size_t min_width)
 	}
 }
 
-size_t
+inline size_t
 oedge3_size(size_t nverts, size_t min_width)
 {
 	switch (data_width(nverts, min_width)) {
@@ -319,7 +320,7 @@ oedge3_size(size_t nverts, size_t min_width)
 	}
 }
 
-size_t
+inline size_t
 oedge_size(int rank, size_t nverts, size_t min_width)
 {
 
@@ -330,7 +331,8 @@ oedge_size(int rank, size_t nverts, size_t min_width)
 	}
 }
 
-int graph_rank(unsigned int flags)
+inline int
+graph_rank(unsigned int flags)
 {
 
 	return (flags & RGPH_RANK_MASK) == RGPH_RANK2 ? 2 : 3;
@@ -387,7 +389,7 @@ build_graph(struct rgph_graph *g,
 	switch (g->flags & RGPH_HASH_MASK) {
 		case RGPH_HASH_JENKINS3:
 			init_graph(iter, g->nkeys,
-			    make_hash<T>(&rgph_u32x3_jenkins2_u8a, seed),
+			    make_hash<T>(&rgph_u32x3_jenkins2_data, seed),
 			    g->nverts, edges, oedges);
 			break;
 		default:
