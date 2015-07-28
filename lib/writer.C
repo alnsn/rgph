@@ -405,11 +405,7 @@ rgph_alloc_graph(size_t nkeys, int flags)
 	}
 
 	r = graph_rank(flags);
-	maxkeys = (r == 2) ? UINT32_C(0x78787878) : UINT32_C(0xcccccccc);
-
-	/* Avoid an overflow when rounding up nverts. */
-	if (sizeof(nverts) == sizeof(uint32_t))
-		maxkeys -= r - 1;
+	maxkeys = (r == 2) ? 0x78787877u : 0xcccccccau;
 
 	if (nkeys == 0 || nkeys > maxkeys) {
 		errno = ERANGE;
