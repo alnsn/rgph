@@ -262,26 +262,15 @@ data_width(size_t size, size_t min_width)
 		return 0;
 }
 
+template<int R>
 inline size_t
-edge2_size(size_t nkeys, size_t min_width)
+edge_size_rank(size_t nkeys, size_t min_width)
 {
 
 	switch (data_width(nkeys, min_width)) {
-		case 1: return sizeof(edge<uint8_t,2>);
-		case 2: return sizeof(edge<uint16_t,2>);
-		case 4: return sizeof(edge<uint32_t,2>);
-		default: return 0;
-	}
-}
-
-inline size_t
-edge3_size(size_t nkeys, size_t min_width)
-{
-
-	switch (data_width(nkeys, min_width)) {
-		case 1: return sizeof(edge<uint8_t,3>);
-		case 2: return sizeof(edge<uint16_t,3>);
-		case 4: return sizeof(edge<uint32_t,3>);
+		case 1: return sizeof(edge<uint8_t,R>);
+		case 2: return sizeof(edge<uint16_t,R>);
+		case 4: return sizeof(edge<uint32_t,R>);
 		default: return 0;
 	}
 }
@@ -291,30 +280,21 @@ edge_size(int rank, size_t nkeys, size_t min_width)
 {
 
 	switch (rank) {
-		case 2: return edge2_size(nkeys, min_width);
-		case 3: return edge3_size(nkeys, min_width);
+		case 2: return edge_size_rank<2>(nkeys, min_width);
+		case 3: return edge_size_rank<3>(nkeys, min_width);
 		default: return 0;
 	}
 }
 
+template<int R>
 inline size_t
-oedge2_size(size_t nverts, size_t min_width)
+oedge_size_rank(size_t nverts, size_t min_width)
 {
-	switch (data_width(nverts, min_width)) {
-		case 1: return sizeof(oedge<uint8_t,2>);
-		case 2: return sizeof(oedge<uint16_t,2>);
-		case 4: return sizeof(oedge<uint32_t,2>);
-		default: return 0;
-	}
-}
 
-inline size_t
-oedge3_size(size_t nverts, size_t min_width)
-{
 	switch (data_width(nverts, min_width)) {
-		case 1: return sizeof(oedge<uint8_t,3>);
-		case 2: return sizeof(oedge<uint16_t,3>);
-		case 4: return sizeof(oedge<uint32_t,3>);
+		case 1: return sizeof(oedge<uint8_t,R>);
+		case 2: return sizeof(oedge<uint16_t,R>);
+		case 4: return sizeof(oedge<uint32_t,R>);
 		default: return 0;
 	}
 }
@@ -324,8 +304,8 @@ oedge_size(int rank, size_t nverts, size_t min_width)
 {
 
 	switch (rank) {
-		case 2: return edge2_size(nverts, min_width);
-		case 3: return edge3_size(nverts, min_width);
+		case 2: return oedge_size_rank<2>(nverts, min_width);
+		case 3: return oedge_size_rank<3>(nverts, min_width);
 		default: return 0;
 	}
 }
