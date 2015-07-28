@@ -366,11 +366,13 @@ build_graph(struct rgph_graph *g,
 	key_val_iter iter(keys, state);
 
 	switch (g->flags & RGPH_HASH_MASK) {
-		case RGPH_HASH_JENKINS3:
+		case RGPH_HASH_JENKINS2:
 			init_graph(iter, g->nkeys,
 			    make_hash<T>(&rgph_u32x3_jenkins2_data, seed),
 			    g->nverts, edges, oedges);
 			break;
+		case RGPH_HASH_DEFAULT:
+		case RGPH_HASH_JENKINS3: // XXX implement jenkins3
 		default:
 			errno = EINVAL;
 			return -1;
