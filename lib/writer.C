@@ -74,39 +74,46 @@ struct oedge {
 	T edge;
 };
 
-template<class T>
+template<bool C> struct bool_ {};
+
+template<class T, class S, class H>
 struct hash {
-	mutable T hashes[3];
-	T seed;
-	hash(T s)
-		: seed(s)
-	{}
+	typedef void (*func_t)(const uint8_t *, size_t, S, H *);
+	func_t func;
+	T hashes[3];
+	S seed;
 
-	const T *operator()(const void *key, size_t keylen) const {
-		uint32_t h32[3];
-		rgph_u32x3_jenkins2_u8a((const uint8_t *)key, keylen,
-		    seed, h32);
-		hashes[0] = h32[0];
-		hashes[1] = h32[1];
-		hashes[2] = h32[2];
+	inline hash(func_t f, S s) : func(f), seed(s) {}
+
+
+	inline const T*
+	operator()(const void *key, size_t keylen) {
+		return this->impl(bool_<sizeof(T) == sizeof(H)>(), key, keylen);
+	}
+
+	inline const T *
+	impl(bool_<true>, const void *key, size_t keylen) {
+		func((const uint8_t *)key, keylen, seed, hashes);
+		return hashes;
+	}
+	inline const T*
+	impl(bool_<false>, const void *key, size_t keylen) {
+		H h[3];
+		func((const uint8_t *)key, keylen, seed, h);
+		hashes[0] = h[0];
+		hashes[1] = h[1];
+		hashes[2] = h[2];
 		return hashes;
 	}
 };
 
-template<>
-struct hash<uint32_t> {
-	mutable uint32_t hashes[3];
-	uint32_t seed;
-	hash(uint32_t s)
-		: seed(s)
-	{}
+template<class T, class S, class H>
+inline hash<T,S,H>
+make_hash(void (*func)(const uint8_t *, size_t, S, H *), unsigned int seed)
+{
 
-	const uint32_t *operator()(const void *key, size_t keylen) const {
-		rgph_u32x3_jenkins2_u8a((const uint8_t *)key, keylen,
-		    seed, hashes);
-		return hashes;
-	}
-};
+	return hash<T,S,H>(func, seed);
+}
 
 template<class T>
 inline void
@@ -375,9 +382,19 @@ build_graph(struct rgph_graph *g,
 	typedef oedge<T,R> oedge_t;
 	edge_t *edges = (edge_t *)g->edges;
 	oedge_t *oedges = (oedge_t *)g->oedges;
-	hash<T> hashes(seed);
 	key_val_iter iter(keys, state);
-	init_graph(iter, g->nkeys, hashes, g->nverts, edges, oedges);
+
+	switch (g->flags & RGPH_HASH_MASK) {
+		case RGPH_HASH_JENKINS3:
+			init_graph(iter, g->nkeys,
+			    make_hash<T>(&rgph_u32x3_jenkins2_u8a, seed),
+			    g->nverts, edges, oedges);
+			break;
+		default:
+			errno = EINVAL;
+			return -1;
+	}
+
 	return peel_graph(edges, g->nkeys, oedges, (T *)g->order);
 }
 
