@@ -51,7 +51,7 @@ struct rgph_graph *rgph_alloc_graph(size_t, int);
 void rgph_free_graph(struct rgph_graph *);
 
 int rgph_build_graph(struct rgph_graph *,
-    rgph_entry_iterator_t, void *, unsigned int);
+    rgph_entry_iterator_t, void *, unsigned long);
 
 #ifdef __cplusplus
 }

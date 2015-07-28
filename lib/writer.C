@@ -85,7 +85,6 @@ struct hash {
 
 	inline hash(func_t f, S s) : func(f), seed(s) {}
 
-
 	inline const T *
 	operator()(const void *key, size_t keylen) {
 		bool_selector<(sizeof(T) == sizeof(H))> selector;
@@ -110,7 +109,7 @@ struct hash {
 
 template<class T, class S, class H>
 inline hash<T,S,H>
-make_hash(void (*func)(const void *, size_t, S, H *), unsigned int seed)
+make_hash(void (*func)(const void *, size_t, S, H *), unsigned long seed)
 {
 
 	return hash<T,S,H>(func, seed);
@@ -378,7 +377,7 @@ struct rgph_graph {
 template<class T, int R>
 static int
 build_graph(struct rgph_graph *g,
-    rgph_entry_iterator_t keys, void *state, unsigned int seed)
+    rgph_entry_iterator_t keys, void *state, unsigned long seed)
 {
 	typedef edge<T,R> edge_t;
 	typedef oedge<T,R> oedge_t;
@@ -479,7 +478,7 @@ err:
 extern "C"
 int
 rgph_build_graph(struct rgph_graph *g,
-    rgph_entry_iterator_t keys, void *state, unsigned int seed)
+    rgph_entry_iterator_t keys, void *state, unsigned long seed)
 {
 	const int r = graph_rank(g->flags);
 	const size_t esz = edge_size(r, g->nverts, 0); // data_width(nverts) !
