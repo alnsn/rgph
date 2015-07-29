@@ -118,17 +118,19 @@ struct hash {
 
 	inline const T *
 	operator()(const void *key, size_t keylen) {
-		bool_selector<(sizeof(T) == sizeof(H))> selector;
+		bool_selector<(sizeof(T) < sizeof(H))> selector;
 		return this->hashit(selector, key, keylen);
 	}
 
 	inline const T *
-	hashit(bool_selector<true>, const void *key, size_t keylen) {
+	hashit(bool_selector<false>, const void *key, size_t keylen) {
+		// H == T or H is smaller. The latter will not compile.
 		func(key, keylen, seed, hashes);
 		return hashes;
 	}
 	inline const T *
-	hashit(bool_selector<false>, const void *key, size_t keylen) {
+	hashit(bool_selector<true>, const void *key, size_t keylen) {
+		// T is smaller than H.
 		H h[3];
 		func(key, keylen, seed, h);
 		hashes[0] = (T)h[0];
