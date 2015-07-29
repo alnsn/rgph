@@ -378,6 +378,8 @@ build_graph(struct rgph_graph *g,
 {
 	typedef edge<T,R> edge_t;
 	typedef oedge<T,R> oedge_t;
+
+	T *order = (T *)g->order;
 	edge_t *edges = (edge_t *)g->edges;
 	oedge_t *oedges = (oedge_t *)g->oedges;
 	entry_iterator iter(keys, state);
@@ -395,7 +397,7 @@ build_graph(struct rgph_graph *g,
 			return -1;
 	}
 
-	return peel_graph(edges, g->nkeys, oedges, g->nverts, (T *)g->order);
+	return peel_graph(edges, g->nkeys, oedges, g->nverts, order);
 }
 
 extern "C"
