@@ -27,12 +27,6 @@
  * SUCH DAMAGE.
  */
 
-/*
- * If you're wonderning about coding style, it's documented in
- * /usr/share/misc/style which can be found online at this address
- * http://cvsweb.netbsd.org/bsdweb.cgi/src/share/misc/style
- */
-
 #include <assert.h>
 #include <errno.h>
 #include <limits.h>
