@@ -251,7 +251,7 @@ void
 init_graph(Iter keys, size_t nkeys, Hash hash, size_t nverts,
     edge<T,R> *edges, oedge<T,R> *oedges)
 {
-	// Partition size of an R-partite R-graph.
+	// partsz is a partition size of an R-partite R-graph.
 	const T partsz = nverts / R;
 	assert(partsz > 1 && (nverts % R) == 0);
 
@@ -352,6 +352,14 @@ graph_rank(unsigned int flags)
 	return (flags & RGPH_RANK_MASK) == RGPH_RANK2 ? 2 : 3;
 }
 
+inline size_t
+round_up(size_t n, size_t r)
+{
+
+	assert(n <= SIZE_MAX - (r - 1));
+	return (n + (r - 1)) / r * r;
+}
+
 } // namespace
 
 struct rgph_graph {
@@ -430,7 +438,7 @@ rgph_alloc_graph(size_t nkeys, int flags)
 
 	nverts = (r == 2) ? 2 * nkeys + (nkeys + 7) / 8
 	                  : 1 * nkeys + (nkeys + 3) / 4;
-	nverts = (nverts + (r - 1)) / r * r; // Round up.
+	nverts = round_up(nverts, r);
 	if (nverts < 24)
 		nverts = 24;
 
