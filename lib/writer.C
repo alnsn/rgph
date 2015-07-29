@@ -249,23 +249,24 @@ init_graph(Iter keys, size_t nkeys, Hash hash, size_t nverts,
 	const T partsz = nverts / R;
 	assert(partsz > 1 && (nverts % R) == 0);
 
-	for (T i = 0; i < nkeys; ++i, ++keys) {
+	for (T e = 0; e < nkeys; ++e, ++keys) {
 		const rgph_entry &ent = *keys;
 		const T *verts = hash(ent.key, ent.keylen);
-		for (size_t r = 0; r < R; ++r)
-			edges[i].verts[r] = (verts[r] % partsz) + r * partsz;
-		add_edge(oedges, i, edges[i].verts);
+		for (T r = 0; r < R; ++r)
+			edges[e].verts[r] = (verts[r] % partsz) + r * partsz;
+		add_edge(oedges, e, edges[e].verts);
 	}
 }
 
 template<class T, int R>
 size_t
-peel_graph(edge<T,R> *edges, size_t nkeys, oedge<T,R> *oedges, T *order)
+peel_graph(edge<T,R> *edges, size_t nkeys,
+    oedge<T,R> *oedges, size_t nverts, T *order)
 {
 	size_t end = nkeys;
 
-	for (T i = 0; i < nkeys; ++i)
-		end = remove_vertex(oedges, i, order, end);
+	for (T v0 = 0; v0 < nverts; ++v0)
+		end = remove_vertex(oedges, v0, order, end);
 
 	for (size_t i = nkeys; i > 0 && i > end; --i) {
 		const edge<T,R> &e = edges[order[i-1]];
@@ -394,7 +395,7 @@ build_graph(struct rgph_graph *g,
 			return -1;
 	}
 
-	return peel_graph(edges, g->nkeys, oedges, (T *)g->order);
+	return peel_graph(edges, g->nkeys, oedges, g->nverts, (T *)g->order);
 }
 
 extern "C"
