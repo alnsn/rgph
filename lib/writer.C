@@ -606,7 +606,7 @@ rgph_copy_edge(struct rgph_graph *g, size_t edge, unsigned long *to)
 	const int r = graph_rank(g->flags);
 	const size_t width = data_width(g->nverts, MIN_WIDTH_BUILD);
 
-	if ((g->flags & BUILT) == 0) {
+	if (!(g->flags & BUILT)) {
 		errno = EINVAL;
 		return -1;
 	}
