@@ -50,8 +50,15 @@ typedef struct rgph_entry * (*rgph_entry_iterator_t)( void *);
 struct rgph_graph *rgph_alloc_graph(size_t, int);
 void rgph_free_graph(struct rgph_graph *);
 
+int rgph_flags(struct rgph_graph *);
+int rgph_rank(struct rgph_graph *);
+size_t rgph_entries(struct rgph_graph *);
+size_t rgph_verticies(struct rgph_graph *);
+
 int rgph_build_graph(struct rgph_graph *,
     rgph_entry_iterator_t, void *, unsigned long);
+
+int rgph_copy_edge(struct rgph_graph *, size_t, unsigned long *);
 
 size_t rgph_count_keys(rgph_entry_iterator_t, void *);
 

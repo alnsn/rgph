@@ -424,6 +424,20 @@ build_graph(struct rgph_graph *g,
 	return peel_graph(edges, g->nkeys, oedges, g->nverts, order);
 }
 
+template<class T, int R>
+static int
+copy_edge(struct rgph_graph *g, size_t e, unsigned long *to)
+{
+	typedef edge<T,R> edge_t;
+
+	edge_t *edges = (edge_t *)g->edges;
+
+	for (size_t r = 0; r < R; r++)
+		to[r] = edges[e].verts[r];
+
+	return 0;
+}
+
 extern "C"
 void
 rgph_free_graph(struct rgph_graph *g)
@@ -510,6 +524,37 @@ err:
 
 extern "C"
 int
+rgph_flags(struct rgph_graph *g)
+{
+
+	return g->flags;
+}
+
+extern "C"
+int
+rgph_rank(struct rgph_graph *g)
+{
+
+	return graph_rank(g->flags);
+}
+extern "C"
+size_t
+rgph_entries(struct rgph_graph *g)
+{
+
+	return g->nkeys;
+}
+
+extern "C"
+size_t
+rgph_verticies(struct rgph_graph *g)
+{
+
+	return g->nverts;
+}
+
+extern "C"
+int
 rgph_build_graph(struct rgph_graph *g,
     rgph_entry_iterator_t keys, void *state, unsigned long seed)
 {
@@ -545,6 +590,45 @@ rgph_build_graph(struct rgph_graph *g,
 		return -1;
 	}
 #undef SELECT
+}
+
+extern "C"
+int
+rgph_copy_edge(struct rgph_graph *g, size_t edge, unsigned long *to)
+{
+	const int r = graph_rank(g->flags);
+	const size_t width = data_width(g->nverts, MIN_WIDTH_BUILD);
+
+	if ((g->flags & BUILT) == 0) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	if (edge >= g->nkeys) {
+		errno = ERANGE;
+		return -1;
+	}
+
+#define SELECT(r, w) (8 * (r) + (w))
+	switch (SELECT(r, width)) {
+		case SELECT(2, 1):
+			return copy_edge<uint8_t,2>(g, edge, to);
+		case SELECT(3, 1):
+			return copy_edge<uint8_t,3>(g, edge, to);
+		case SELECT(2, 2):
+			return copy_edge<uint16_t,2>(g, edge, to);
+		case SELECT(3, 2):
+			return copy_edge<uint16_t,3>(g, edge, to);
+		case SELECT(2, 4):
+			return copy_edge<uint32_t,2>(g, edge, to);
+		case SELECT(3, 4):
+			return copy_edge<uint32_t,3>(g, edge, to);
+	    default:
+		errno = EINVAL;
+		return -1;
+	}
+#undef SELECT
+	return 0;
 }
 
 extern "C"
