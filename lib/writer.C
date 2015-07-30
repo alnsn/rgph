@@ -527,7 +527,7 @@ int
 rgph_flags(struct rgph_graph *g)
 {
 
-	return g->flags;
+	return g->flags & PUBLIC_FLAGS;
 }
 
 extern "C"
