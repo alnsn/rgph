@@ -39,6 +39,10 @@
 #include "rgph_hash.h"
 #include "rgph_graph.h"
 
+namespace {
+
+template<bool C> struct bool_selector {};
+
 /*
  * The algorithm below is based on paper
  * Cache-Oblivious Peeling of Random Hypergraphs by Djamal Belazzougui,
@@ -46,10 +50,6 @@
  * Vigna.
  * http://zola.di.unipi.it/rossano/wp-content/papercite-data/pdf/dcc14.pdf
  */
-namespace {
-
-template<bool C> struct bool_selector {};
-
 template<class T, int R>
 struct edge {
 	T verts[R]; // v0, v1 (and v2, if R==3).
