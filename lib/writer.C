@@ -547,7 +547,7 @@ rgph_entries(struct rgph_graph *g)
 
 extern "C"
 size_t
-rgph_verticies(struct rgph_graph *g)
+rgph_vertices(struct rgph_graph *g)
 {
 
 	return g->nverts;
