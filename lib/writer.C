@@ -257,7 +257,8 @@ remove_vertex(oedge<T,3> *oedges, T v0, T *order, size_t end)
 template<class Iter, class Hash, class T, int R>
 bool
 init_graph(Iter keys, Iter keys_end, Hash hash,
-    edge<T,R> *edges, size_t nkeys, oedge<T,R> *oedges, size_t nverts)
+    edge<T,R> *edges, size_t nkeys, oedge<T,R> *oedges, size_t nverts,
+    size_t *datalenmax, size_t *datalenmin)
 {
 	// partsz is a partition size of an R-partite R-graph.
 	const T partsz = nverts / R;
@@ -270,6 +271,10 @@ init_graph(Iter keys, Iter keys_end, Hash hash,
 		for (T r = 0; r < R; ++r)
 			edges[e].verts[r] = (verts[r] % partsz) + r * partsz;
 		add_edge(oedges, e, edges[e].verts);
+		if (ent.datalen > *datalenmax)
+			*datalenmax = ent.datalen;
+		if (ent.datalen < *datalenmin)
+			*datalenmin = ent.datalen;
 	}
 
 	return e == nkeys;
@@ -379,6 +384,8 @@ struct rgph_graph {
 	void *order;
 	void *edges;
 	void *oedges;
+	size_t datalenmax;
+	size_t datalenmin;
 	unsigned int flags;
 };
 
@@ -402,12 +409,15 @@ build_graph(struct rgph_graph *g,
 	entry_iterator keys_start(keys, state), keys_end;
 
 	g->flags &= ~BUILT;
+	g->datalenmax = 0;
+	g->datalenmin = (size_t)-1;
 
 	switch (g->flags & RGPH_HASH_MASK) {
 		case RGPH_HASH_JENKINS2:
 			if (!init_graph(keys_start, keys_end,
 			    make_hash<T>(&rgph_u32x3_jenkins2_data, seed),
-			    edges, g->nkeys, oedges, g->nverts)) {
+			    edges, g->nkeys, oedges, g->nverts,
+			    &g->datalenmax, &g->datalenmin)) {
 			    goto einval;
 			}
 			break;
