@@ -39,6 +39,11 @@
 #include "rgph_hash.h"
 #include "rgph_graph.h"
 
+// Min. data_width size for building a graph. Setting it to 1 or 2
+// may save you some space for smaller graphs but beware of subtleties
+// of integral promotion rules.
+#define MIN_WIDTH_BUILD 4
+
 namespace {
 
 template<bool C> struct bool_selector {};
@@ -277,7 +282,6 @@ peel_graph(edge<T,R> *edges, size_t nkeys,
 	return end;
 }
 
-// XXX check whether promotion rules break the code when min_width < sizeof(int)
 inline size_t
 data_width(size_t size, size_t min_width)
 {
@@ -441,8 +445,8 @@ rgph_alloc_graph(size_t nkeys, int flags)
 
 	assert(nverts > nkeys);
 
-	esz = edge_size(r, nverts, 0); // data_width(nverts) !
-	osz = oedge_size(r, nverts, 0);
+	esz = edge_size(r, nverts, MIN_WIDTH_BUILD); // data_width(nverts) !
+	osz = oedge_size(r, nverts, MIN_WIDTH_BUILD);
 
 	if (esz == 0 || osz == 0) {
 		errno = EINVAL;
@@ -490,11 +494,11 @@ rgph_build_graph(struct rgph_graph *g,
     rgph_entry_iterator_t keys, void *state, unsigned long seed)
 {
 	const int r = graph_rank(g->flags);
-	const size_t width = data_width(g->nverts, 0);
+	const size_t width = data_width(g->nverts, MIN_WIDTH_BUILD);
 
 	if (!(g->flags & ZEROED)) {
-		const size_t esz = edge_size(r, g->nverts, 0);
-		const size_t osz = oedge_size(r, g->nverts, 0);
+		const size_t esz = edge_size(r, g->nverts, MIN_WIDTH_BUILD);
+		const size_t osz = oedge_size(r, g->nverts, MIN_WIDTH_BUILD);
 		memset(g->order, 0, esz * g->nkeys);
 		memset(g->edges, 0, esz * g->nkeys);
 		memset(g->oedges, 0, osz * g->nverts);
