@@ -16,7 +16,10 @@ struct rgph_entry *iterator_func(void *state)
 	struct rgph_entry *res = &s->entry;
 
 	// Note that fgetln isn't available on some OSes.
-	res->key = fgetln(s->file, &res->keylen);
+	res->key = res->data = fgetln(s->file, &res->keylen);
+	res->datalen = res->keylen;
+
+	// NetBSD returns "(null)" instead of NULL.
 	if (res->key != NULL && strcmp(res->key, "(null)") == 0)
 		res->key = NULL;
 	//printf("%*s", (int)res->keylen, res->key);
