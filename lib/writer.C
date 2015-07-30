@@ -256,7 +256,7 @@ remove_vertex(oedge<T,3> *oedges, T v0, T *order, size_t end)
 
 template<class Iter, class Hash, class T, int R>
 bool
-init_graph(Iter keys, Iter end, Hash hash,
+init_graph(Iter keys, Iter keys_end, Hash hash,
     edge<T,R> *edges, size_t nkeys, oedge<T,R> *oedges, size_t nverts)
 {
 	// partsz is a partition size of an R-partite R-graph.
@@ -264,7 +264,7 @@ init_graph(Iter keys, Iter end, Hash hash,
 	assert(partsz > 1 && (nverts % R) == 0);
 
 	T e = 0;
-	for (; e < nkeys && keys != end; ++e, ++keys) {
+	for (; e < nkeys && keys != keys_end; ++e, ++keys) {
 		const rgph_entry &ent = *keys;
 		const T *verts = hash(ent.key, ent.keylen);
 		for (T r = 0; r < R; ++r)
@@ -384,7 +384,8 @@ struct rgph_graph {
 
 enum {
 	PUBLIC_FLAGS = 0x3ff,
-	ZEROED = 0x40000000
+	ZEROED = 0x40000000,
+	BUILT  = 0x20000000
 };
 
 template<class T, int R>
@@ -398,11 +399,13 @@ build_graph(struct rgph_graph *g,
 	T *order = (T *)g->order;
 	edge_t *edges = (edge_t *)g->edges;
 	oedge_t *oedges = (oedge_t *)g->oedges;
-	entry_iterator iter(keys, state), end;
+	entry_iterator keys_start(keys, state), keys_end;
+
+	g->flags &= ~BUILT;
 
 	switch (g->flags & RGPH_HASH_MASK) {
 		case RGPH_HASH_JENKINS2:
-			if (!init_graph(iter, end,
+			if (!init_graph(keys_start, keys_end,
 			    make_hash<T>(&rgph_u32x3_jenkins2_data, seed),
 			    edges, g->nkeys, oedges, g->nverts)) {
 			    goto einval;
@@ -415,6 +418,8 @@ build_graph(struct rgph_graph *g,
 			errno = EINVAL;
 			return -1;
 	}
+
+	g->flags |= BUILT;
 
 	return peel_graph(edges, g->nkeys, oedges, g->nverts, order);
 }
