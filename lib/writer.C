@@ -372,7 +372,7 @@ inline size_t
 round_up(size_t n, size_t r)
 {
 
-	assert(n <= SIZE_MAX - (r - 1));
+	assert(n <= -r);
 	return (n + (r - 1)) / r * r;
 }
 
