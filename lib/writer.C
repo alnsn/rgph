@@ -258,7 +258,7 @@ template<class Iter, class Hash, class T, int R>
 bool
 init_graph(Iter keys, Iter keys_end, Hash hash,
     edge<T,R> *edges, size_t nkeys, oedge<T,R> *oedges, size_t nverts,
-    size_t *datalenmax, size_t *datalenmin)
+    size_t *datalenmin, size_t *datalenmax)
 {
 	// partsz is a partition size of an R-partite R-graph.
 	const T partsz = nverts / R;
@@ -271,10 +271,10 @@ init_graph(Iter keys, Iter keys_end, Hash hash,
 		for (T r = 0; r < R; ++r)
 			edges[e].verts[r] = (verts[r] % partsz) + r * partsz;
 		add_edge(oedges, e, edges[e].verts);
-		if (ent.datalen > *datalenmax)
-			*datalenmax = ent.datalen;
 		if (ent.datalen < *datalenmin)
 			*datalenmin = ent.datalen;
+		if (ent.datalen > *datalenmax)
+			*datalenmax = ent.datalen;
 	}
 
 	return e == nkeys;
@@ -384,8 +384,8 @@ struct rgph_graph {
 	void *order;
 	void *edges;
 	void *oedges;
-	size_t datalenmax;
 	size_t datalenmin;
+	size_t datalenmax;
 	unsigned int flags;
 };
 
@@ -406,18 +406,25 @@ build_graph(struct rgph_graph *g,
 	T *order = (T *)g->order;
 	edge_t *edges = (edge_t *)g->edges;
 	oedge_t *oedges = (oedge_t *)g->oedges;
-	entry_iterator keys_start(keys, state), keys_end;
 
-	g->flags &= ~BUILT;
-	g->datalenmax = 0;
+	if (!(g->flags & ZEROED)) {
+		memset(order, 0, sizeof(edge_t) * g->nkeys);
+		memset(edges, 0, sizeof(edge_t) * g->nkeys);
+		memset(oedges, 0, sizeof(oedge_t) * g->nverts);
+	}
+
+	g->flags &= ~(ZEROED|BUILT);
 	g->datalenmin = (size_t)-1;
+	g->datalenmax = 0;
+
+	entry_iterator keys_start(keys, state), keys_end;
 
 	switch (g->flags & RGPH_HASH_MASK) {
 		case RGPH_HASH_JENKINS2:
 			if (!init_graph(keys_start, keys_end,
 			    make_hash<T>(&rgph_u32x3_jenkins2_data, seed),
 			    edges, g->nkeys, oedges, g->nverts,
-			    &g->datalenmax, &g->datalenmin)) {
+			    &g->datalenmin, &g->datalenmax)) {
 			    goto einval;
 			}
 			break;
@@ -570,16 +577,6 @@ rgph_build_graph(struct rgph_graph *g,
 {
 	const int r = graph_rank(g->flags);
 	const size_t width = data_width(g->nverts, MIN_WIDTH_BUILD);
-
-	if (!(g->flags & ZEROED)) {
-		const size_t esz = edge_size(r, g->nverts, MIN_WIDTH_BUILD);
-		const size_t osz = oedge_size(r, g->nverts, MIN_WIDTH_BUILD);
-		memset(g->order, 0, esz * g->nkeys);
-		memset(g->edges, 0, esz * g->nkeys);
-		memset(g->oedges, 0, osz * g->nverts);
-	}
-
-	g->flags &= ~ZEROED;
 
 #define SELECT(r, w) (8 * (r) + (w))
 	switch (SELECT(r, width)) {
