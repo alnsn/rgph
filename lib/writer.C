@@ -83,28 +83,37 @@ struct entry_iterator {
 	entry_iterator(rgph_entry_iterator_t i, void *s)
 		: iter(i)
 		, state(s)
+		, cur(iter(state))
+	{}
+
+	entry_iterator()
+		: iter(NULL)
+		, state(NULL)
 		, cur(NULL)
 	{}
 
-	struct rgph_entry *get() {
-		if (cur == NULL)
-			cur = iter(state);
-		assert(p != NULL);
-		return cur;
-	}
-
 	void operator++() {
-		cur = NULL;
+		cur = iter(state);
 	}
 
 	struct rgph_entry *operator->() {
-		return get();
+		assert(cur != NULL);
+		return cur;
 	}
 
 	const rgph_entry &operator*() {
-		return *get();
+		assert(cur != NULL);
+		return *cur;
 	}
 };
+
+// Good enough to detect past-the-end.
+inline bool
+operator!=(const entry_iterator &a, const entry_iterator &b)
+{
+
+	return a.cur != b.cur;
+}
 
 template<class T, class S, class H>
 struct hash {
@@ -246,21 +255,24 @@ remove_vertex(oedge<T,3> *oedges, T v0, T *order, size_t end)
 }
 
 template<class Iter, class Hash, class T, int R>
-void
-init_graph(Iter keys, size_t nkeys, Hash hash, size_t nverts,
-    edge<T,R> *edges, oedge<T,R> *oedges)
+bool
+init_graph(Iter keys, Iter end, Hash hash,
+    edge<T,R> *edges, size_t nkeys, oedge<T,R> *oedges, size_t nverts)
 {
 	// partsz is a partition size of an R-partite R-graph.
 	const T partsz = nverts / R;
 	assert(partsz > 1 && (nverts % R) == 0);
 
-	for (T e = 0; e < nkeys; ++e, ++keys) {
+	T e = 0;
+	for (; e < nkeys && keys != end; ++e, ++keys) {
 		const rgph_entry &ent = *keys;
 		const T *verts = hash(ent.key, ent.keylen);
 		for (T r = 0; r < R; ++r)
 			edges[e].verts[r] = (verts[r] % partsz) + r * partsz;
 		add_edge(oedges, e, edges[e].verts);
 	}
+
+	return e == nkeys;
 }
 
 template<class T, int R>
@@ -386,17 +398,20 @@ build_graph(struct rgph_graph *g,
 	T *order = (T *)g->order;
 	edge_t *edges = (edge_t *)g->edges;
 	oedge_t *oedges = (oedge_t *)g->oedges;
-	entry_iterator iter(keys, state);
+	entry_iterator iter(keys, state), end;
 
 	switch (g->flags & RGPH_HASH_MASK) {
 		case RGPH_HASH_JENKINS2:
-			init_graph(iter, g->nkeys,
+			if (!init_graph(iter, end,
 			    make_hash<T>(&rgph_u32x3_jenkins2_data, seed),
-			    g->nverts, edges, oedges);
+			    edges, g->nkeys, oedges, g->nverts)) {
+			    goto einval;
+			}
 			break;
 		case RGPH_HASH_DEFAULT:
 		case RGPH_HASH_JENKINS3: // XXX implement jenkins3
 		default:
+		einval:
 			errno = EINVAL;
 			return -1;
 	}
@@ -525,4 +540,16 @@ rgph_build_graph(struct rgph_graph *g,
 		return -1;
 	}
 #undef SELECT
+}
+
+extern "C"
+size_t
+rgph_count_keys(rgph_entry_iterator_t iter, void *state)
+{
+	entry_iterator keys(iter, state), end;
+	size_t res = 0;
+
+	for (; keys != end; ++keys)
+		res++;
+	return res;
 }

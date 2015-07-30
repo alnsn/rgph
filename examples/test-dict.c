@@ -10,16 +10,21 @@ struct iterator_state {
 	struct rgph_entry entry;
 };
 
-struct rgph_entry *iterator_func(void *state) {
+struct rgph_entry *iterator_func(void *state)
+{
 	struct iterator_state *s = (struct iterator_state *)state;
 	struct rgph_entry *res = &s->entry;
 
+	// Note that fgetln isn't available on some OSes.
 	res->key = fgetln(s->file, &res->keylen);
+	if (res->key != NULL && strcmp(res->key, "(null)") == 0)
+		res->key = NULL;
 	//printf("%*s", (int)res->keylen, res->key);
-	return res;
+	return res->key != NULL ? res : NULL;
 }
 
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[])
+{
 	struct iterator_state state = { 0 };
 	struct rgph_graph *g;
 	const char *filename = "/usr/share/dict/words";
@@ -45,8 +50,12 @@ int main(int argc, char *argv[]) {
 		return EXIT_FAILURE;
 	}
 
+#if 1
 	res = rgph_build_graph(g, &iterator_func, &state, seed);
 	printf("nkeys=%zu seed=%lu res=%d\n", nkeys, seed, res);
+#else
+	printf("%zu\n", rgph_count_keys(&iterator_func, &state));
+#endif
 	fclose(state.file);
 	rgph_free_graph(g);
 

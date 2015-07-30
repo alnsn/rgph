@@ -53,6 +53,8 @@ void rgph_free_graph(struct rgph_graph *);
 int rgph_build_graph(struct rgph_graph *,
     rgph_entry_iterator_t, void *, unsigned long);
 
+size_t rgph_count_keys(rgph_entry_iterator_t, void *);
+
 #ifdef __cplusplus
 }
 #endif
