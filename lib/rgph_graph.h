@@ -42,7 +42,6 @@ struct rgph_entry {
 	size_t keylen;
 	void *data;
 	size_t datalen;
-	size_t index; // XXX
 };
 
 typedef struct rgph_entry * (*rgph_entry_iterator_t)( void *);

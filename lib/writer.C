@@ -58,7 +58,6 @@ template<bool C> struct bool_selector {};
 template<class T, int R>
 struct edge {
 	T verts[R]; // v0, v1 (and v2, if R==3).
-	T index; // XXX
 };
 
 /*
