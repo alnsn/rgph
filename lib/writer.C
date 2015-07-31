@@ -318,10 +318,10 @@ edge_size_rank(size_t nkeys, size_t min_width)
 {
 
 	switch (data_width(nkeys, min_width)) {
-		case 1: return sizeof(edge<uint8_t,R>);
-		case 2: return sizeof(edge<uint16_t,R>);
-		case 4: return sizeof(edge<uint32_t,R>);
-		default: return 0;
+	case 1: return sizeof(edge<uint8_t,R>);
+	case 2: return sizeof(edge<uint16_t,R>);
+	case 4: return sizeof(edge<uint32_t,R>);
+	default: return 0;
 	}
 }
 
@@ -330,9 +330,9 @@ edge_size(int rank, size_t nkeys, size_t min_width)
 {
 
 	switch (rank) {
-		case 2: return edge_size_rank<2>(nkeys, min_width);
-		case 3: return edge_size_rank<3>(nkeys, min_width);
-		default: return 0;
+	case 2: return edge_size_rank<2>(nkeys, min_width);
+	case 3: return edge_size_rank<3>(nkeys, min_width);
+	default: return 0;
 	}
 }
 
@@ -342,10 +342,10 @@ oedge_size_rank(size_t nverts, size_t min_width)
 {
 
 	switch (data_width(nverts, min_width)) {
-		case 1: return sizeof(oedge<uint8_t,R>);
-		case 2: return sizeof(oedge<uint16_t,R>);
-		case 4: return sizeof(oedge<uint32_t,R>);
-		default: return 0;
+	case 1: return sizeof(oedge<uint8_t,R>);
+	case 2: return sizeof(oedge<uint16_t,R>);
+	case 4: return sizeof(oedge<uint32_t,R>);
+	default: return 0;
 	}
 }
 
@@ -354,9 +354,9 @@ oedge_size(int rank, size_t nverts, size_t min_width)
 {
 
 	switch (rank) {
-		case 2: return oedge_size_rank<2>(nverts, min_width);
-		case 3: return oedge_size_rank<3>(nverts, min_width);
-		default: return 0;
+	case 2: return oedge_size_rank<2>(nverts, min_width);
+	case 3: return oedge_size_rank<3>(nverts, min_width);
+	default: return 0;
 	}
 }
 
@@ -422,19 +422,19 @@ build_graph(struct rgph_graph *g,
 	entry_iterator keys_start(keys, state), keys_end;
 
 	switch (g->flags & RGPH_HASH_MASK) {
-		case RGPH_HASH_JENKINS2:
-			if (!init_graph(keys_start, keys_end,
-			    make_hash<T>(&rgph_u32x3_jenkins2_data, seed),
-			    edges, g->nkeys, oedges, g->nverts,
-			    &g->datalenmin, &g->datalenmax)) {
-				return RGPH_NOKEY;
-			}
-			break;
-		case RGPH_HASH_DEFAULT:
-		case RGPH_HASH_JENKINS3: // XXX implement jenkins3
-		default:
-			assert(0 && "rgph_alloc_graph() should have caught it");
-			return RGPH_INVAL;
+	case RGPH_HASH_JENKINS2:
+		if (!init_graph(keys_start, keys_end,
+		    make_hash<T>(&rgph_u32x3_jenkins2_data, seed),
+		    edges, g->nkeys, oedges, g->nverts,
+		    &g->datalenmin, &g->datalenmax)) {
+			return RGPH_NOKEY;
+		}
+		break;
+	case RGPH_HASH_DEFAULT:
+	case RGPH_HASH_JENKINS3: // XXX implement jenkins3
+	default:
+		assert(0 && "rgph_alloc_graph() should have caught it");
+		return RGPH_INVAL;
 	}
 
 	g->order_top = peel_graph(edges, g->nkeys, oedges, g->nverts, order);
@@ -512,13 +512,13 @@ rgph_alloc_graph(size_t nkeys, int flags)
 	}
 
 	switch (flags & RGPH_HASH_MASK) {
-		case RGPH_HASH_JENKINS2:
-			break;
-		case RGPH_HASH_DEFAULT:
-		case RGPH_HASH_JENKINS3: // XXX implement jenkins3
-		default:
-			errno = EINVAL;
-			return NULL;
+	case RGPH_HASH_JENKINS2:
+		break;
+	case RGPH_HASH_DEFAULT:
+	case RGPH_HASH_JENKINS3: // XXX implement jenkins3
+	default:
+		errno = EINVAL;
+		return NULL;
 	}
 
 	g = (struct rgph_graph *)calloc(sizeof(*g), 1);
@@ -600,19 +600,19 @@ rgph_build_graph(struct rgph_graph *g,
 
 #define SELECT(r, w) (8 * (r) + (w))
 	switch (SELECT(r, width)) {
-		case SELECT(2, 1):
-			return build_graph<uint8_t,2>(g, keys, state, seed);
-		case SELECT(3, 1):
-			return build_graph<uint8_t,3>(g, keys, state, seed);
-		case SELECT(2, 2):
-			return build_graph<uint16_t,2>(g, keys, state, seed);
-		case SELECT(3, 2):
-			return build_graph<uint16_t,3>(g, keys, state, seed);
-		case SELECT(2, 4):
-			return build_graph<uint32_t,2>(g, keys, state, seed);
-		case SELECT(3, 4):
-			return build_graph<uint32_t,3>(g, keys, state, seed);
-	    default:
+	case SELECT(2, 1):
+		return build_graph<uint8_t,2>(g, keys, state, seed);
+	case SELECT(3, 1):
+		return build_graph<uint8_t,3>(g, keys, state, seed);
+	case SELECT(2, 2):
+		return build_graph<uint16_t,2>(g, keys, state, seed);
+	case SELECT(3, 2):
+		return build_graph<uint16_t,3>(g, keys, state, seed);
+	case SELECT(2, 4):
+		return build_graph<uint32_t,2>(g, keys, state, seed);
+	case SELECT(3, 4):
+		return build_graph<uint32_t,3>(g, keys, state, seed);
+	default:
 		assert(0 && "rgph_alloc_graph() should have caught it");
 		return RGPH_INVAL;
 	}
@@ -634,19 +634,19 @@ rgph_copy_edge(struct rgph_graph *g, size_t edge, unsigned long *to)
 
 #define SELECT(r, w) (8 * (r) + (w))
 	switch (SELECT(r, width)) {
-		case SELECT(2, 1):
-			return copy_edge<uint8_t,2>(g, edge, to);
-		case SELECT(3, 1):
-			return copy_edge<uint8_t,3>(g, edge, to);
-		case SELECT(2, 2):
-			return copy_edge<uint16_t,2>(g, edge, to);
-		case SELECT(3, 2):
-			return copy_edge<uint16_t,3>(g, edge, to);
-		case SELECT(2, 4):
-			return copy_edge<uint32_t,2>(g, edge, to);
-		case SELECT(3, 4):
-			return copy_edge<uint32_t,3>(g, edge, to);
-	    default:
+	case SELECT(2, 1):
+		return copy_edge<uint8_t,2>(g, edge, to);
+	case SELECT(3, 1):
+		return copy_edge<uint8_t,3>(g, edge, to);
+	case SELECT(2, 2):
+		return copy_edge<uint16_t,2>(g, edge, to);
+	case SELECT(3, 2):
+		return copy_edge<uint16_t,3>(g, edge, to);
+	case SELECT(2, 4):
+		return copy_edge<uint32_t,2>(g, edge, to);
+	case SELECT(3, 4):
+		return copy_edge<uint32_t,3>(g, edge, to);
+	default:
 		assert(0 && "rgph_alloc_graph() should have caught it");
 		return RGPH_INVAL;
 	}
