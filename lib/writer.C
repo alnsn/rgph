@@ -155,6 +155,14 @@ make_hash(void (*func)(const void *, size_t, S, H *), unsigned long seed)
 	return hash<T,S,H>(func, seed);
 }
 
+inline size_t
+round_up(size_t n, size_t r)
+{
+
+	assert(n <= -r);
+	return (n + (r - 1)) / r * r;
+}
+
 template<class T>
 inline void
 add_remove_oedge(oedge<T,2> *oedges, int delta, T e, T v0, T v1)
@@ -298,6 +306,44 @@ peel_graph(edge<T,R> *edges, size_t nkeys,
 	return top;
 }
 
+// Copy r-core of a graph to order[0], ..., order[top-1].
+// The bitset array is a temporary storage with at least
+// round_up(nkeys, LONG_BIT) / LONG_BIT elements.
+template<class T>
+void
+copy_rcore(T *order, size_t nkeys, size_t top, unsigned long *bitset)
+{
+	unsigned long b;
+	const size_t bits = sizeof(b) * CHAR_BIT;
+	const size_t bitsetsz = round_up(nkeys, bits) / bits;
+
+	assert(top > 0);
+
+	memset(bitset, 0, sizeof(b) * bitsetsz);
+
+	for (size_t i = top; i < nkeys; i++) {
+		b = 1ul << (order[i] % bits);
+		assert(!(bitset[order[i] / bits] & b)); // unique elements
+		bitset[order[i] / bits] |= b;
+	}
+
+	// Fill bits after the last real bit to simplify the loop below.
+	if ((nkeys % bits) != 0)
+		bitset[nkeys / bits] |= ULONG_MAX << (nkeys % bits);
+
+	for (size_t i = 0; i < bitsetsz && top > 0; i++) {
+		b = bitset[i];
+		if (b == ULONG_MAX)
+			continue;
+		for (size_t j = 0; j < bits && top > 0; ++j) {
+			if (!(b & (1ul << j)))
+				order[--top] = i * bits + j;
+		}
+	}
+
+	assert(top == 0);
+}
+
 inline size_t
 data_width(size_t size, size_t min_width)
 {
@@ -365,14 +411,6 @@ graph_rank(unsigned int flags)
 {
 
 	return (flags & RGPH_RANK_MASK) == RGPH_RANK2 ? 2 : 3;
-}
-
-inline size_t
-round_up(size_t n, size_t r)
-{
-
-	assert(n <= -r);
-	return (n + (r - 1)) / r * r;
 }
 
 } // namespace
