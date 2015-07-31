@@ -221,7 +221,7 @@ add_edge(oedge<T,3> *oedges, T e, const T *verts)
 
 template<class T>
 inline size_t
-remove_vertex(oedge<T,2> *oedges, T v0, T *order, size_t end)
+remove_vertex(oedge<T,2> *oedges, T v0, T *order, size_t top)
 {
 
 	if (oedges[v0].degree == 1) {
@@ -229,15 +229,15 @@ remove_vertex(oedge<T,2> *oedges, T v0, T *order, size_t end)
 		const T v1 = oedges[v0].overts[0];
 		oedges[v0].degree = 0;
 		remove_oedge(oedges, e, v1, v0);
-		order[--end] = e;
+		order[--top] = e;
 	}
 
-	return end;
+	return top;
 }
 
 template<class T>
 inline size_t
-remove_vertex(oedge<T,3> *oedges, T v0, T *order, size_t end)
+remove_vertex(oedge<T,3> *oedges, T v0, T *order, size_t top)
 {
 
 	if (oedges[v0].degree == 1) {
@@ -247,10 +247,10 @@ remove_vertex(oedge<T,3> *oedges, T v0, T *order, size_t end)
 		oedges[v0].degree = 0;
 		remove_oedge(oedges, e, v1, v0, v2);
 		remove_oedge(oedges, e, v2, v0, v1);
-		order[--end] = e;
+		order[--top] = e;
 	}
 
-	return end;
+	return top;
 }
 
 template<class Iter, class Hash, class T, int R>
@@ -284,18 +284,18 @@ size_t
 peel_graph(edge<T,R> *edges, size_t nkeys,
     oedge<T,R> *oedges, size_t nverts, T *order)
 {
-	size_t end = nkeys;
+	size_t top = nkeys;
 
 	for (T v0 = 0; v0 < nverts; ++v0)
-		end = remove_vertex(oedges, v0, order, end);
+		top = remove_vertex(oedges, v0, order, top);
 
-	for (size_t i = nkeys; i > 0 && i > end; --i) {
+	for (size_t i = nkeys; i > 0 && i > top; --i) {
 		const edge<T,R> &e = edges[order[i-1]];
 		for (size_t r = 0; r < R; ++r)
-			end = remove_vertex(oedges, e.verts[r], order, end);
+			top = remove_vertex(oedges, e.verts[r], order, top);
 	}
 
-	return end;
+	return top;
 }
 
 inline size_t
@@ -383,6 +383,7 @@ struct rgph_graph {
 	void *order;
 	void *edges;
 	void *oedges;
+	size_t order_top;
 	size_t datalenmin;
 	size_t datalenmax;
 	unsigned int flags;
@@ -391,7 +392,8 @@ struct rgph_graph {
 enum {
 	PUBLIC_FLAGS = 0x3ff,
 	ZEROED = 0x40000000,
-	BUILT  = 0x20000000
+	BUILT  = 0x20000000,
+	CYCLES = 0x10000000
 };
 
 template<class T, int R>
@@ -412,7 +414,8 @@ build_graph(struct rgph_graph *g,
 		memset(oedges, 0, sizeof(oedge_t) * g->nverts);
 	}
 
-	g->flags &= ~(ZEROED|BUILT);
+	g->flags &= ~(ZEROED|BUILT|CYCLES);
+	g->order_top = g->nkeys;
 	g->datalenmin = (size_t)-1;
 	g->datalenmax = 0;
 
@@ -424,20 +427,25 @@ build_graph(struct rgph_graph *g,
 			    make_hash<T>(&rgph_u32x3_jenkins2_data, seed),
 			    edges, g->nkeys, oedges, g->nverts,
 			    &g->datalenmin, &g->datalenmax)) {
-			    goto einval;
+				return RGPH_NOKEY;
 			}
 			break;
 		case RGPH_HASH_DEFAULT:
 		case RGPH_HASH_JENKINS3: // XXX implement jenkins3
 		default:
-		einval:
-			errno = EINVAL;
-			return -1;
+			assert(0 && "rgph_alloc_graph() should have caught it");
+			return RGPH_INVAL;
+	}
+
+	g->order_top = peel_graph(edges, g->nkeys, oedges, g->nverts, order);
+
+	if (g->order_top != 0) {
+		g->flags |= CYCLES;
+		return RGPH_CYCLE;
 	}
 
 	g->flags |= BUILT;
-
-	return peel_graph(edges, g->nkeys, oedges, g->nverts, order);
+	return RGPH_SUCCESS;
 }
 
 template<class T, int R>
@@ -503,6 +511,16 @@ rgph_alloc_graph(size_t nkeys, int flags)
 		return NULL;
 	}
 
+	switch (flags & RGPH_HASH_MASK) {
+		case RGPH_HASH_JENKINS2:
+			break;
+		case RGPH_HASH_DEFAULT:
+		case RGPH_HASH_JENKINS3: // XXX implement jenkins3
+		default:
+			errno = EINVAL;
+			return NULL;
+	}
+
 	g = (struct rgph_graph *)calloc(sizeof(*g), 1);
 	if (g == NULL)
 		return NULL;
@@ -528,6 +546,9 @@ rgph_alloc_graph(size_t nkeys, int flags)
 
 	g->nkeys = nkeys;
 	g->nverts = nverts;
+	g->order_top = nkeys;
+	g->datalenmin = (size_t)-1;
+	g->datalenmax = 0;
 	g->flags |= ZEROED; // calloc
 
 	return g;
@@ -592,8 +613,8 @@ rgph_build_graph(struct rgph_graph *g,
 		case SELECT(3, 4):
 			return build_graph<uint32_t,3>(g, keys, state, seed);
 	    default:
-		errno = EINVAL;
-		return -1;
+		assert(0 && "rgph_alloc_graph() should have caught it");
+		return RGPH_INVAL;
 	}
 #undef SELECT
 }
@@ -605,15 +626,11 @@ rgph_copy_edge(struct rgph_graph *g, size_t edge, unsigned long *to)
 	const int r = graph_rank(g->flags);
 	const size_t width = data_width(g->nverts, MIN_WIDTH_BUILD);
 
-	if (!(g->flags & BUILT)) {
-		errno = EINVAL;
-		return -1;
-	}
+	if (!(g->flags & (BUILT|CYCLES)))
+		return RGPH_INVAL;
 
-	if (edge >= g->nkeys) {
-		errno = ERANGE;
-		return -1;
-	}
+	if (edge >= g->nkeys)
+		return RGPH_RANGE;
 
 #define SELECT(r, w) (8 * (r) + (w))
 	switch (SELECT(r, width)) {
@@ -630,8 +647,8 @@ rgph_copy_edge(struct rgph_graph *g, size_t edge, unsigned long *to)
 		case SELECT(3, 4):
 			return copy_edge<uint32_t,3>(g, edge, to);
 	    default:
-		errno = EINVAL;
-		return -1;
+		assert(0 && "rgph_alloc_graph() should have caught it");
+		return RGPH_INVAL;
 	}
 #undef SELECT
 	return 0;
@@ -641,10 +658,10 @@ extern "C"
 size_t
 rgph_count_keys(rgph_entry_iterator_t iter, void *state)
 {
-	entry_iterator keys(iter, state), end;
+	entry_iterator keys(iter, state), keys_end;
 	size_t res = 0;
 
-	for (; keys != end; ++keys)
+	for (; keys != keys_end; ++keys)
 		res++;
 	return res;
 }
