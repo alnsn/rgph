@@ -314,30 +314,30 @@ void
 copy_rcore(T *order, size_t nkeys, size_t top, unsigned long *bitset)
 {
 	unsigned long b;
-	const size_t bits = sizeof(b) * CHAR_BIT;
-	const size_t bitsetsz = round_up(nkeys, bits) / bits;
+	const size_t nbits = sizeof(b) * CHAR_BIT;
+	const size_t bitsetsz = round_up(nkeys, nbits) / nbits;
 
 	assert(top > 0);
 
 	memset(bitset, 0, sizeof(b) * bitsetsz);
 
 	for (size_t i = top; i < nkeys; i++) {
-		b = 1ul << (order[i] % bits);
-		assert(!(bitset[order[i] / bits] & b)); // unique elements
-		bitset[order[i] / bits] |= b;
+		b = 1ul << (order[i] % nbits);
+		assert(!(bitset[order[i] / nbits] & b)); // unique elements
+		bitset[order[i] / nbits] |= b;
 	}
 
 	// Fill bits after the last real bit to simplify the loop below.
-	if ((nkeys % bits) != 0)
-		bitset[nkeys / bits] |= ULONG_MAX << (nkeys % bits);
+	if ((nkeys % nbits) != 0)
+		bitset[nkeys / nbits] |= ULONG_MAX << (nkeys % nbits);
 
 	for (size_t i = 0; i < bitsetsz && top > 0; i++) {
 		b = bitset[i];
 		if (b == ULONG_MAX)
 			continue;
-		for (size_t j = 0; j < bits && top > 0; ++j) {
+		for (size_t j = 0; j < nbits && top > 0; j++) {
 			if (!(b & (1ul << j)))
-				order[--top] = i * bits + j;
+				order[--top] = i * nbits + j;
 		}
 	}
 
