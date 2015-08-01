@@ -57,6 +57,8 @@ size_t rgph_vertices(struct rgph_graph *);
 int rgph_build_graph(struct rgph_graph *,
     rgph_entry_iterator_t, void *, unsigned long);
 
+size_t rgph_core_size(struct rgph_graph *);
+
 int rgph_copy_edge(struct rgph_graph *, size_t, unsigned long *);
 
 size_t rgph_count_keys(rgph_entry_iterator_t, void *);

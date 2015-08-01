@@ -31,7 +31,7 @@ int main(int argc, char *argv[])
 	struct iterator_state state = { 0 };
 	struct rgph_graph *g;
 	const char *filename = "/usr/share/dict/words";
-	size_t nkeys = 1;
+	size_t core, nkeys = 1;
 	unsigned long seed = 0;
 	int res;
 	const int rank = RGPH_RANK3;
@@ -55,7 +55,8 @@ int main(int argc, char *argv[])
 
 #if 1
 	res = rgph_build_graph(g, &iterator_func, &state, seed);
-	printf("nkeys=%zu seed=%lu res=%d\n", nkeys, seed, res);
+	core = rgph_core_size(g);
+	printf("nkeys=%zu seed=%lu res=%d core=%zu\n", nkeys, seed, res, core);
 #else
 	printf("%zu\n", rgph_count_keys(&iterator_func, &state));
 #endif

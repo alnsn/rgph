@@ -155,13 +155,53 @@ make_hash(void (*func)(const void *, size_t, S, H *), unsigned long seed)
 	return hash<T,S,H>(func, seed);
 }
 
-inline size_t
-round_up(size_t n, size_t r)
-{
+// Simple bitset class for finding edges in r-core of a graph.
+template<class T>
+struct bitset {
+	static const T ONE = 1;
+	static const T ALL = -1;
+	static const size_t TBIT = sizeof(T) * CHAR_BIT;
 
-	assert(n <= -r);
-	return (n + (r - 1)) / r * r;
-}
+	T *data;
+
+	bitset(void *ptr) : data((T *)ptr) {}
+
+	bool isset(size_t e) {
+		return (data[e / TBIT] >> (e % TBIT)) & ONE;
+	}
+
+	void set(size_t e) {
+		data[e / TBIT] |= ONE << (e % TBIT);
+	}
+
+	static size_t size(size_t nkeys) {
+		return (nkeys + (TBIT - 1)) / TBIT;
+	}
+
+	static size_t allocation_size(size_t nkeys) {
+		return size(nkeys) * sizeof(T);
+	}
+
+	void unset_all(size_t nkeys) {
+		memset(data, 0, allocation_size(nkeys));
+	}
+
+	template<class U>
+	void copy_unset(size_t nkeys, U *order, size_t top) {
+		// Fill bits after the last real bit to simplify the loop below.
+		if ((nkeys % TBIT) != 0)
+			data[nkeys / TBIT] |= ALL << (nkeys % TBIT);
+
+		for (size_t i = 0; i < size(nkeys) && top > 0; i++) {
+			if (data[i] == ALL)
+				continue;
+			for (size_t j = 0; j < TBIT && top > 0; j++) {
+				if (!isset(i * TBIT + j))
+					order[--top] = i * TBIT + j;
+			}
+		}
+	}
+};
 
 template<class T>
 inline void
@@ -227,14 +267,16 @@ add_edge(oedge<T,3> *oedges, T e, const T *verts)
 	add_remove_oedge(oedges, 1, e, verts[2], verts[0], verts[1]);
 }
 
-template<class T>
+template<class T, class U>
 inline size_t
-remove_vertex(oedge<T,2> *oedges, T v0, T *order, size_t top)
+remove_vertex(oedge<T,2> *oedges, T v0, T *order, size_t top, bitset<U> peeled)
 {
 
 	if (oedges[v0].degree == 1) {
 		const T e = oedges[v0].edge;
 		const T v1 = oedges[v0].overts[0];
+		assert(!peeled.isset(e)); // Each edge can only be peeled once.
+		peeled.set(e);
 		oedges[v0].degree = 0;
 		remove_oedge(oedges, e, v1, v0);
 		order[--top] = e;
@@ -243,15 +285,17 @@ remove_vertex(oedge<T,2> *oedges, T v0, T *order, size_t top)
 	return top;
 }
 
-template<class T>
+template<class T, class U>
 inline size_t
-remove_vertex(oedge<T,3> *oedges, T v0, T *order, size_t top)
+remove_vertex(oedge<T,3> *oedges, T v0, T *order, size_t top, bitset<U> peeled)
 {
 
 	if (oedges[v0].degree == 1) {
 		const T e = oedges[v0].edge;
 		const T v1 = oedges[v0].overts[0];
 		const T v2 = oedges[v0].overts[1];
+		assert(!peeled.isset(e)); // Each edge can only be peeled once.
+		peeled.set(e);
 		oedges[v0].degree = 0;
 		remove_oedge(oedges, e, v1, v0, v2);
 		remove_oedge(oedges, e, v2, v0, v1);
@@ -287,61 +331,25 @@ init_graph(Iter keys, Iter keys_end, Hash hash,
 	return e == nkeys;
 }
 
-template<class T, int R>
+template<class T, int R, class U>
 size_t
 peel_graph(edge<T,R> *edges, size_t nkeys,
-    oedge<T,R> *oedges, size_t nverts, T *order)
+    oedge<T,R> *oedges, size_t nverts, T *order, bitset<U> peeled)
 {
 	size_t top = nkeys;
 
 	for (T v0 = 0; v0 < nverts; ++v0)
-		top = remove_vertex(oedges, v0, order, top);
+		top = remove_vertex(oedges, v0, order, top, peeled);
 
 	for (size_t i = nkeys; i > 0 && i > top; --i) {
 		const edge<T,R> &e = edges[order[i-1]];
-		for (size_t r = 0; r < R; ++r)
-			top = remove_vertex(oedges, e.verts[r], order, top);
-	}
-
-	return top;
-}
-
-// Copy r-core of a graph to order[0], ..., order[top-1].
-// The bitset array is a temporary storage with at least
-// round_up(nkeys, LONG_BIT) / LONG_BIT elements.
-template<class T>
-void
-copy_rcore(T *order, size_t nkeys, size_t top, unsigned long *bitset)
-{
-	unsigned long b;
-	const size_t nbits = sizeof(b) * CHAR_BIT;
-	const size_t bitsetsz = round_up(nkeys, nbits) / nbits;
-
-	assert(top > 0);
-
-	memset(bitset, 0, sizeof(b) * bitsetsz);
-
-	for (size_t i = top; i < nkeys; i++) {
-		b = 1ul << (order[i] % nbits);
-		assert(!(bitset[order[i] / nbits] & b)); // unique elements
-		bitset[order[i] / nbits] |= b;
-	}
-
-	// Fill bits after the last real bit to simplify the loop below.
-	if ((nkeys % nbits) != 0)
-		bitset[nkeys / nbits] |= ULONG_MAX << (nkeys % nbits);
-
-	for (size_t i = 0; i < bitsetsz && top > 0; i++) {
-		b = bitset[i];
-		if (b == ULONG_MAX)
-			continue;
-		for (size_t j = 0; j < nbits && top > 0; j++) {
-			if (!(b & (1ul << j)))
-				order[--top] = i * nbits + j;
+		for (size_t r = 0; r < R; ++r) {
+			top = remove_vertex(oedges,
+			    e.verts[r], order, top, peeled);
 		}
 	}
 
-	assert(top == 0);
+	return top;
 }
 
 inline size_t
@@ -413,15 +421,24 @@ graph_rank(unsigned int flags)
 	return (flags & RGPH_RANK_MASK) == RGPH_RANK2 ? 2 : 3;
 }
 
+inline size_t
+round_up(size_t n, size_t r)
+{
+
+	assert(n <= -r);
+	return (n + (r - 1)) / r * r;
+}
+
 } // namespace
 
 struct rgph_graph {
 	size_t nkeys;
 	size_t nverts;
-	void *order;
+	void *order;  // Output order of edges.
+	void *peeled; // Bitset of peeled edges.
 	void *edges;
 	void *oedges;
-	size_t order_top;
+	size_t core_size; // R-core size.
 	size_t datalenmin;
 	size_t datalenmax;
 	unsigned int flags;
@@ -430,8 +447,7 @@ struct rgph_graph {
 enum {
 	PUBLIC_FLAGS = 0x3ff,
 	ZEROED = 0x40000000,
-	BUILT  = 0x20000000,
-	CYCLES = 0x10000000
+	BUILT  = 0x20000000
 };
 
 template<class T, int R>
@@ -445,15 +461,17 @@ build_graph(struct rgph_graph *g,
 	T *order = (T *)g->order;
 	edge_t *edges = (edge_t *)g->edges;
 	oedge_t *oedges = (oedge_t *)g->oedges;
+	bitset<unsigned long> peeled(g->peeled);
 
 	if (!(g->flags & ZEROED)) {
 		memset(order, 0, sizeof(edge_t) * g->nkeys);
+		peeled.unset_all(g->nkeys);
 		memset(edges, 0, sizeof(edge_t) * g->nkeys);
 		memset(oedges, 0, sizeof(oedge_t) * g->nverts);
 	}
 
-	g->flags &= ~(ZEROED|BUILT|CYCLES);
-	g->order_top = g->nkeys;
+	g->flags &= ~(ZEROED|BUILT);
+	g->core_size = g->nkeys;
 	g->datalenmin = (size_t)-1;
 	g->datalenmax = 0;
 
@@ -475,15 +493,12 @@ build_graph(struct rgph_graph *g,
 		return RGPH_INVAL;
 	}
 
-	g->order_top = peel_graph(edges, g->nkeys, oedges, g->nverts, order);
-
-	if (g->order_top != 0) {
-		g->flags |= CYCLES;
-		return RGPH_CYCLE;
-	}
+	g->core_size = peel_graph(edges, g->nkeys,
+	    oedges, g->nverts, order, peeled);
+	peeled.copy_unset(g->nkeys, order, g->core_size);
 
 	g->flags |= BUILT;
-	return RGPH_SUCCESS;
+	return g->core_size == 0 ? RGPH_SUCCESS : RGPH_CYCLE;
 }
 
 template<class T, int R>
@@ -507,6 +522,7 @@ rgph_free_graph(struct rgph_graph *g)
 
 	free(g->oedges);
 	free(g->edges);
+	free(g->peeled);
 	free(g->order);
 	free(g);
 }
@@ -566,12 +582,17 @@ rgph_alloc_graph(size_t nkeys, int flags)
 	g->nkeys = 0;
 	g->nverts = 0;
 	g->order = NULL;
+	g->peeled = NULL;
 	g->edges = NULL;
 	g->oedges = NULL;
 	g->flags = flags;
 
 	g->order = calloc(esz, nkeys);
 	if (g->order == NULL)
+		goto err;
+
+	g->peeled = calloc(1, bitset<unsigned long>::allocation_size(nkeys));
+	if (g->peeled == NULL)
 		goto err;
 
 	g->edges = calloc(esz, nkeys);
@@ -584,7 +605,7 @@ rgph_alloc_graph(size_t nkeys, int flags)
 
 	g->nkeys = nkeys;
 	g->nverts = nverts;
-	g->order_top = nkeys;
+	g->core_size = nkeys;
 	g->datalenmin = (size_t)-1;
 	g->datalenmax = 0;
 	g->flags |= ZEROED; // calloc
@@ -629,6 +650,14 @@ rgph_vertices(struct rgph_graph *g)
 }
 
 extern "C"
+size_t
+rgph_core_size(struct rgph_graph *g)
+{
+
+	return g->core_size;
+}
+
+extern "C"
 int
 rgph_build_graph(struct rgph_graph *g,
     rgph_entry_iterator_t keys, void *state, unsigned long seed)
@@ -664,7 +693,7 @@ rgph_copy_edge(struct rgph_graph *g, size_t edge, unsigned long *to)
 	const int r = graph_rank(g->flags);
 	const size_t width = data_width(g->nverts, MIN_WIDTH_BUILD);
 
-	if (!(g->flags & (BUILT|CYCLES)))
+	if (!(g->flags & BUILT))
 		return RGPH_INVAL;
 
 	if (edge >= g->nkeys)
