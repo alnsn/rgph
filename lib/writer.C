@@ -178,12 +178,8 @@ struct bitset {
 		return (nkeys + (TBIT - 1)) / TBIT;
 	}
 
-	static size_t allocation_size(size_t nkeys) {
-		return size(nkeys) * sizeof(T);
-	}
-
 	void unset_all(size_t nkeys) {
-		memset(data, 0, allocation_size(nkeys));
+		memset(data, 0, size(nkeys) * sizeof(T));
 	}
 
 	template<class U>
