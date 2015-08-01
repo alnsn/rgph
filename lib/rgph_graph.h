@@ -60,6 +60,7 @@ int rgph_build_graph(struct rgph_graph *,
 size_t rgph_core_size(struct rgph_graph *);
 
 int rgph_copy_edge(struct rgph_graph *, size_t, unsigned long *);
+int rgph_copy_peeled_edge(struct rgph_graph *, size_t, unsigned long *);
 
 size_t rgph_count_keys(rgph_entry_iterator_t, void *);
 
