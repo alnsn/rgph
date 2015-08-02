@@ -10,7 +10,7 @@ C99OPTS?=	-std=c99
 CXXOPTS?=	-nostdinc++ -fno-exceptions -fno-rtti
 CFLAGS+=	-O2 -fPIC ${WARNS} -I. ${C99OPTS}
 CXXFLAGS+=	-O2 -fPIC ${WARNS} -I. ${CXXOPTS}
-SHLDFLAGS=	-O2 -fPIC ${PIEOPTS} -shared
+SHLDFLAGS=	-O2 -fPIC -shared
 
 all: ${ALL}
 
