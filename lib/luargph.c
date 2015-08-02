@@ -43,12 +43,16 @@ parse_flags(lua_State *L, int arg)
 	char buf[64];
 	char *tok, *last_tok;
 	const char *sep = "+|,";
+	const char *opts;
+	size_t optslen = 0;
 	int flags = 0; /* aka RGPH_DEFAULT */
 
-	buf[sizeof(buf) - 1] = '\0';
-	strncpy(buf, luaL_optstring(L, arg, ""), sizeof(buf) - 1);
-	if (strlen(buf) == sizeof(buf) - 1)
+	opts = luaL_optlstring(L, arg, "", &optslen);
+	if (optslen > sizeof(buf) - 1)
 		return luaL_argerror(L, arg, "too long");
+
+	memcpy(buf, opts, optslen);
+	buf[optslen] = '\0';
 
 	for (tok = strtok_r(buf, sep, &last_tok); tok != NULL;
 	    tok = strtok_r(NULL, sep, &last_tok)) {
@@ -167,8 +171,9 @@ static luaL_Reg rgph_fn[] = {
 };
 
 static luaL_Reg graph_fn[] = {
-	{ "rank", graph_entries },
-	{ "rank", graph_vertices },
+	{ "rank", graph_rank },
+	{ "entries", graph_entries },
+	{ "vertices", graph_vertices },
 	{ NULL, NULL }
 };
 
