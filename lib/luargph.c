@@ -41,8 +41,7 @@
 struct build_iter_state {
 	struct rgph_entry ent;
 	lua_State *L;
-	int arg;   /* Index of an iterator function. */
-	int nargs; /* Number of arguments to the iterator function. */
+	int iter;  /* Index of an iterator function. */
 };
 
 static int
@@ -178,21 +177,17 @@ graph_build_iter(void *raw_state)
 {
 	struct build_iter_state *state = (struct build_iter_state *)raw_state;
 	lua_State *L = state->L;
-	int i;
 
-	lua_pop(L, 1); /* Pop value from the previous iteration. */
+	lua_pushvalue(L, state->iter);     /* Push the iterator function. */
+	lua_pushvalue(L, state->iter + 1); /* Push the state. */
+	lua_pushvalue(L, state->iter + 2); /* Push the first var. */
 
-	/* Call the iterator function. */
-	lua_pushvalue(L, state->arg);
-	for (i = 1; i <= state->nargs; i++)
-		lua_pushvalue(L, state->arg + i);
-	lua_call(L, state->nargs, 1); /* May throw Lua error. */
-
-	if (lua_isnil(L, -1))
-		return NULL;
+	/* Call the iterator function and return 1 var; may throw Lua error. */
+	lua_call(L, 2, 1);
+	lua_replace(L, state->iter + 2); /* Move the first var to its place. */
 
 	/* XXX don't convert to string. */
-	state->ent.key = lua_tolstring(L, -1, &state->ent.keylen);
+	state->ent.key = lua_tolstring(L, state->iter + 2, &state->ent.keylen);
 	return state->ent.key == NULL ? NULL : &state->ent;
 }
 
@@ -202,9 +197,7 @@ graph_build(lua_State *L)
 	struct build_iter_state state;
 	struct rgph_graph **pg;
 	unsigned long seed;
-	int top, res;
-
-	top = lua_gettop(L);
+	int res;
 
 	pg = (struct rgph_graph **)luaL_checkudata(L, 1, GRAPH_MT);
 	if (*pg == NULL)
@@ -212,16 +205,16 @@ graph_build(lua_State *L)
 
 	seed = luaL_checkinteger(L, 2);
 
-	state.L = L;
-	state.arg = 3;
-	luaL_checkany(L, state.arg); /* Will check later if it's callable. */
-	assert(top >= state.arg);
-	state.nargs = top - state.arg;
-	memset(&state.ent, 0, sizeof(state.ent));
+	state.iter = 3;
+	luaL_checkany(L, state.iter); /* Will check later if it's callable. */
 
-	lua_pushnil(L); /* Will be popped on the first iteration. */
+	/* Align stack as if state and var are always present. */
+	lua_settop(L, state.iter + 2);
+
+	memset(&state.ent, 0, sizeof(state.ent));
+	state.L = L;
+
 	res = rgph_build_graph(*pg, &graph_build_iter, &state, seed);
-	lua_pop(L, 1);
 
 	lua_pushboolean(L, res == RGPH_SUCCESS);
 	switch (res) {
