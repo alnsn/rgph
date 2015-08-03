@@ -37,6 +37,13 @@
 
 #define GRAPH_MT "rgph.graph"
 
+struct build_iter_state {
+	struct rgph_entry ent;
+	lua_State *L;
+	int arg;   /* Index of an iterator function. */
+	int nargs; /* Number of arguments to the iterator function. */
+};
+
 static int
 parse_flags(lua_State *L, int arg)
 {
@@ -165,6 +172,69 @@ graph_vertices(lua_State *L)
 	return 1;
 }
 
+static struct rgph_entry *
+graph_build_iter(void *raw_state)
+{
+	struct build_iter_state *state = (struct build_iter_state *)raw_state;
+	lua_State *L = state->L;
+	int i;
+
+	lua_pop(L, 1); /* Pop value from the previous iteration. */
+
+	/* Call the iterator function. */
+	lua_pushvalue(L, state->arg);
+	for (i = 1; i <= state->nargs; i++)
+		lua_pushvalue(L, state->arg + i);
+	lua_call(L, state->nargs, 1); /* May throw Lua error. */
+
+	if (lua_isnil(L, -1))
+		return NULL;
+
+	state->ent.key = lua_tolstring(L, -1, &state->ent.keylen);
+	return state->ent.key == NULL ? NULL : &state->ent;
+}
+
+static int
+graph_build(lua_State *L)
+{
+	struct build_iter_state state;
+	struct rgph_graph **pg;
+	unsigned long seed;
+	int res;
+
+	pg = (struct rgph_graph **)luaL_checkudata(L, 1, GRAPH_MT);
+	if (*pg == NULL)
+		return luaL_argerror(L, 1, "dead object");
+
+	seed = luaL_checkinteger(L, 2);
+
+	state.L = L;
+	state.arg = 3;
+	luaL_checkany(L, state.arg); /* Will check later if it's callable. */
+
+	state.nargs = lua_gettop(L) - state.arg;
+	memset(&state.ent, 0, sizeof(state.ent));
+
+	lua_pushnil(L); /* Will be popped on the first iteration. */
+	res = rgph_build_graph(*pg, &graph_build_iter, &state, seed);
+
+	lua_pushboolean(L, res == RGPH_SUCCESS);
+	switch (res) {
+	case RGPH_CYCLE:
+	case RGPH_SUCCESS:
+		return 1;
+	case RGPH_INVAL:
+		lua_pushstring(L, "invalid value");
+		return 2;
+	case RGPH_NOKEY:
+		lua_pushstring(L, "iterator returned no key");
+		return 2;
+	default:
+		lua_pushfstring(L, "unknown error %d", res);
+		return 2;
+	}
+}
+
 static luaL_Reg rgph_fn[] = {
 	{ "new_graph", new_graph_fn },
 	{ NULL, NULL }
@@ -174,6 +244,7 @@ static luaL_Reg graph_fn[] = {
 	{ "rank", graph_rank },
 	{ "entries", graph_entries },
 	{ "vertices", graph_vertices },
+	{ "build", graph_build },
 	{ NULL, NULL }
 };
 
