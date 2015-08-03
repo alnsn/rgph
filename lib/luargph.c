@@ -191,6 +191,7 @@ graph_build_iter(void *raw_state)
 	if (lua_isnil(L, -1))
 		return NULL;
 
+	/* XXX don't convert to string. */
 	state->ent.key = lua_tolstring(L, -1, &state->ent.keylen);
 	return state->ent.key == NULL ? NULL : &state->ent;
 }
