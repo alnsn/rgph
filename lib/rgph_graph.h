@@ -44,7 +44,7 @@ struct rgph_entry {
 	size_t datalen;
 };
 
-typedef struct rgph_entry * (*rgph_entry_iterator_t)( void *);
+typedef struct rgph_entry * (*rgph_entry_iterator_t)(void *);
 
 struct rgph_graph *rgph_alloc_graph(size_t, int);
 void rgph_free_graph(struct rgph_graph *);
@@ -55,7 +55,7 @@ size_t rgph_entries(struct rgph_graph *);
 size_t rgph_vertices(struct rgph_graph *);
 
 int rgph_build_graph(struct rgph_graph *,
-    rgph_entry_iterator_t, void *, unsigned long);
+    unsigned long, rgph_entry_iterator_t, void *);
 
 size_t rgph_core_size(struct rgph_graph *);
 

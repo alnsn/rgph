@@ -668,7 +668,7 @@ rgph_core_size(struct rgph_graph *g)
 extern "C"
 int
 rgph_build_graph(struct rgph_graph *g,
-    rgph_entry_iterator_t keys, void *state, unsigned long seed)
+    unsigned long seed, rgph_entry_iterator_t keys, void *state)
 {
 	const int r = graph_rank(g->flags);
 	const size_t width = data_width(g->nverts, MIN_WIDTH_BUILD);

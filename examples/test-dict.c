@@ -54,7 +54,7 @@ int main(int argc, char *argv[])
 	}
 
 #if 1
-	res = rgph_build_graph(g, &iterator_func, &state, seed);
+	res = rgph_build_graph(g, seed, &iterator_func, &state);
 	core = rgph_core_size(g);
 	printf("nkeys=%zu seed=%lu res=%d core=%zu\n", nkeys, seed, res, core);
 #else

@@ -214,7 +214,7 @@ graph_build(lua_State *L)
 	memset(&state.ent, 0, sizeof(state.ent));
 	state.L = L;
 
-	res = rgph_build_graph(*pg, &graph_build_iter, &state, seed);
+	res = rgph_build_graph(*pg, seed, &graph_build_iter, &state);
 
 	lua_pushboolean(L, res == RGPH_SUCCESS);
 	switch (res) {
