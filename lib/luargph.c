@@ -27,6 +27,7 @@
  * SUCH DAMAGE.
  */
 
+#include <assert.h>
 #include <errno.h>
 #include <string.h>
 
@@ -200,7 +201,9 @@ graph_build(lua_State *L)
 	struct build_iter_state state;
 	struct rgph_graph **pg;
 	unsigned long seed;
-	int res;
+	int top, res;
+
+	top = lua_gettop(L);
 
 	pg = (struct rgph_graph **)luaL_checkudata(L, 1, GRAPH_MT);
 	if (*pg == NULL)
@@ -211,12 +214,13 @@ graph_build(lua_State *L)
 	state.L = L;
 	state.arg = 3;
 	luaL_checkany(L, state.arg); /* Will check later if it's callable. */
-
-	state.nargs = lua_gettop(L) - state.arg;
+	assert(top >= state.arg);
+	state.nargs = top - state.arg;
 	memset(&state.ent, 0, sizeof(state.ent));
 
 	lua_pushnil(L); /* Will be popped on the first iteration. */
 	res = rgph_build_graph(*pg, &graph_build_iter, &state, seed);
+	lua_pop(L, 1);
 
 	lua_pushboolean(L, res == RGPH_SUCCESS);
 	switch (res) {
