@@ -267,6 +267,20 @@ graph_edge(lua_State *L)
 	}
 }
 
+static int
+graph_core_size(lua_State *L)
+{
+	struct rgph_graph **pg;
+	int res;
+
+	pg = (struct rgph_graph **)luaL_checkudata(L, 1, GRAPH_MT);
+	if (*pg == NULL)
+		return luaL_argerror(L, 1, "dead object");
+
+	lua_pushinteger(L, rgph_core_size(*pg));
+	return 1;
+}
+
 static luaL_Reg rgph_fn[] = {
 	{ "new_graph", new_graph_fn },
 	{ NULL, NULL }
@@ -278,6 +292,7 @@ static luaL_Reg graph_fn[] = {
 	{ "vertices", graph_vertices },
 	{ "build", graph_build },
 	{ "edge", graph_edge },
+	{ "core_size", graph_core_size },
 	{ NULL, NULL }
 };
 
