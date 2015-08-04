@@ -233,6 +233,40 @@ graph_build(lua_State *L)
 	}
 }
 
+static int
+graph_edge(lua_State *L)
+{
+	struct rgph_graph **pg;
+	unsigned long edge[3];
+	size_t at;
+	int rank, res;
+
+	pg = (struct rgph_graph **)luaL_checkudata(L, 1, GRAPH_MT);
+	if (*pg == NULL)
+		return luaL_argerror(L, 1, "dead object");
+
+	at = luaL_checkinteger(L, 2);
+
+	rank = rgph_rank(*pg);
+	res = rgph_copy_edge(*pg, at - 1, edge);
+	if (res < 0)
+		rank = res;
+
+	switch (rank) {
+	case 3:
+		lua_pushinteger(L, edge[0]);
+	case 2:
+		lua_pushinteger(L, edge[rank - 2]);
+		lua_pushinteger(L, edge[rank - 1]);
+		return rank;
+	case RGPH_RANGE:
+		return luaL_error(L, "edge not in range");
+	case RGPH_INVAL:
+	default:
+		return luaL_error(L, "invalid value");
+	}
+}
+
 static luaL_Reg rgph_fn[] = {
 	{ "new_graph", new_graph_fn },
 	{ NULL, NULL }
@@ -243,6 +277,7 @@ static luaL_Reg graph_fn[] = {
 	{ "entries", graph_entries },
 	{ "vertices", graph_vertices },
 	{ "build", graph_build },
+	{ "edge", graph_edge },
 	{ NULL, NULL }
 };
 
