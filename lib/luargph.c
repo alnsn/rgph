@@ -234,33 +234,84 @@ graph_build(lua_State *L)
 }
 
 static int
-graph_edge(lua_State *L)
+graph_edges_iter(lua_State *L)
+{
+	unsigned long edge[3];
+	struct rgph_graph **pg;
+	size_t at;
+	int rank, res;
+
+	at = lua_tointeger(L, lua_upvalueindex(2));
+	lua_pushinteger(L, at + 1);
+	lua_replace(L, lua_upvalueindex(2));
+
+	pg = (struct rgph_graph **)lua_touserdata(L, lua_upvalueindex(1));
+	res = rgph_copy_edge(*pg, at, edge);
+
+	switch (res) {
+	case RGPH_RANGE:
+		return 0;
+	case RGPH_SUCCESS:
+		rank = rgph_rank(*pg);
+		switch (rank) {
+		case 3:
+			lua_pushinteger(L, edge[0]);
+			/* FALLTHROUGH */
+		case 2:
+			lua_pushinteger(L, edge[rank - 2]);
+			lua_pushinteger(L, edge[rank - 1]);
+			return rank;
+		}
+		/* FALLTHROUGH */
+	case RGPH_INVAL:
+	default:
+		return luaL_error(L, "invalid value");
+	}
+}
+
+static int
+graph_edges(lua_State *L)
 {
 	struct rgph_graph **pg;
+
+	pg = (struct rgph_graph **)luaL_checkudata(L, 1, GRAPH_MT);
+	if (*pg == NULL)
+		return luaL_argerror(L, 1, "dead object");
+
+	lua_pushvalue(L, 1);
+	lua_pushinteger(L, 0);
+	lua_pushcclosure(L, &graph_edges_iter, 2);
+	return 1;
+}
+
+static int
+graph_edge(lua_State *L)
+{
 	unsigned long edge[3];
-	size_t at;
+	struct rgph_graph **pg;
 	int rank, res;
 
 	pg = (struct rgph_graph **)luaL_checkudata(L, 1, GRAPH_MT);
 	if (*pg == NULL)
 		return luaL_argerror(L, 1, "dead object");
 
-	at = luaL_checkinteger(L, 2);
+	res = rgph_copy_edge(*pg, luaL_checkinteger(L, 2) - 1, edge);
 
-	rank = rgph_rank(*pg);
-	res = rgph_copy_edge(*pg, at - 1, edge);
-	if (res < 0)
-		rank = res;
-
-	switch (rank) {
-	case 3:
-		lua_pushinteger(L, edge[0]);
-	case 2:
-		lua_pushinteger(L, edge[rank - 2]);
-		lua_pushinteger(L, edge[rank - 1]);
-		return rank;
+	switch (res) {
 	case RGPH_RANGE:
 		return luaL_error(L, "edge not in range");
+	case RGPH_SUCCESS:
+		rank = rgph_rank(*pg);
+		switch (rank) {
+		case 3:
+			lua_pushinteger(L, edge[0]);
+			/* FALLTHROUGH */
+		case 2:
+			lua_pushinteger(L, edge[rank - 2]);
+			lua_pushinteger(L, edge[rank - 1]);
+			return rank;
+		}
+		/* FALLTHROUGH */
 	case RGPH_INVAL:
 	default:
 		return luaL_error(L, "invalid value");
@@ -271,7 +322,6 @@ static int
 graph_core_size(lua_State *L)
 {
 	struct rgph_graph **pg;
-	int res;
 
 	pg = (struct rgph_graph **)luaL_checkudata(L, 1, GRAPH_MT);
 	if (*pg == NULL)
@@ -292,6 +342,7 @@ static luaL_Reg graph_fn[] = {
 	{ "vertices", graph_vertices },
 	{ "build", graph_build },
 	{ "edge", graph_edge },
+	{ "edges", graph_edges },
 	{ "core_size", graph_core_size },
 	{ NULL, NULL }
 };
