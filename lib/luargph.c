@@ -208,7 +208,7 @@ graph_build(lua_State *L)
 	state.iter = 3;
 	luaL_checkany(L, state.iter); /* Will check later if it's callable. */
 
-	/* Align stack as if state and var are always present. */
+	/* Align stack as if state and var were always present. */
 	lua_settop(L, state.iter + 2);
 
 	memset(&state.ent, 0, sizeof(state.ent));
