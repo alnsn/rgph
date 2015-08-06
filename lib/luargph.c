@@ -239,7 +239,22 @@ graph_edges_iter(lua_State *L)
 	unsigned long edge[3];
 	struct rgph_graph **pg;
 	size_t at;
-	int rank, res;
+	int key, rank, res;
+	int iter, state, var; /* Indices of upvalues. */
+
+	iter = lua_upvalueindex(3);
+	key = !lua_isnil(L, iter);
+
+	if (key) {
+		state = lua_upvalueindex(4);
+		var = lua_upvalueindex(5);
+		lua_pushvalue(L, iter);
+		lua_pushvalue(L, state);
+		lua_pushvalue(L, var);
+		lua_call(L, 2, 1);
+		lua_pushvalue(L, -1);
+		lua_replace(L, var);
+	}
 
 	at = lua_tointeger(L, lua_upvalueindex(2));
 	lua_pushinteger(L, at + 1);
@@ -260,7 +275,7 @@ graph_edges_iter(lua_State *L)
 		case 2:
 			lua_pushinteger(L, edge[rank - 2]);
 			lua_pushinteger(L, edge[rank - 1]);
-			return rank;
+			return key + rank;
 		}
 		/* FALLTHROUGH */
 	case RGPH_INVAL:
@@ -273,14 +288,43 @@ static int
 graph_edges(lua_State *L)
 {
 	struct rgph_graph **pg;
+	int narg, nup; /* nup is a number of upvalues. */
+
+	narg = lua_gettop(L);
 
 	pg = (struct rgph_graph **)luaL_checkudata(L, 1, GRAPH_MT);
 	if (*pg == NULL)
 		return luaL_argerror(L, 1, "dead object");
 
+	nup = 2;
 	lua_pushvalue(L, 1);
 	lua_pushinteger(L, 0);
-	lua_pushcclosure(L, &graph_edges_iter, 2);
+
+	switch (narg) {
+	case 1:
+		nup += 1;
+		lua_pushnil(L);
+		break;
+	case 2:
+		nup += 3;
+		lua_pushvalue(L, 2);
+		lua_pushnil(L);
+		lua_pushnil(L);
+		break;
+	case 3:
+		nup += 3;
+		lua_pushvalue(L, 2);
+		lua_pushvalue(L, 3);
+		lua_pushnil(L);
+		break;
+	default:
+		nup += 3;
+		lua_pushvalue(L, 2);
+		lua_pushvalue(L, 3);
+		lua_pushvalue(L, 4);
+	}
+
+	lua_pushcclosure(L, &graph_edges_iter, nup);
 	return 1;
 }
 
