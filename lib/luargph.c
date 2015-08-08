@@ -299,9 +299,7 @@ static int
 graph_edges(lua_State *L)
 {
 	struct rgph_graph **pg;
-	int narg, nup; /* nup is a number of upvalues. */
-
-	narg = lua_gettop(L);
+	int nup; /* Number of upvalues. */
 
 	pg = (struct rgph_graph **)luaL_checkudata(L, 1, GRAPH_MT);
 	if (*pg == NULL)
@@ -311,28 +309,22 @@ graph_edges(lua_State *L)
 	lua_pushvalue(L, 1);
 	lua_pushinteger(L, 0);
 
-	switch (narg) {
-	case 1:
+	if (lua_isnoneornil(L, 2)) {
 		nup += 1;
 		lua_pushnil(L);
-		break;
-	case 2:
+	} else {
 		nup += 3;
 		lua_pushvalue(L, 2);
-		lua_pushnil(L);
-		lua_pushnil(L);
-		break;
-	case 3:
-		nup += 3;
-		lua_pushvalue(L, 2);
-		lua_pushvalue(L, 3);
-		lua_pushnil(L);
-		break;
-	default:
-		nup += 3;
-		lua_pushvalue(L, 2);
-		lua_pushvalue(L, 3);
-		lua_pushvalue(L, 4);
+
+		if (lua_isnone(L, 3))
+			lua_pushnil(L);
+		else
+			lua_pushvalue(L, 3);
+
+		if (lua_isnone(L, 4))
+			lua_pushnil(L);
+		else
+			lua_pushvalue(L, 4);
 	}
 
 	lua_pushcclosure(L, &graph_edges_iter, nup);
