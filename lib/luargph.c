@@ -153,7 +153,7 @@ graph_entries(lua_State *L)
 	if (*pg == NULL)
 		return luaL_argerror(L, 1, "dead object");
 
-	lua_pushinteger(L, rgph_entries(*pg));
+	lua_pushnumber(L, rgph_entries(*pg));
 	return 1;
 }
 
@@ -166,7 +166,7 @@ graph_vertices(lua_State *L)
 	if (*pg == NULL)
 		return luaL_argerror(L, 1, "dead object");
 
-	lua_pushinteger(L, rgph_vertices(*pg));
+	lua_pushnumber(L, rgph_vertices(*pg));
 	return 1;
 }
 
@@ -179,7 +179,7 @@ graph_seed(lua_State *L)
 	if (*pg == NULL)
 		return luaL_argerror(L, 1, "dead object");
 
-	lua_pushinteger(L, rgph_seed(*pg));
+	lua_pushnumber(L, rgph_seed(*pg));
 	return 1;
 }
 
