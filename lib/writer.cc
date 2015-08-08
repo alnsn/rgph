@@ -430,6 +430,7 @@ struct rgph_graph {
 	size_t core_size; // R-core size.
 	size_t datalenmin;
 	size_t datalenmax;
+	unsigned long seed;
 	unsigned int flags;
 };
 
@@ -597,6 +598,7 @@ rgph_alloc_graph(size_t nkeys, int flags)
 	g->order = NULL;
 	g->edges = NULL;
 	g->oedges = NULL;
+	g->seed = 0;
 	g->flags = flags;
 
 	g->order = calloc(esz, nkeys);
@@ -658,6 +660,14 @@ rgph_vertices(struct rgph_graph *g)
 }
 
 extern "C"
+unsigned long
+rgph_seed(struct rgph_graph *g)
+{
+
+	return g->seed;
+}
+
+extern "C"
 size_t
 rgph_core_size(struct rgph_graph *g)
 {
@@ -672,6 +682,8 @@ rgph_build_graph(struct rgph_graph *g,
 {
 	const int r = graph_rank(g->flags);
 	const size_t width = data_width(g->nverts, MIN_WIDTH_BUILD);
+
+	g->seed = seed;
 
 #define SELECT(r, w) (8 * (r) + (w))
 	switch (SELECT(r, width)) {

@@ -153,7 +153,6 @@ graph_entries(lua_State *L)
 	if (*pg == NULL)
 		return luaL_argerror(L, 1, "dead object");
 
-	/* XXX size_t vs lua_Integer */
 	lua_pushinteger(L, rgph_entries(*pg));
 	return 1;
 }
@@ -167,8 +166,20 @@ graph_vertices(lua_State *L)
 	if (*pg == NULL)
 		return luaL_argerror(L, 1, "dead object");
 
-	/* XXX size_t vs lua_Integer */
 	lua_pushinteger(L, rgph_vertices(*pg));
+	return 1;
+}
+
+static int
+graph_seed(lua_State *L)
+{
+	struct rgph_graph **pg;
+
+	pg = (struct rgph_graph **)luaL_checkudata(L, 1, GRAPH_MT);
+	if (*pg == NULL)
+		return luaL_argerror(L, 1, "dead object");
+
+	lua_pushinteger(L, rgph_seed(*pg));
 	return 1;
 }
 
@@ -385,6 +396,7 @@ static luaL_Reg graph_fn[] = {
 	{ "entries", graph_entries },
 	{ "vertices", graph_vertices },
 	{ "build", graph_build },
+	{ "seed", graph_seed },
 	{ "edge", graph_edge },
 	{ "edges", graph_edges },
 	{ "core_size", graph_core_size },

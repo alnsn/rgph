@@ -53,6 +53,7 @@ int rgph_flags(struct rgph_graph *);
 int rgph_rank(struct rgph_graph *);
 size_t rgph_entries(struct rgph_graph *);
 size_t rgph_vertices(struct rgph_graph *);
+unsigned long rgph_seed(struct rgph_graph *);
 
 int rgph_build_graph(struct rgph_graph *,
     unsigned long, rgph_entry_iterator_t, void *);
