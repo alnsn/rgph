@@ -155,50 +155,6 @@ make_hash(void (*func)(const void *, size_t, S, H *), unsigned long seed)
 	return hash<T,S,H>(func, seed);
 }
 
-// Simple bitset class for finding edges in r-core of a graph.
-template<class T>
-struct bitset {
-	static const T ONE = 1;
-	static const T ALL = -1;
-	static const size_t TBIT = sizeof(T) * CHAR_BIT;
-
-	T *data;
-
-	bitset(void *ptr) : data((T *)ptr) {}
-
-	bool isset(size_t e) {
-		return (data[e / TBIT] >> (e % TBIT)) & ONE;
-	}
-
-	void set(size_t e) {
-		data[e / TBIT] |= ONE << (e % TBIT);
-	}
-
-	static size_t size(size_t nkeys) {
-		return (nkeys + (TBIT - 1)) / TBIT;
-	}
-
-	void unset_all(size_t nkeys) {
-		memset(data, 0, size(nkeys) * sizeof(T));
-	}
-
-	template<class U>
-	void copy_unset(size_t nkeys, U *order, size_t top) {
-		// Fill bits after the last real bit to simplify the loop below.
-		if ((nkeys % TBIT) != 0)
-			data[nkeys / TBIT] |= ALL << (nkeys % TBIT);
-
-		for (size_t i = 0; i < size(nkeys) && top > 0; i++) {
-			if (data[i] == ALL)
-				continue;
-			for (size_t j = 0; j < TBIT && top > 0; j++) {
-				if (!isset(i * TBIT + j))
-					order[--top] = i * TBIT + j;
-			}
-		}
-	}
-};
-
 template<class T>
 inline void
 add_remove_oedge(oedge<T,2> *oedges, int delta, T e, T v0, T v1)
@@ -426,7 +382,7 @@ struct rgph_graph {
 	size_t nverts;
 	void *order;  // Output order of edges.
 	void *edges;
-	void *oedges; // Can be reused for a bitset of peeled edges.
+	void *oedges; // Can be reused for peel order index.
 	size_t core_size; // R-core size.
 	size_t datalenmin;
 	size_t datalenmax;
@@ -436,9 +392,9 @@ struct rgph_graph {
 
 enum {
 	PUBLIC_FLAGS = 0x3ff,
-	ZEROED       = 0x40000000,
-	BUILT        = 0x20000000,
-	CORE_COPIED  = 0x10000000
+	ZEROED  = 0x40000000, // The order, edges and oedges arrays are zeroed.
+	BUILT   = 0x20000000, // Graph is built.
+	INDEXED = 0x10000000  // Peel order index is built.
 };
 
 template<class T, int R>
@@ -459,7 +415,8 @@ build_graph(struct rgph_graph *g,
 		memset(oedges, 0, sizeof(oedge_t) * g->nverts);
 	}
 
-	g->flags &= ~(ZEROED|BUILT);
+	g->flags &= ~(ZEROED|BUILT|INDEXED);
+	g->seed = seed;
 	g->core_size = g->nkeys;
 	g->datalenmin = (size_t)-1;
 	g->datalenmax = 0;
@@ -488,9 +445,24 @@ build_graph(struct rgph_graph *g,
 	return g->core_size == 0 ? RGPH_SUCCESS : RGPH_CYCLE;
 }
 
+template<class T>
+static void
+build_peel_index(struct rgph_graph *g)
+{
+	T *order = (T *)g->order;
+	T *index = (T *)g->oedges; // Reuse oedges.
+
+	memset(index, 0, sizeof(T) * g->nverts);
+
+	for (size_t i = g->nkeys; i > g->core_size; i--) {
+		assert(index[order[i-1]] == 0);
+		index[order[i-1]] = g->nkeys - i + 1;
+	}
+}
+
 template<class T, int R>
 static int
-copy_edge(struct rgph_graph *g, size_t e, unsigned long *to)
+copy_edge(struct rgph_graph *g, size_t e, unsigned long *to, size_t *peel_order)
 {
 	typedef edge<T,R> edge_t;
 
@@ -499,35 +471,17 @@ copy_edge(struct rgph_graph *g, size_t e, unsigned long *to)
 	for (size_t r = 0; r < R; r++)
 		to[r] = edges[e].verts[r];
 
-	return RGPH_SUCCESS;
-}
-
-template<class T, int R>
-static int
-copy_peeled_edge(struct rgph_graph *g, size_t i, unsigned long *to)
-{
-	typedef edge<T,R> edge_t;
-
-	T *order = (T *)g->order;
-	edge_t *edges = (edge_t *)g->edges;
-
-	if (i < g->core_size && !(g->flags & CORE_COPIED)) {
-		bitset<unsigned long> peeled(g->oedges); // Reuse oedges.
-
-		peeled.unset_all(g->nkeys);
-		for (size_t i = g->core_size; i < g->nkeys; ++i) {
-			assert(!peeled.isset(order[i]));
-			peeled.set(order[i]);
-		}
-
-		peeled.copy_unset(g->nkeys, order, g->core_size);
-		g->flags |= CORE_COPIED;
+	if (peel_order != NULL && !(g->flags & INDEXED)) {
+		g->flags |= INDEXED;
+		build_peel_index<T>(g);
 	}
 
-	for (size_t r = 0; r < R; r++)
-		to[r] = edges[order[i]].verts[r];
+	if (peel_order != NULL) {
+		T *index = (T *)g->oedges; // Reuse oedges.
+		*peel_order = index[e];
+	}
 
-	return i < g->core_size ? RGPH_RANGE : RGPH_SUCCESS;
+	return RGPH_SUCCESS;
 }
 
 extern "C"
@@ -668,22 +622,12 @@ rgph_seed(struct rgph_graph *g)
 }
 
 extern "C"
-size_t
-rgph_core_size(struct rgph_graph *g)
-{
-
-	return g->core_size;
-}
-
-extern "C"
 int
 rgph_build_graph(struct rgph_graph *g,
     unsigned long seed, rgph_entry_iterator_t keys, void *state)
 {
 	const int r = graph_rank(g->flags);
 	const size_t width = data_width(g->nverts, MIN_WIDTH_BUILD);
-
-	g->seed = seed;
 
 #define SELECT(r, w) (8 * (r) + (w))
 	switch (SELECT(r, width)) {
@@ -708,7 +652,8 @@ rgph_build_graph(struct rgph_graph *g,
 
 extern "C"
 int
-rgph_copy_edge(struct rgph_graph *g, size_t edge, unsigned long *to)
+rgph_copy_edge(struct rgph_graph *g, size_t edge,
+    unsigned long *to, size_t *peel_order)
 {
 	const int r = graph_rank(g->flags);
 	const size_t width = data_width(g->nverts, MIN_WIDTH_BUILD);
@@ -722,54 +667,17 @@ rgph_copy_edge(struct rgph_graph *g, size_t edge, unsigned long *to)
 #define SELECT(r, w) (8 * (r) + (w))
 	switch (SELECT(r, width)) {
 	case SELECT(2, 1):
-		return copy_edge<uint8_t,2>(g, edge, to);
+		return copy_edge<uint8_t,2>(g, edge, to, peel_order);
 	case SELECT(3, 1):
-		return copy_edge<uint8_t,3>(g, edge, to);
+		return copy_edge<uint8_t,3>(g, edge, to, peel_order);
 	case SELECT(2, 2):
-		return copy_edge<uint16_t,2>(g, edge, to);
+		return copy_edge<uint16_t,2>(g, edge, to, peel_order);
 	case SELECT(3, 2):
-		return copy_edge<uint16_t,3>(g, edge, to);
+		return copy_edge<uint16_t,3>(g, edge, to, peel_order);
 	case SELECT(2, 4):
-		return copy_edge<uint32_t,2>(g, edge, to);
+		return copy_edge<uint32_t,2>(g, edge, to, peel_order);
 	case SELECT(3, 4):
-		return copy_edge<uint32_t,3>(g, edge, to);
-	default:
-		assert(0 && "rgph_alloc_graph() should have caught it");
-		return RGPH_INVAL;
-	}
-#undef SELECT
-}
-
-extern "C"
-int
-rgph_copy_peeled_edge(struct rgph_graph *g, size_t edge, unsigned long *to)
-{
-	const int r = graph_rank(g->flags);
-	const size_t width = data_width(g->nverts, MIN_WIDTH_BUILD);
-
-	if (!(g->flags & BUILT))
-		return RGPH_INVAL;
-
-	if (edge >= g->nkeys)
-		return RGPH_RANGE;
-
-	// First peeled edge is at the end of g->order:
-	const size_t i = g->nkeys - edge - 1;
-
-#define SELECT(r, w) (8 * (r) + (w))
-	switch (SELECT(r, width)) {
-	case SELECT(2, 1):
-		return copy_peeled_edge<uint8_t,2>(g, i, to);
-	case SELECT(3, 1):
-		return copy_peeled_edge<uint8_t,3>(g, i, to);
-	case SELECT(2, 2):
-		return copy_peeled_edge<uint16_t,2>(g, i, to);
-	case SELECT(3, 2):
-		return copy_peeled_edge<uint16_t,3>(g, i, to);
-	case SELECT(2, 4):
-		return copy_peeled_edge<uint32_t,2>(g, i, to);
-	case SELECT(3, 4):
-		return copy_peeled_edge<uint32_t,3>(g, i, to);
+		return copy_edge<uint32_t,3>(g, edge, to, peel_order);
 	default:
 		assert(0 && "rgph_alloc_graph() should have caught it");
 		return RGPH_INVAL;

@@ -249,30 +249,20 @@ graph_edges_iter(lua_State *L)
 {
 	unsigned long edge[3];
 	struct rgph_graph **pg;
-	size_t at;
-	int key, rank, res;
+	size_t at, peel_order;
+	size_t *peel_arg;
+	int peel, key, rank, res;
 	int iter, state, var; /* Indices of upvalues. */
 
-	iter = lua_upvalueindex(3);
-	key = !lua_isnil(L, iter);
+	peel = lua_toboolean(L, lua_upvalueindex(2));
+	peel_arg = peel ? &peel_order : NULL;
 
-	if (key) {
-		state = lua_upvalueindex(4);
-		var = lua_upvalueindex(5);
-		lua_pushvalue(L, iter);
-		lua_pushvalue(L, state);
-		lua_pushvalue(L, var);
-		lua_call(L, 2, 1);
-		lua_pushvalue(L, -1);
-		lua_replace(L, var);
-	}
-
-	at = lua_tointeger(L, lua_upvalueindex(2));
+	at = lua_tointeger(L, lua_upvalueindex(3));
 	lua_pushinteger(L, at + 1);
-	lua_replace(L, lua_upvalueindex(2));
+	lua_replace(L, lua_upvalueindex(3));
 
 	pg = (struct rgph_graph **)lua_touserdata(L, lua_upvalueindex(1));
-	res = rgph_copy_edge(*pg, at, edge);
+	res = rgph_copy_edge(*pg, at, edge, peel_arg);
 
 	switch (res) {
 	case RGPH_RANGE:
@@ -286,45 +276,70 @@ graph_edges_iter(lua_State *L)
 		case 2:
 			lua_pushinteger(L, edge[rank - 2]);
 			lua_pushinteger(L, edge[rank - 1]);
-			return key + rank;
+			break;
+		default:
+			return luaL_error(L, "invalid value");
 		}
-		/* FALLTHROUGH */
+		break;
 	case RGPH_INVAL:
 	default:
 		return luaL_error(L, "invalid value");
 	}
+
+	iter = lua_upvalueindex(4);
+	key = !lua_isnil(L, iter);
+
+	if (peel)
+		lua_pushnumber(L, peel_order);
+
+	if (key) {
+		state = lua_upvalueindex(5);
+		var = lua_upvalueindex(6);
+		lua_pushvalue(L, iter);
+		lua_pushvalue(L, state);
+		lua_pushvalue(L, var);
+		lua_call(L, 2, 1);
+		lua_pushvalue(L, -1);
+		lua_replace(L, var);
+	}
+
+	return rank + peel + key;
 }
 
 static int
 graph_edges(lua_State *L)
 {
 	struct rgph_graph **pg;
+	int peel;
 	int nup; /* Number of upvalues. */
 
 	pg = (struct rgph_graph **)luaL_checkudata(L, 1, GRAPH_MT);
 	if (*pg == NULL)
 		return luaL_argerror(L, 1, "dead object");
 
-	nup = 2;
+	peel = lua_isstring(L, 2) && strcmp("peel", lua_tostring(L, 2)) == 0;
+
+	nup = 3;
 	lua_pushvalue(L, 1);
+	lua_pushboolean(L, peel);
 	lua_pushinteger(L, 0);
 
-	if (lua_isnoneornil(L, 2)) {
+	if (lua_isnoneornil(L, 2 + peel)) {
 		nup += 1;
 		lua_pushnil(L);
 	} else {
 		nup += 3;
-		lua_pushvalue(L, 2);
+		lua_pushvalue(L, 2 + peel);
 
-		if (lua_isnone(L, 3))
+		if (lua_isnone(L, 3 + peel))
 			lua_pushnil(L);
 		else
-			lua_pushvalue(L, 3);
+			lua_pushvalue(L, 3 + peel);
 
-		if (lua_isnone(L, 4))
+		if (lua_isnone(L, 4 + peel))
 			lua_pushnil(L);
 		else
-			lua_pushvalue(L, 4);
+			lua_pushvalue(L, 4 + peel);
 	}
 
 	lua_pushcclosure(L, &graph_edges_iter, nup);
@@ -342,7 +357,7 @@ graph_edge(lua_State *L)
 	if (*pg == NULL)
 		return luaL_argerror(L, 1, "dead object");
 
-	res = rgph_copy_edge(*pg, luaL_checkinteger(L, 2) - 1, edge);
+	res = rgph_copy_edge(*pg, luaL_checkinteger(L, 2) - 1, edge, NULL);
 
 	switch (res) {
 	case RGPH_RANGE:
@@ -365,19 +380,6 @@ graph_edge(lua_State *L)
 	}
 }
 
-static int
-graph_core_size(lua_State *L)
-{
-	struct rgph_graph **pg;
-
-	pg = (struct rgph_graph **)luaL_checkudata(L, 1, GRAPH_MT);
-	if (*pg == NULL)
-		return luaL_argerror(L, 1, "dead object");
-
-	lua_pushinteger(L, rgph_core_size(*pg));
-	return 1;
-}
-
 static luaL_Reg rgph_fn[] = {
 	{ "new_graph", new_graph_fn },
 	{ NULL, NULL }
@@ -391,7 +393,6 @@ static luaL_Reg graph_fn[] = {
 	{ "seed", graph_seed },
 	{ "edge", graph_edge },
 	{ "edges", graph_edges },
-	{ "core_size", graph_core_size },
 	{ NULL, NULL }
 };
 
