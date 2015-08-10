@@ -415,7 +415,7 @@ build_graph(struct rgph_graph *g,
 		memset(oedges, 0, sizeof(oedge_t) * g->nverts);
 	}
 
-	g->flags &= ~(ZEROED|BUILT|INDEXED);
+	g->flags &= PUBLIC_FLAGS;
 	g->seed = seed;
 	g->core_size = g->nkeys;
 	g->datalenmin = (size_t)-1;
