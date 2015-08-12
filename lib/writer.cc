@@ -446,18 +446,24 @@ build_graph(struct rgph_graph *g,
 }
 
 template<class T>
-static void
+static T *
 build_peel_index(struct rgph_graph *g)
 {
-	T *order = (T *)g->order;
 	T *index = (T *)g->oedges; // Reuse oedges.
 
-	memset(index, 0, sizeof(T) * g->nkeys);
+	if (!(g->flags & INDEXED)) {
+		T *order = (T *)g->order;
 
-	for (size_t i = g->nkeys; i > g->core_size; i--) {
-		assert(index[order[i-1]] == 0);
-		index[order[i-1]] = g->nkeys - i + 1;
+		g->flags |= INDEXED;
+		memset(index, 0, sizeof(T) * g->nkeys);
+
+		for (size_t i = g->nkeys; i > g->core_size; i--) {
+			assert(index[order[i-1]] == 0);
+			index[order[i-1]] = g->nkeys - i + 1;
+		}
 	}
+
+	return index;
 }
 
 template<class T, int R>
