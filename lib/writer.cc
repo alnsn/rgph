@@ -314,48 +314,48 @@ data_width(size_t size, size_t min_width)
 
 template<int R>
 inline size_t
-edges_size_rank(size_t nkeys, size_t width)
+edge_size_rank(size_t width)
 {
 
 	switch (width) {
-	case 1: return nkeys * sizeof(edge<uint8_t,R>);
-	case 2: return nkeys * sizeof(edge<uint16_t,R>);
-	case 4: return nkeys * sizeof(edge<uint32_t,R>);
+	case 1: return sizeof(edge<uint8_t,R>);
+	case 2: return sizeof(edge<uint16_t,R>);
+	case 4: return sizeof(edge<uint32_t,R>);
 	default: return 0;
 	}
 }
 
 inline size_t
-edges_size(int rank, size_t nkeys, size_t width)
+edge_size(int rank, size_t width)
 {
 
 	switch (rank) {
-	case 2: return edges_size_rank<2>(nkeys, width);
-	case 3: return edges_size_rank<3>(nkeys, width);
+	case 2: return edge_size_rank<2>(width);
+	case 3: return edge_size_rank<3>(width);
 	default: return 0;
 	}
 }
 
 template<int R>
 inline size_t
-oedges_size_rank(size_t nverts, size_t width)
+oedge_size_rank(size_t width)
 {
 
 	switch (width) {
-	case 1: return nverts * sizeof(oedge<uint8_t,R>);
-	case 2: return nverts * sizeof(oedge<uint16_t,R>);
-	case 4: return nverts * sizeof(oedge<uint32_t,R>);
+	case 1: return sizeof(oedge<uint8_t,R>);
+	case 2: return sizeof(oedge<uint16_t,R>);
+	case 4: return sizeof(oedge<uint32_t,R>);
 	default: return 0;
 	}
 }
 
 inline size_t
-oedges_size(int rank, size_t nverts, size_t width)
+oedge_size(int rank, size_t width)
 {
 
 	switch (rank) {
-	case 2: return oedges_size_rank<2>(nverts, width);
-	case 3: return oedges_size_rank<3>(nverts, width);
+	case 2: return oedge_size_rank<2>(width);
+	case 3: return oedge_size_rank<3>(width);
 	default: return 0;
 	}
 }
@@ -532,8 +532,8 @@ rgph_alloc_graph(size_t nkeys, int flags)
 	assert(nverts > nkeys);
 
 	width = data_width(nverts, MIN_WIDTH_BUILD);
-	esz = edges_size(r, nkeys, width);
-	osz = oedges_size(r, nverts, width);
+	esz = edge_size(r, width);
+	osz = oedge_size(r, width);
 
 	if (esz == 0 || osz == 0) {
 		errno = EINVAL;
@@ -566,11 +566,11 @@ rgph_alloc_graph(size_t nkeys, int flags)
 	if (g->order == NULL)
 		goto err;
 
-	g->edges = calloc(1, esz);
+	g->edges = calloc(esz, nkeys);
 	if (g->edges == NULL)
 		goto err;
 
-	g->oedges = calloc(1, osz);
+	g->oedges = calloc(osz, nverts);
 	if (g->oedges == NULL)
 		goto err;
 
