@@ -314,48 +314,48 @@ data_width(size_t size, size_t min_width)
 
 template<int R>
 inline size_t
-edge_size_rank(size_t nkeys, size_t min_width)
+edges_size_rank(size_t nkeys, size_t width)
 {
 
-	switch (data_width(nkeys, min_width)) {
-	case 1: return sizeof(edge<uint8_t,R>);
-	case 2: return sizeof(edge<uint16_t,R>);
-	case 4: return sizeof(edge<uint32_t,R>);
+	switch (width) {
+	case 1: return nkeys * sizeof(edge<uint8_t,R>);
+	case 2: return nkeys * sizeof(edge<uint16_t,R>);
+	case 4: return nkeys * sizeof(edge<uint32_t,R>);
 	default: return 0;
 	}
 }
 
 inline size_t
-edge_size(int rank, size_t nkeys, size_t min_width)
+edges_size(int rank, size_t nkeys, size_t width)
 {
 
 	switch (rank) {
-	case 2: return edge_size_rank<2>(nkeys, min_width);
-	case 3: return edge_size_rank<3>(nkeys, min_width);
+	case 2: return edges_size_rank<2>(nkeys, width);
+	case 3: return edges_size_rank<3>(nkeys, width);
 	default: return 0;
 	}
 }
 
 template<int R>
 inline size_t
-oedge_size_rank(size_t nverts, size_t min_width)
+oedges_size_rank(size_t nverts, size_t width)
 {
 
-	switch (data_width(nverts, min_width)) {
-	case 1: return sizeof(oedge<uint8_t,R>);
-	case 2: return sizeof(oedge<uint16_t,R>);
-	case 4: return sizeof(oedge<uint32_t,R>);
+	switch (width) {
+	case 1: return nverts * sizeof(oedge<uint8_t,R>);
+	case 2: return nverts * sizeof(oedge<uint16_t,R>);
+	case 4: return nverts * sizeof(oedge<uint32_t,R>);
 	default: return 0;
 	}
 }
 
 inline size_t
-oedge_size(int rank, size_t nverts, size_t min_width)
+oedges_size(int rank, size_t nverts, size_t width)
 {
 
 	switch (rank) {
-	case 2: return oedge_size_rank<2>(nverts, min_width);
-	case 3: return oedge_size_rank<3>(nverts, min_width);
+	case 2: return oedges_size_rank<2>(nverts, width);
+	case 3: return oedges_size_rank<3>(nverts, width);
 	default: return 0;
 	}
 }
@@ -500,7 +500,7 @@ struct rgph_graph *
 rgph_alloc_graph(size_t nkeys, int flags)
 {
 	struct rgph_graph *g;
-	size_t maxkeys, nverts, esz, osz;
+	size_t maxkeys, nverts, width, esz, osz;
 	int save_errno;
 	int r;
 
@@ -525,8 +525,9 @@ rgph_alloc_graph(size_t nkeys, int flags)
 
 	assert(nverts > nkeys);
 
-	esz = edge_size(r, nverts, MIN_WIDTH_BUILD); // data_width(nverts) !
-	osz = oedge_size(r, nverts, MIN_WIDTH_BUILD);
+	width = data_width(nverts, MIN_WIDTH_BUILD);
+	esz = edges_size(r, nkeys, width);
+	osz = oedges_size(r, nverts, width);
 
 	if (esz == 0 || osz == 0) {
 		errno = EINVAL;
@@ -555,15 +556,15 @@ rgph_alloc_graph(size_t nkeys, int flags)
 	g->seed = 0;
 	g->flags = flags;
 
-	g->order = calloc(esz, nkeys);
+	g->order = calloc(width, nkeys);
 	if (g->order == NULL)
 		goto err;
 
-	g->edges = calloc(esz, nkeys);
+	g->edges = calloc(1, esz);
 	if (g->edges == NULL)
 		goto err;
 
-	g->oedges = calloc(osz, nverts);
+	g->oedges = calloc(1, osz);
 	if (g->oedges == NULL)
 		goto err;
 
