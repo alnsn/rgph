@@ -318,7 +318,7 @@ data_width(size_t size, size_t min_width)
 
 template<int R>
 inline size_t
-edge_size_rank(size_t width)
+edge_size_impl(size_t width)
 {
 
 	switch (width) {
@@ -334,32 +334,41 @@ edge_size(int rank, size_t width)
 {
 
 	switch (rank) {
-	case 2: return edge_size_rank<2>(width);
-	case 3: return edge_size_rank<3>(width);
+	case 2: return edge_size_impl<2>(width);
+	case 3: return edge_size_impl<3>(width);
 	default: return 0;
 	}
+}
+
+template<class T, int R>
+inline size_t
+oedges_size_impl(size_t nkeys, size_t nverts)
+{
+	const size_t osz = sizeof(oedge<T,R>);
+
+	return nverts > SIZE_MAX / osz ? 0 : nverts * osz;
 }
 
 template<int R>
 inline size_t
-oedge_size_rank(size_t width)
+oedges_size_impl(size_t width, size_t nkeys, size_t nverts)
 {
 
 	switch (width) {
-	case 1: return sizeof(oedge<uint8_t,R>);
-	case 2: return sizeof(oedge<uint16_t,R>);
-	case 4: return sizeof(oedge<uint32_t,R>);
+	case 1: return oedges_size_impl<uint8_t,R>(nkeys, nverts);
+	case 2: return oedges_size_impl<uint16_t,R>(nkeys, nverts);
+	case 4: return oedges_size_impl<uint32_t,R>(nkeys, nverts);
 	default: return 0;
 	}
 }
 
 inline size_t
-oedge_size(int rank, size_t width)
+oedges_size(int rank, size_t width, size_t nkeys, size_t nverts)
 {
 
 	switch (rank) {
-	case 2: return oedge_size_rank<2>(width);
-	case 3: return oedge_size_rank<3>(width);
+	case 2: return oedges_size_impl<2>(width, nkeys, nverts);
+	case 3: return oedges_size_impl<3>(width, nkeys, nverts);
 	default: return 0;
 	}
 }
@@ -537,10 +546,14 @@ rgph_alloc_graph(size_t nkeys, int flags)
 
 	width = data_width(nverts, MIN_WIDTH_BUILD);
 	esz = edge_size(r, width);
-	osz = oedge_size(r, width);
-
-	if (esz == 0 || osz == 0) {
+	if (esz == 0) {
 		errno = EINVAL;
+		return NULL;
+	}
+
+	osz = oedges_size(r, width, nkeys, nverts);
+	if (osz == 0) {
+		errno = ENOMEM;
 		return NULL;
 	}
 
@@ -574,7 +587,7 @@ rgph_alloc_graph(size_t nkeys, int flags)
 	if (g->edges == NULL)
 		goto err;
 
-	g->oedges = calloc(osz, nverts);
+	g->oedges = calloc(osz, 1);
 	if (g->oedges == NULL)
 		goto err;
 
