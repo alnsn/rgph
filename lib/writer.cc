@@ -39,6 +39,10 @@
 #include "rgph_hash.h"
 #include "rgph_graph.h"
 
+#ifndef SIZE_MAX
+#define SIZE_MAX ((size_t)-1)
+#endif
+
 // Min. data_width size for building a graph. Setting it to 1 or 2
 // may save you some space for smaller graphs but beware of subtleties
 // of integral promotion rules.
@@ -418,7 +422,7 @@ build_graph(struct rgph_graph *g,
 	g->flags &= PUBLIC_FLAGS;
 	g->seed = seed;
 	g->core_size = g->nkeys;
-	g->datalenmin = (size_t)-1;
+	g->datalenmin = SIZE_MAX;
 	g->datalenmax = 0;
 
 	entry_iterator keys_start(keys, state), keys_end;
@@ -577,7 +581,7 @@ rgph_alloc_graph(size_t nkeys, int flags)
 	g->nkeys = nkeys;
 	g->nverts = nverts;
 	g->core_size = nkeys;
-	g->datalenmin = (size_t)-1;
+	g->datalenmin = SIZE_MAX;
 	g->datalenmax = 0;
 	g->flags |= ZEROED; // calloc
 
