@@ -62,6 +62,9 @@ int rgph_copy_edge(struct rgph_graph *, size_t, unsigned long *, size_t *);
 
 size_t rgph_count_keys(rgph_entry_iterator_t, void *);
 
+int rgph_find_duplicates(struct rgph_graph *,
+    rgph_entry_iterator_t, void *, size_t *);
+
 #ifdef __cplusplus
 }
 #endif

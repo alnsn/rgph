@@ -229,7 +229,7 @@ graph_build(lua_State *L)
 
 	lua_pushboolean(L, res == RGPH_SUCCESS);
 	switch (res) {
-	case RGPH_CYCLE:
+	case RGPH_AGAIN:
 	case RGPH_SUCCESS:
 		return 1;
 	case RGPH_INVAL:
@@ -237,6 +237,53 @@ graph_build(lua_State *L)
 		return 2;
 	case RGPH_NOKEY:
 		lua_pushstring(L, "iterator returned no key");
+		return 2;
+	default:
+		lua_pushfstring(L, "unknown error %d", res);
+		return 2;
+	}
+}
+
+static int
+graph_find_duplicates(lua_State *L)
+{
+	struct build_iter_state state;
+	struct rgph_graph **pg;
+	size_t dup[2];
+	int res;
+
+	pg = (struct rgph_graph **)luaL_checkudata(L, 1, GRAPH_MT);
+	if (*pg == NULL)
+		return luaL_argerror(L, 1, "dead object");
+
+	state.iter = 2;
+	luaL_checkany(L, state.iter); /* Will check later if it's callable. */
+
+	/* Align stack as if state and var were always present. */
+	lua_settop(L, state.iter + 2);
+
+	memset(&state.ent, 0, sizeof(state.ent));
+	state.L = L;
+
+	res = rgph_find_duplicates(*pg, &graph_build_iter, &state, dup);
+
+	lua_pushboolean(L, res == RGPH_SUCCESS);
+	switch (res) {
+	case RGPH_SUCCESS:
+		lua_pushinteger(L, dup[0]);
+		lua_pushinteger(L, dup[1]);
+		return 3;
+	case RGPH_AGAIN:
+		lua_pushstring(L, "try again");
+		return 2;
+	case RGPH_NOKEY:
+		lua_pushstring(L, "no duplicates");
+		return 2;
+	case RGPH_NOMEM:
+		lua_pushstring(L, "not enough memory");
+		return 2;
+	case RGPH_INVAL:
+		lua_pushstring(L, "invalid value");
 		return 2;
 	default:
 		lua_pushfstring(L, "unknown error %d", res);
@@ -390,6 +437,7 @@ static luaL_Reg graph_fn[] = {
 	{ "entries", graph_entries },
 	{ "vertices", graph_vertices },
 	{ "build", graph_build },
+	{ "find_duplicates", graph_find_duplicates },
 	{ "seed", graph_seed },
 	{ "edge", graph_edge },
 	{ "edges", graph_edges },

@@ -59,6 +59,14 @@ template<bool C> struct bool_selector {};
  * Vigna.
  * http://zola.di.unipi.it/rossano/wp-content/papercite-data/pdf/dcc14.pdf
  */
+
+ /*
+  * Generated graphs are always R-partite. This means that v0 is less
+  * than (nverts / R), v1 starts from (nverts / R) and is less than
+  * (2 * nverts / R). If R=3, v2 takes the remaining range.
+  * To simplify code, nverts is always rounded to make sure that R always
+  * divides it exactly.
+  */
 template<class T, int R>
 struct edge {
 	T verts[R]; // v0, v1 (and v2, if R==3).
@@ -77,6 +85,14 @@ struct oedge {
 	T degree;      // Degree of v0.
 	T edge;
 };
+
+/*
+ * Hash table of pointers to potentially duplicate keys can be build
+ * without any additional hashing because v0 is a good hash for a table
+ * with (nverts / R) entries.
+ * Each entry is a pointer to (edge, keylen, key bytes) tuple.
+ */
+typedef size_t *duphash_entry_t;
 
 struct entry_iterator {
 	rgph_entry_iterator_t iter;
@@ -111,6 +127,13 @@ struct entry_iterator {
 };
 
 // Good enough to detect past-the-end.
+inline bool
+operator==(const entry_iterator &a, const entry_iterator &b)
+{
+
+	return a.cur == b.cur;
+}
+
 inline bool
 operator!=(const entry_iterator &a, const entry_iterator &b)
 {
@@ -340,13 +363,55 @@ edge_size(int rank, size_t width)
 	}
 }
 
+inline size_t
+round_up(size_t n, size_t r)
+{
+
+	return n > -r ? 0 : (n + (r - 1)) / r * r;
+}
+
+template<class T, int R>
+inline size_t
+duphash_size(size_t nverts)
+{
+	const size_t nelems = nverts / R;
+
+	assert((nverts % R) == 0);
+
+	if (nelems > SIZE_MAX / sizeof(duphash_entry_t))
+		return 0;
+
+	// Round up to T's size because the hash table is followed by
+	// a peel index array. In practice, rounding doesn't make any
+	// difference because T isn't bigger than duphash_entry_t.
+	return round_up(nelems * sizeof(duphash_entry_t), sizeof(T));
+}
+
+/*
+ * Memory allocated for oedges is shared with a hash table and a peel
+ * index. Typically, oedges takes more space but for small T it can
+ * take less space.
+ */
 template<class T, int R>
 inline size_t
 oedges_size_impl(size_t nkeys, size_t nverts)
 {
 	const size_t osz = sizeof(oedge<T,R>);
+	const size_t tsz = sizeof(T);
 
-	return nverts > SIZE_MAX / osz ? 0 : nverts * osz;
+	if (nverts > SIZE_MAX / osz || nkeys > SIZE_MAX / tsz)
+		return 0;
+
+	const size_t oedges_sz = nverts * osz;
+	const size_t hash_sz = duphash_size<T,R>(nverts);
+	if (hash_sz == 0)
+		return 0;
+
+	const size_t index_sz = nkeys * tsz;
+	if (index_sz > SIZE_MAX - hash_sz)
+		return 0;
+
+	return oedges_sz > hash_sz + index_sz ? oedges_sz : hash_sz + index_sz;
 }
 
 template<int R>
@@ -378,14 +443,6 @@ graph_rank(unsigned int flags)
 {
 
 	return (flags & RGPH_RANK_MASK) == RGPH_RANK2 ? 2 : 3;
-}
-
-inline size_t
-round_up(size_t n, size_t r)
-{
-
-	assert(n <= -r);
-	return (n + (r - 1)) / r * r;
 }
 
 } // namespace
@@ -455,14 +512,17 @@ build_graph(struct rgph_graph *g,
 	g->core_size = peel_graph(edges, g->nkeys, oedges, g->nverts, order);
 
 	g->flags |= BUILT;
-	return g->core_size == 0 ? RGPH_SUCCESS : RGPH_CYCLE;
+	return g->core_size == 0 ? RGPH_SUCCESS : RGPH_AGAIN;
 }
 
-template<class T>
+template<class T, int R>
 static T *
 build_peel_index(struct rgph_graph *g)
 {
-	T *index = (T *)g->oedges; // Reuse oedges.
+	const size_t hashsz = duphash_size<T,R>(g->nverts);
+	T *index = (T *)((char *)g->oedges + hashsz); // Reuse oedges.
+
+	assert(hashsz != 0);
 
 	if (!(g->flags & INDEXED)) {
 		T *order = (T *)g->order;
@@ -490,17 +550,99 @@ copy_edge(struct rgph_graph *g, size_t e, unsigned long *to, size_t *peel_order)
 	for (size_t r = 0; r < R; r++)
 		to[r] = edges[e].verts[r];
 
-	if (peel_order != NULL && !(g->flags & INDEXED)) {
-		g->flags |= INDEXED;
-		build_peel_index<T>(g);
-	}
-
 	if (peel_order != NULL) {
-		T *index = (T *)g->oedges; // Reuse oedges.
+		T *index = build_peel_index<T,R>(g);
 		*peel_order = index[e];
 	}
 
 	return RGPH_SUCCESS;
+}
+
+template<class T, int R>
+static int
+find_duplicates(struct rgph_graph *g,
+    rgph_entry_iterator_t iter, void *state, size_t *dup)
+{
+	typedef edge<T,R> edge_t;
+
+	assert((g->nverts % R) == 0);
+
+	const size_t hashsz = g->nverts / R;
+	duphash_entry_t *hash = (duphash_entry_t *)g->oedges; // Reuse oedges.
+
+	for (size_t i = 0; i < hashsz; i++)
+		hash[i] = NULL;
+
+	int res = RGPH_NOKEY;
+	T *index = build_peel_index<T,R>(g);
+	edge_t *edges = (edge_t *)g->edges;
+	entry_iterator keys(iter, state), keys_end;
+
+	for (size_t e = 0; e < g->nkeys; ++e, ++keys) {
+		if (keys == keys_end) {
+			res = RGPH_NOKEY;
+			goto out;
+		}
+
+		if (index[e] != 0)
+			continue;
+
+		const void *key = keys->key;
+		const size_t keylen = keys->keylen;
+		const T v0 = edges[e].verts[0];
+
+		assert(v0 < hashsz);
+
+		// Linear probing with a wrap-around.
+		size_t v = v0, vend = hashsz;
+		for (int i = 0; i < 2; i++) {
+			for (; v < vend && hash[v] != NULL; v++) {
+				if (keylen == hash[v][1] &&
+				    memcmp(key, &hash[v][2], keylen) == 0) {
+					res = RGPH_SUCCESS;
+					dup[0] = hash[v][0];
+					dup[1] = e;
+					goto out;
+				}
+			}
+
+			if (v < vend || i == 1)
+				break;
+			v = 0;
+			vend = v0;
+		}
+
+		if (hash[v] != NULL) {
+			res = RGPH_AGAIN; // Hash table is full.
+			goto out;
+		}
+
+		if (keylen > SIZE_MAX - 2 * sizeof(hash[v][0])) {
+			res = RGPH_NOMEM;
+			goto out;
+		}
+
+		hash[v] =
+		    (duphash_entry_t)malloc(2 * sizeof(hash[v][0]) + keylen);
+		if (hash[v] == NULL) {
+			res = RGPH_NOMEM;
+			goto out;
+		}
+
+		hash[v][0] = e;
+		hash[v][1] = keylen;
+		memcpy(&hash[v][2], key, keylen);
+	}
+out:
+	for (size_t i = 0; i < hashsz; i++) {
+		if (hash[i] != NULL)
+			free(hash[i]);
+	}
+
+	if (res == RGPH_NOMEM)
+		errno = ENOMEM;
+
+	return res;
 }
 
 extern "C"
@@ -702,6 +844,38 @@ rgph_copy_edge(struct rgph_graph *g, size_t edge,
 		return copy_edge<uint32_t,2>(g, edge, to, peel_order);
 	case SELECT(3, 4):
 		return copy_edge<uint32_t,3>(g, edge, to, peel_order);
+	default:
+		assert(0 && "rgph_alloc_graph() should have caught it");
+		return RGPH_INVAL;
+	}
+#undef SELECT
+}
+
+extern "C"
+int
+rgph_find_duplicates(struct rgph_graph *g,
+    rgph_entry_iterator_t keys, void *state, size_t *dup)
+{
+	const int r = graph_rank(g->flags);
+	const size_t width = data_width(g->nverts, MIN_WIDTH_BUILD);
+
+	if (!(g->flags & BUILT))
+		return RGPH_INVAL;
+
+#define SELECT(r, w) (8 * (r) + (w))
+	switch (SELECT(r, width)) {
+	case SELECT(2, 1):
+		return find_duplicates<uint8_t,2>(g, keys, state, dup);
+	case SELECT(3, 1):
+		return find_duplicates<uint8_t,3>(g, keys, state, dup);
+	case SELECT(2, 2):
+		return find_duplicates<uint16_t,2>(g, keys, state, dup);
+	case SELECT(3, 2):
+		return find_duplicates<uint16_t,3>(g, keys, state, dup);
+	case SELECT(2, 4):
+		return find_duplicates<uint32_t,2>(g, keys, state, dup);
+	case SELECT(3, 4):
+		return find_duplicates<uint32_t,3>(g, keys, state, dup);
 	default:
 		assert(0 && "rgph_alloc_graph() should have caught it");
 		return RGPH_INVAL;

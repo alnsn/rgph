@@ -52,10 +52,11 @@
 #define	RGPH_INDEX_XXX     0x100
 
 /* Return values of rgph functions. */
-#define RGPH_SUCCESS  0
-#define RGPH_INVAL   -1 /* EINVAL. */
-#define RGPH_RANGE   -2 /* ERANGE. */
-#define RGPH_CYCLE   -3 /* Graph has a cycle or a loop. */
-#define RGPH_NOKEY   -4 /* Iterator returned no key. */
+#define RGPH_SUCCESS 0
+#define RGPH_INVAL  -1 /* EINVAL. */
+#define RGPH_RANGE  -2 /* ERANGE. */
+#define RGPH_NOMEM  -3 /* ENOMEM. */
+#define RGPH_AGAIN  -4 /* Graph has a cycle or rgph_find_duplicates() failed. */
+#define RGPH_NOKEY  -5 /* Iterator returned no key. */
 
 #endif /* !RGPH_DEFS_H_INCLUDED */
