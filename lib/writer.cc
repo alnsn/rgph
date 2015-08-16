@@ -568,6 +568,7 @@ find_duplicates(struct rgph_graph *g,
 	assert((g->nverts % R) == 0);
 
 	const size_t hashsz = g->nverts / R;
+	const size_t maxfill = g->nverts / 4; // Fill factor is 50% or 75%.
 	duphash_entry_t *hash = (duphash_entry_t *)g->oedges; // Reuse oedges.
 
 	for (size_t i = 0; i < hashsz; i++)
@@ -578,6 +579,7 @@ find_duplicates(struct rgph_graph *g,
 	edge_t *edges = (edge_t *)g->edges;
 	entry_iterator keys(iter, state), keys_end;
 
+	size_t hashed = 0;
 	for (size_t e = 0; e < g->nkeys; ++e, ++keys) {
 		if (keys == keys_end) {
 			res = RGPH_NOKEY;
@@ -586,6 +588,11 @@ find_duplicates(struct rgph_graph *g,
 
 		if (index[e] != 0)
 			continue;
+
+		if (hashed++ == maxfill) {
+			res = RGPH_AGAIN;
+			goto out;
+		}
 
 		const void *key = keys->key;
 		const size_t keylen = keys->keylen;
