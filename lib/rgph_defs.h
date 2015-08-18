@@ -29,6 +29,14 @@
 #ifndef RGPH_DEFS_H_INCLUDED
 #define RGPH_DEFS_H_INCLUDED
 
+/* Return values of rgph functions. */
+#define RGPH_SUCCESS 0
+#define RGPH_INVAL  -1 /* EINVAL. */
+#define RGPH_RANGE  -2 /* ERANGE. */
+#define RGPH_NOMEM  -3 /* ENOMEM. */
+#define RGPH_AGAIN  -4 /* Graph has a cycle or rgph_find_duplicates() failed. */
+#define RGPH_NOKEY  -5 /* Iterator returned no key. */
+
 /* RGPH_HASH_DEFAULT | RGPH_RANK3 | RGPH_ALGO_DEFAULT | RGPH_INDEX_DEFAULT */
 #define	RGPH_DEFAULT       0
 
@@ -50,13 +58,5 @@
 #define	RGPH_INDEX_MASK    0x300
 #define	RGPH_INDEX_DEFAULT 0
 #define	RGPH_INDEX_XXX     0x100
-
-/* Return values of rgph functions. */
-#define RGPH_SUCCESS 0
-#define RGPH_INVAL  -1 /* EINVAL. */
-#define RGPH_RANGE  -2 /* ERANGE. */
-#define RGPH_NOMEM  -3 /* ENOMEM. */
-#define RGPH_AGAIN  -4 /* Graph has a cycle or rgph_find_duplicates() failed. */
-#define RGPH_NOKEY  -5 /* Iterator returned no key. */
 
 #endif /* !RGPH_DEFS_H_INCLUDED */
