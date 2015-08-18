@@ -525,7 +525,7 @@ build_peel_index(struct rgph_graph *g)
 	assert(hashsz != 0);
 
 	if (!(g->flags & INDEXED)) {
-		T *order = (T *)g->order;
+		const T *order = (const T *)g->order;
 
 		g->flags |= INDEXED;
 		memset(index, 0, sizeof(T) * g->nkeys);
