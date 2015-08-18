@@ -480,7 +480,7 @@ build_graph(struct rgph_graph *g,
 	oedge_t *oedges = (oedge_t *)g->oedges;
 
 	if (!(g->flags & ZEROED)) {
-		memset(order, 0, sizeof(edge_t) * g->nkeys);
+		memset(order, 0, sizeof(T) * g->nkeys);
 		memset(edges, 0, sizeof(edge_t) * g->nkeys);
 		memset(oedges, 0, sizeof(oedge_t) * g->nverts);
 	}
