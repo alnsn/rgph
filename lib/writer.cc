@@ -576,7 +576,7 @@ find_duplicates(struct rgph_graph *g,
 
 	int res = RGPH_NOKEY;
 	T *index = build_peel_index<T,R>(g);
-	edge_t *edges = (edge_t *)g->edges;
+	const edge_t *edges = (const edge_t *)g->edges;
 	entry_iterator keys(iter, state), keys_end;
 
 	size_t hashed = 0;
