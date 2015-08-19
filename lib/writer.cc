@@ -370,6 +370,19 @@ round_up(size_t n, size_t r)
 	return n > -r ? 0 : (n + (r - 1)) / r * r;
 }
 
+inline size_t
+round_up_pow2(size_t n)
+{
+	size_t r = 1;
+
+	while (n != 0) {
+		n >>= 1;
+		r <<= 1;
+	}
+
+	return r;
+}
+
 template<class T, int R>
 inline size_t
 duphash_size(size_t nverts)
@@ -461,7 +474,7 @@ struct rgph_graph {
 };
 
 enum {
-	PUBLIC_FLAGS = 0x3ff,
+	PUBLIC_FLAGS = 0x7ff,
 	ZEROED   = 0x40000000, // The order, edges and oedges arrays are zeroed.
 	BUILT    = 0x20000000, // Graph is built.
 	INDEXED  = 0x10000000, // Peel order index is built.
@@ -748,6 +761,14 @@ rgph_alloc_graph(size_t nkeys, int flags)
 	nverts = round_up(nverts, r);
 	if (nverts < 24)
 		nverts = 24;
+
+	if (flags & RGPH_ROUND_POW2) {
+		nverts = round_up_pow2(nverts / r) * r;
+		if (nverts == 0) {
+			errno = ERANGE;
+			return NULL;
+		}
+	}
 
 	assert(nverts > nkeys);
 
