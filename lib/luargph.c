@@ -77,6 +77,8 @@ parse_flags(lua_State *L, int arg)
 			flags |= RGPH_HASH_JENKINS3;
 		else if (strcmp(tok, "murmur3") == 0)
 			flags |= RGPH_HASH_MURMUR3;
+		else if (strcmp(tok, "pow2") == 0)
+			flags |= RGPH_ROUND_POW2;
 		else
 			return luaL_argerror(L, arg, "parse error");
 	}
