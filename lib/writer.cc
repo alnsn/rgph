@@ -462,9 +462,10 @@ struct rgph_graph {
 
 enum {
 	PUBLIC_FLAGS = 0x3ff,
-	ZEROED  = 0x40000000, // The order, edges and oedges arrays are zeroed.
-	BUILT   = 0x20000000, // Graph is built.
-	INDEXED = 0x10000000  // Peel order index is built.
+	ZEROED   = 0x40000000, // The order, edges and oedges arrays are zeroed.
+	BUILT    = 0x20000000, // Graph is built.
+	INDEXED  = 0x10000000, // Peel order index is built.
+	ASSIGNED = 0x08000000  // Assignment step is done.
 };
 
 template<class T, int R>
@@ -528,6 +529,7 @@ build_peel_index(struct rgph_graph *g)
 		const T *order = (const T *)g->order;
 
 		g->flags |= INDEXED;
+		g->flags &= ~ASSIGNED;
 		memset(index, 0, sizeof(T) * g->nkeys);
 
 		for (size_t i = g->nkeys; i > g->core_size; i--) {
@@ -650,6 +652,61 @@ out:
 		errno = ENOMEM;
 
 	return res;
+}
+
+template<class T, int R>
+static int
+assign_bdz(struct rgph_graph *g)
+{
+	enum { unassigned = R };
+	typedef edge<T,R> edge_t;
+
+	const T *order = (const T *)g->order;
+	const edge_t *edges = (const edge_t *)g->edges;
+	uint8_t *assigned = (uint8_t *)g->oedges; // Reuse oedges.
+
+	assert(g->core_size == 0);
+
+	g->flags |= ASSIGNED;
+	g->flags &= ~INDEXED;
+
+	memset(assigned, unassigned, g->nverts);
+
+	for (size_t i = 0; i < g->nkeys; i++) {
+		const T e = order[i];
+		assert(e < g->nkeys);
+		for (size_t j = 0; j < R; j++) {
+			const T v = edges[e].verts[j];
+			assert(v < g->nverts);
+			if (assigned[v] == unassigned) {
+				uint8_t a = R * (R - 1);
+				for (size_t k = 1; k < R; k++) {
+					const T u = edges[e].verts[(j + k) % R];
+					a -= assigned[u];
+				}
+				assigned[v] = (R * (R - 1) - a) % R;
+			}
+		}
+	}
+
+	return RGPH_SUCCESS;
+}
+
+template<class T, int R>
+static int
+assign(struct rgph_graph *g)
+{
+
+	switch (g->flags & RGPH_ALGO_MASK) {
+	case RGPH_ALGO_DEFAULT:
+	case RGPH_ALGO_BDZ:
+		return assign_bdz<T,R>(g);
+	case RGPH_ALGO_CHM:
+		return RGPH_INVAL; // XXX implement
+	default:
+		assert(0 && "rgph_alloc_graph() should have caught it");
+		return RGPH_INVAL;
+	}
 }
 
 extern "C"
@@ -883,6 +940,39 @@ rgph_find_duplicates(struct rgph_graph *g,
 		return find_duplicates<uint32_t,2>(g, keys, state, dup);
 	case SELECT(3, 4):
 		return find_duplicates<uint32_t,3>(g, keys, state, dup);
+	default:
+		assert(0 && "rgph_alloc_graph() should have caught it");
+		return RGPH_INVAL;
+	}
+#undef SELECT
+}
+
+extern "C"
+int
+rgph_assign(struct rgph_graph *g)
+{
+	const int r = graph_rank(g->flags);
+	const size_t width = data_width(g->nverts, MIN_WIDTH_BUILD);
+
+	if (!(g->flags & BUILT))
+		return RGPH_INVAL;
+	else if (g->core_size != 0)
+		return RGPH_AGAIN;
+
+#define SELECT(r, w) (8 * (r) + (w))
+	switch (SELECT(r, width)) {
+	case SELECT(2, 1):
+		return assign<uint8_t,2>(g);
+	case SELECT(3, 1):
+		return assign<uint8_t,3>(g);
+	case SELECT(2, 2):
+		return assign<uint16_t,2>(g);
+	case SELECT(3, 2):
+		return assign<uint16_t,3>(g);
+	case SELECT(2, 4):
+		return assign<uint32_t,2>(g);
+	case SELECT(3, 4):
+		return assign<uint32_t,3>(g);
 	default:
 		assert(0 && "rgph_alloc_graph() should have caught it");
 		return RGPH_INVAL;

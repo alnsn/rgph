@@ -292,6 +292,39 @@ graph_find_duplicates(lua_State *L)
 }
 
 static int
+graph_assign(lua_State *L)
+{
+	struct rgph_graph **pg;
+	size_t i, nverts;
+	int res;
+
+	pg = (struct rgph_graph **)luaL_checkudata(L, 1, GRAPH_MT);
+	if (*pg == NULL)
+		return luaL_argerror(L, 1, "dead object");
+
+	res = rgph_assign(*pg);
+
+	switch (res) {
+	case RGPH_SUCCESS:
+		//nverts = rgph_vertices(*pg);
+		//lua_createtable(L, nverts, 0);
+		//for (i = 0; i < nverts; i++) {
+		//	lua_pushinteger(L, to[i]);
+		//	lua_rawseti(L, -2, i + 1);
+		//}
+		return 0;
+	case RGPH_INVAL:
+		lua_pushboolean(L, 0);
+		lua_pushstring(L, "invalid value");
+		return 2;
+	default:
+		lua_pushboolean(L, 0);
+		lua_pushfstring(L, "unknown error %d", res);
+		return 2;
+	}
+}
+
+static int
 graph_edges_iter(lua_State *L)
 {
 	unsigned long edge[3];
@@ -438,6 +471,7 @@ static luaL_Reg graph_fn[] = {
 	{ "vertices", graph_vertices },
 	{ "build", graph_build },
 	{ "find_duplicates", graph_find_duplicates },
+	{ "assign", graph_assign },
 	{ "seed", graph_seed },
 	{ "edge", graph_edge },
 	{ "edges", graph_edges },
