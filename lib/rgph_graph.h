@@ -65,6 +65,8 @@ size_t rgph_count_keys(rgph_entry_iterator_t, void *);
 int rgph_find_duplicates(struct rgph_graph *,
     rgph_entry_iterator_t, void *, size_t *);
 
+int rgph_assign(struct rgph_graph *);
+
 #ifdef __cplusplus
 }
 #endif
