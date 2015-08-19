@@ -37,7 +37,10 @@
 #define RGPH_AGAIN  -4 /* Graph has a cycle or rgph_find_duplicates() failed. */
 #define RGPH_NOKEY  -5 /* Iterator returned no key. */
 
-/* RGPH_HASH_DEFAULT | RGPH_RANK3 | RGPH_ALGO_DEFAULT | RGPH_INDEX_DEFAULT */
+/*
+ * (RGPH_HASH_DEFAULT | RGPH_RANK3 | RGPH_ALGO_DEFAULT |
+ *     RGPH_ROUND_DEFAULT | RGPH_INDEX_DEFAULT)
+ */
 #define	RGPH_DEFAULT       0
 
 #define	RGPH_HASH_MASK     0x1f
@@ -55,8 +58,12 @@
 #define	RGPH_ALGO_CHM      0x40
 #define	RGPH_ALGO_BDZ      0x80
 
-#define	RGPH_INDEX_MASK    0x300
+#define RGPH_ROUND_MASK    0x100
+#define RGPH_ROUND_DEFAULT 0
+#define RGPH_ROUND_POW2    0x100
+
+#define	RGPH_INDEX_MASK    0x600
 #define	RGPH_INDEX_DEFAULT 0
-#define	RGPH_INDEX_XXX     0x100
+#define	RGPH_INDEX_XXX     0x200
 
 #endif /* !RGPH_DEFS_H_INCLUDED */
