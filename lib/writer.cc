@@ -375,6 +375,9 @@ round_up_pow2(size_t n)
 {
 	size_t r = 1;
 
+	if ((n & (n - 1)) == 0)
+		return n;
+
 	while (n != 0) {
 		n >>= 1;
 		r <<= 1;
