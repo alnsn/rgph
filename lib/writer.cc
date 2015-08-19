@@ -679,12 +679,13 @@ assign_bdz(struct rgph_graph *g)
 			const T v = edges[e].verts[j];
 			assert(v < g->nverts);
 			if (assigned[v] == unassigned) {
-				uint8_t a = R * (R - 1);
+				assigned[v] = j + R * (R - 1);
 				for (size_t k = 1; k < R; k++) {
 					const T u = edges[e].verts[(j + k) % R];
-					a -= assigned[u];
+					assert(u != v);
+					assigned[v] -= assigned[u];
 				}
-				assigned[v] = (R * (R - 1) - a) % R;
+				assigned[v] %= R;
 			}
 		}
 	}
