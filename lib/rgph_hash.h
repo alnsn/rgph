@@ -32,6 +32,9 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#define RGPH_JENKINS2_SEED1 UINT32_C(0x9e3779b9)
+#define RGPH_JENKINS2_SEED2 UINT32_C(0x9e3779b9)
+
 #ifdef __cplusplus
 extern "C" {
 #endif

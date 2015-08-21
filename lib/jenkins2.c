@@ -32,9 +32,9 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define SEED1(seed) 0
-#define SEED2(seed) seed
-#define SEED3(seed) 0xcab4dad
+#define SEED1(seed) RGPH_JENKINS2_SEED1
+#define SEED2(seed) RGPH_JENKINS2_SEED2
+#define SEED3(seed) seed
 
 /*
  * Based on http://www.burtleburtle.net/bob/c/lookup2.c.
@@ -268,6 +268,8 @@ rgph_u32x3_jenkins2_u8a(const uint8_t * restrict key,
 			MIX(h[0], h[1], h[2]);
 		}
 
+		h[2] += len;
+
 		if (end - key >= 4) {
 			h[n++] += htole32(*((const uint32_t *)&key[0]));
 			key += 4;
@@ -283,6 +285,8 @@ rgph_u32x3_jenkins2_u8a(const uint8_t * restrict key,
 			h[2] += read32(&key[8]);
 			MIX(h[0], h[1], h[2]);
 		}
+
+		h[2] += len;
 
 		if (end - key >= 4) {
 			h[n++] += read32(&key[0]);
@@ -302,7 +306,6 @@ rgph_u32x3_jenkins2_u8a(const uint8_t * restrict key,
 	case 1:
 		h[n] += (uint32_t)key[0];       /* FALLTHROUGH */
 	case 0:
-		h[2] += len;
 		MIX(h[0], h[1], h[2]);
 	}
 }
