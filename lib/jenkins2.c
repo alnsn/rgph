@@ -253,7 +253,7 @@ rgph_u64_jenkins2_f64(double value, uint32_t seed)
 
 inline void
 rgph_u32x3_jenkins2_u8a(const uint8_t * restrict key,
-    size_t len, uint32_t seed, uint32_t *h)
+    size_t len, uint32_t seed, uint32_t * restrict h)
 {
 	const uint8_t *end = key + len;
 	int n = 0;
@@ -311,7 +311,7 @@ rgph_u32x3_jenkins2_u8a(const uint8_t * restrict key,
 
 inline void
 rgph_u32x3_jenkins2_data(const void * restrict data,
-    size_t len, uint32_t seed, uint32_t *h)
+    size_t len, uint32_t seed, uint32_t * restrict h)
 {
 	const uint8_t *key = (const uint8_t *)(const char *)data;
 
@@ -346,7 +346,7 @@ rgph_u64_jenkins2_data(const void * restrict data,
 
 void
 rgph_u32x3_jenkins2_u16a(const uint16_t * restrict key,
-    size_t len, uint32_t seed, uint32_t *h)
+    size_t len, uint32_t seed, uint32_t * restrict h)
 {
 
 	return rgph_u32x3_jenkins2_data((const void *)key,
@@ -355,7 +355,7 @@ rgph_u32x3_jenkins2_u16a(const uint16_t * restrict key,
 
 void
 rgph_u32x3_jenkins2_u32a(const uint32_t * restrict key,
-    size_t len, uint32_t seed, uint32_t *h)
+    size_t len, uint32_t seed, uint32_t * restrict h)
 {
 	const uint32_t *end = key + len;
 
@@ -383,7 +383,7 @@ rgph_u32x3_jenkins2_u32a(const uint32_t * restrict key,
 
 void
 rgph_u32x3_jenkins2_u64a(const uint64_t * restrict key,
-    size_t len, uint32_t seed, uint32_t *h)
+    size_t len, uint32_t seed, uint32_t * restrict h)
 {
 	const uint64_t *end = key + len;
 	uint64_t a, b, c;
@@ -429,7 +429,7 @@ rgph_u32x3_jenkins2_u64a(const uint64_t * restrict key,
 
 void
 rgph_u32x3_jenkins2_f32a(const float * restrict key,
-    size_t len, uint32_t seed, uint32_t *h)
+    size_t len, uint32_t seed, uint32_t * restrict h)
 {
 	const float *end = key + len;
 
@@ -457,7 +457,7 @@ rgph_u32x3_jenkins2_f32a(const float * restrict key,
 
 void
 rgph_u32x3_jenkins2_f64a(const double * restrict key,
-    size_t len, uint32_t seed, uint32_t *h)
+    size_t len, uint32_t seed, uint32_t * restrict h)
 {
 	const double *end = key + len;
 	uint64_t a, b, c;
