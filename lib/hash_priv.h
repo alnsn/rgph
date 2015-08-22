@@ -38,6 +38,13 @@
 #endif
 
 #include <stdint.h>
+#include <limits.h>
+
+/*
+ * Rotate left and right.
+ */
+#define rotl(x, l) (((x) << (l)) | ((x) >> (CHAR_BIT * sizeof(x) - (l))))
+#define rotr(x, r) (((x) >> (r)) | ((x) << (CHAR_BIT * sizeof(x) - (r))))
 
 /*
  * Read 4 bytes from buf in little-endian order.
