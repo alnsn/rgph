@@ -1,5 +1,7 @@
-OBJ=	writer.o jenkins2.o
+OBJ=	writer.o jenkins2.o murmur32.o
 LOBJ=	luargph.o
+
+#CFLAGS+=	-DRGPH_UNALIGNED_READ
 
 # Comment these lines to debug.
 CFLAGS+=	-DNDEBUG

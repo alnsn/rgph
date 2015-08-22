@@ -35,16 +35,27 @@
 #define RGPH_JENKINS2_SEED1 UINT32_C(0x9e3779b9)
 #define RGPH_JENKINS2_SEED2 UINT32_C(0x9e3779b9)
 
+#define RGPH_MURMUR32_MUL1 UINT32_C(0x239b961b)
+#define RGPH_MURMUR32_MUL2 UINT32_C(0xab0e9789)
+#define RGPH_MURMUR32_MUL3 UINT32_C(0x38b34ae5)
+#define RGPH_MURMUR32_MUL4 UINT32_C(0xa1e38b93)
+#define RGPH_MURMUR32_ADD1 UINT32_C(0x561ccd1b)
+#define RGPH_MURMUR32_ADD2 UINT32_C(0x0bcaa747)
+#define RGPH_MURMUR32_ADD3 UINT32_C(0x96cd1c35)
+#define RGPH_MURMUR32_ADD4 UINT32_C(0x32ac3b17)
+#define RGPH_MURMUR32_FMIXMUL1 UINT32_C(0x85ebca6b)
+#define RGPH_MURMUR32_FMIXMUL2 UINT32_C(0xc2b2ae35)
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/* Generic scalar and x3 hashes for any data. */
+/* Jenkins 2 generic scalar and x3 hashes for any data. */
 uint32_t rgph_u32_jenkins2_data(const void *, size_t, uint32_t);
 uint64_t rgph_u64_jenkins2_data(const void *, size_t, uint32_t);
 void rgph_u32x3_jenkins2_data(const void *, size_t, uint32_t, uint32_t *);
 
-/* Scalar 32bit hashes for fixed width types. */
+/* Jenkins 2 scalar 32bit hashes for fixed width types. */
 uint32_t rgph_u32_jenkins2_u8(uint8_t,   uint32_t);
 uint32_t rgph_u32_jenkins2_u16(uint16_t, uint32_t);
 uint32_t rgph_u32_jenkins2_u32(uint32_t, uint32_t);
@@ -52,7 +63,7 @@ uint32_t rgph_u32_jenkins2_u64(uint64_t, uint32_t);
 uint32_t rgph_u32_jenkins2_f32(float,    uint32_t);
 uint32_t rgph_u32_jenkins2_f64(double,   uint32_t);
 
-/* Scalar 64bit hashes for fixed width types. */
+/* Jenkins 2 scalar 64bit hashes for fixed width types. */
 uint64_t rgph_u64_jenkins2_u8 (uint8_t,  uint32_t);
 uint64_t rgph_u64_jenkins2_u16(uint16_t, uint32_t);
 uint64_t rgph_u64_jenkins2_u32(uint32_t, uint32_t);
@@ -60,7 +71,7 @@ uint64_t rgph_u64_jenkins2_u64(uint64_t, uint32_t);
 uint64_t rgph_u64_jenkins2_f32(float,    uint32_t);
 uint64_t rgph_u64_jenkins2_f64(double,   uint32_t);
 
-/* Vector 32bit x3 hashes for fixed width types. */
+/* Jenkins 2 vector 32bit x3 hashes for fixed width types. */
 void rgph_u32x3_jenkins2_u8 (uint8_t,  uint32_t, uint32_t *);
 void rgph_u32x3_jenkins2_u16(uint16_t, uint32_t, uint32_t *);
 void rgph_u32x3_jenkins2_u32(uint32_t, uint32_t, uint32_t *);
@@ -68,13 +79,50 @@ void rgph_u32x3_jenkins2_u64(uint64_t, uint32_t, uint32_t *);
 void rgph_u32x3_jenkins2_f32(float,    uint32_t, uint32_t *);
 void rgph_u32x3_jenkins2_f64(double,   uint32_t, uint32_t *);
 
-/* Vector 32bit x3 hashes for arrays. */
+/* Jenkins 2 vector 32bit x3 hashes for arrays. */
 void rgph_u32x3_jenkins2_u8a(const uint8_t *,   size_t, uint32_t, uint32_t *);
 void rgph_u32x3_jenkins2_u16a(const uint16_t *, size_t, uint32_t, uint32_t *);
 void rgph_u32x3_jenkins2_u32a(const uint32_t *, size_t, uint32_t, uint32_t *);
 void rgph_u32x3_jenkins2_u64a(const uint64_t *, size_t, uint32_t, uint32_t *);
 void rgph_u32x3_jenkins2_f32a(const float *,    size_t, uint32_t, uint32_t *);
 void rgph_u32x3_jenkins2_f64a(const double *,   size_t, uint32_t, uint32_t *);
+
+/* 32bit Murmur 3 generic scalar and x4 hashes for any data. */
+uint32_t rgph_u32_murmur32_data(const void *, size_t, uint32_t);
+uint64_t rgph_u64_murmur32_data(const void *, size_t, uint32_t);
+void rgph_u32x4_murmur32_data(const void *, size_t, uint32_t, uint32_t *);
+
+/* 32bit Murmur 3 scalar 32bit hashes for fixed width types. */
+uint32_t rgph_u32_murmur32_u8(uint8_t,   uint32_t);
+uint32_t rgph_u32_murmur32_u16(uint16_t, uint32_t);
+uint32_t rgph_u32_murmur32_u32(uint32_t, uint32_t);
+uint32_t rgph_u32_murmur32_u64(uint64_t, uint32_t);
+uint32_t rgph_u32_murmur32_f32(float,    uint32_t);
+uint32_t rgph_u32_murmur32_f64(double,   uint32_t);
+
+/* 32bit Murmur 3 scalar 64bit hashes for fixed width types. */
+uint64_t rgph_u64_murmur32_u8 (uint8_t,  uint32_t);
+uint64_t rgph_u64_murmur32_u16(uint16_t, uint32_t);
+uint64_t rgph_u64_murmur32_u32(uint32_t, uint32_t);
+uint64_t rgph_u64_murmur32_u64(uint64_t, uint32_t);
+uint64_t rgph_u64_murmur32_f32(float,    uint32_t);
+uint64_t rgph_u64_murmur32_f64(double,   uint32_t);
+
+/* 32bit Murmur 3 vector 32bit x4 hashes for fixed width types. */
+void rgph_u32x4_murmur32_u8 (uint8_t,  uint32_t, uint32_t *);
+void rgph_u32x4_murmur32_u16(uint16_t, uint32_t, uint32_t *);
+void rgph_u32x4_murmur32_u32(uint32_t, uint32_t, uint32_t *);
+void rgph_u32x4_murmur32_u64(uint64_t, uint32_t, uint32_t *);
+void rgph_u32x4_murmur32_f32(float,    uint32_t, uint32_t *);
+void rgph_u32x4_murmur32_f64(double,   uint32_t, uint32_t *);
+
+/* 32bit Murmur 3 vector 32bit x4 hashes for arrays. */
+void rgph_u32x4_murmur32_u8a(const uint8_t *,   size_t, uint32_t, uint32_t *);
+void rgph_u32x4_murmur32_u16a(const uint16_t *, size_t, uint32_t, uint32_t *);
+void rgph_u32x4_murmur32_u32a(const uint32_t *, size_t, uint32_t, uint32_t *);
+void rgph_u32x4_murmur32_u64a(const uint64_t *, size_t, uint32_t, uint32_t *);
+void rgph_u32x4_murmur32_f32a(const float *,    size_t, uint32_t, uint32_t *);
+void rgph_u32x4_murmur32_f64a(const double *,   size_t, uint32_t, uint32_t *);
 
 #ifdef __cplusplus
 }
