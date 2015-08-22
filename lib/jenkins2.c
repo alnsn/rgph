@@ -26,6 +26,10 @@
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
+
+/*
+ * Based on http://www.burtleburtle.net/bob/c/lookup2.c.
+ */
 #include "hash_priv.h"
 #include "rgph_hash.h"
 
@@ -36,10 +40,8 @@
 #define SEED2(seed) RGPH_JENKINS2_SEED2
 #define SEED3(seed) seed
 
-/*
- * Based on http://www.burtleburtle.net/bob/c/lookup2.c.
- */
-#define MIX(a, b, c) do {               \
+/* XXX Move to rhpg_hash.h. */
+#define RGPH_JENKINS2_MIX(a, b, c) do { \
         a -= b; a -= c; a ^= (c >> 13); \
         b -= c; b -= a; b ^= (a << 8);  \
         c -= a; c -= b; c ^= (b >> 13); \
@@ -61,7 +63,7 @@ rgph_u32x3_jenkins2_u8(uint8_t value, uint32_t seed, uint32_t *h)
 
 	h[0] += value;
 	h[2] += sizeof(value);
-	MIX(h[0], h[1], h[2]);
+	RGPH_JENKINS2_MIX(h[0], h[1], h[2]);
 }
 
 inline void
@@ -74,7 +76,7 @@ rgph_u32x3_jenkins2_u16(uint16_t value, uint32_t seed, uint32_t *h)
 
 	h[0] += value;
 	h[2] += sizeof(value);
-	MIX(h[0], h[1], h[2]);
+	RGPH_JENKINS2_MIX(h[0], h[1], h[2]);
 }
 
 inline void
@@ -87,7 +89,7 @@ rgph_u32x3_jenkins2_u32(uint32_t value, uint32_t seed, uint32_t *h)
 
 	h[0] += value;
 	h[2] += sizeof(value);
-	MIX(h[0], h[1], h[2]);
+	RGPH_JENKINS2_MIX(h[0], h[1], h[2]);
 }
 
 inline void
@@ -101,7 +103,7 @@ rgph_u32x3_jenkins2_u64(uint64_t value, uint32_t seed, uint32_t *h)
 	h[0] += value & UINT32_MAX;
 	h[1] += value >> 32;
 	h[2] += sizeof(value);
-	MIX(h[0], h[1], h[2]);
+	RGPH_JENKINS2_MIX(h[0], h[1], h[2]);
 }
 
 inline void
@@ -265,7 +267,7 @@ rgph_u32x3_jenkins2_u8a(const uint8_t * restrict key,
 			h[0] += htole32(*((const uint32_t *)&key[0]));
 			h[1] += htole32(*((const uint32_t *)&key[4]));
 			h[2] += htole32(*((const uint32_t *)&key[8]));
-			MIX(h[0], h[1], h[2]);
+			RGPH_JENKINS2_MIX(h[0], h[1], h[2]);
 		}
 
 		if (end - key >= 4) {
@@ -281,7 +283,7 @@ rgph_u32x3_jenkins2_u8a(const uint8_t * restrict key,
 			h[0] += read32(&key[0]);
 			h[1] += read32(&key[4]);
 			h[2] += read32(&key[8]);
-			MIX(h[0], h[1], h[2]);
+			RGPH_JENKINS2_MIX(h[0], h[1], h[2]);
 		}
 
 		if (end - key >= 4) {
@@ -303,7 +305,7 @@ rgph_u32x3_jenkins2_u8a(const uint8_t * restrict key,
 		h[n] += (uint32_t)key[0];       /* FALLTHROUGH */
 	case 0:
 		h[2] += len;
-		MIX(h[0], h[1], h[2]);
+		RGPH_JENKINS2_MIX(h[0], h[1], h[2]);
 	}
 }
 
@@ -365,7 +367,7 @@ rgph_u32x3_jenkins2_u32a(const uint32_t * restrict key,
 		h[0] += htole32(key[0]);
 		h[1] += htole32(key[1]);
 		h[2] += htole32(key[2]);
-		MIX(h[0], h[1], h[2]);
+		RGPH_JENKINS2_MIX(h[0], h[1], h[2]);
 	}
 
 	switch (end - key) {
@@ -375,7 +377,7 @@ rgph_u32x3_jenkins2_u32a(const uint32_t * restrict key,
 		h[0] += htole32(key[0]); /* FALLTHROUGH */
 	case 0:
 		h[2] += len * sizeof(key[0]);
-		MIX(h[0], h[1], h[2]);
+		RGPH_JENKINS2_MIX(h[0], h[1], h[2]);
 	}
 }
 
@@ -397,11 +399,11 @@ rgph_u32x3_jenkins2_u64a(const uint64_t * restrict key,
 		h[0] += a & UINT32_MAX;
 		h[1] += a >> 32;
 		h[2] += b & UINT32_MAX;
-		MIX(h[0], h[1], h[2]);
+		RGPH_JENKINS2_MIX(h[0], h[1], h[2]);
 		h[0] += b >> 32;
 		h[1] += c & UINT32_MAX;
 		h[2] += c >> 32;
-		MIX(h[0], h[1], h[2]);
+		RGPH_JENKINS2_MIX(h[0], h[1], h[2]);
 	}
 
 	switch (end - key) {
@@ -411,7 +413,7 @@ rgph_u32x3_jenkins2_u64a(const uint64_t * restrict key,
 		h[0] += a & UINT32_MAX;
 		h[1] += a >> 32;
 		h[2] += b & UINT32_MAX;
-		MIX(h[0], h[1], h[2]);
+		RGPH_JENKINS2_MIX(h[0], h[1], h[2]);
 		h[0] += b >> 32;
 		break;
 	case 1:
@@ -422,7 +424,7 @@ rgph_u32x3_jenkins2_u64a(const uint64_t * restrict key,
 	}
 
 	h[2] += len * sizeof(key[0]);
-	MIX(h[0], h[1], h[2]);
+	RGPH_JENKINS2_MIX(h[0], h[1], h[2]);
 }
 
 void
@@ -439,7 +441,7 @@ rgph_u32x3_jenkins2_f32a(const float * restrict key,
 		h[0] += htole32(f2u32(key[0]));
 		h[1] += htole32(f2u32(key[1]));
 		h[2] += htole32(f2u32(key[2]));
-		MIX(h[0], h[1], h[2]);
+		RGPH_JENKINS2_MIX(h[0], h[1], h[2]);
 	}
 
 	switch (end - key) {
@@ -449,7 +451,7 @@ rgph_u32x3_jenkins2_f32a(const float * restrict key,
 		h[0] += htole32(f2u32(key[0])); /* FALLTHROUGH */
 	case 0:
 		h[2] += len * sizeof(key[0]);
-		MIX(h[0], h[1], h[2]);
+		RGPH_JENKINS2_MIX(h[0], h[1], h[2]);
 	}
 }
 
@@ -471,11 +473,11 @@ rgph_u32x3_jenkins2_f64a(const double * restrict key,
 		h[0] += a & UINT32_MAX;
 		h[1] += a >> 32;
 		h[2] += b & UINT32_MAX;
-		MIX(h[0], h[1], h[2]);
+		RGPH_JENKINS2_MIX(h[0], h[1], h[2]);
 		h[0] += b >> 32;
 		h[1] += c & UINT32_MAX;
 		h[2] += c >> 32;
-		MIX(h[0], h[1], h[2]);
+		RGPH_JENKINS2_MIX(h[0], h[1], h[2]);
 	}
 
 	switch (end - key) {
@@ -485,7 +487,7 @@ rgph_u32x3_jenkins2_f64a(const double * restrict key,
 		h[0] += a & UINT32_MAX;
 		h[1] += a >> 32;
 		h[2] += b & UINT32_MAX;
-		MIX(h[0], h[1], h[2]);
+		RGPH_JENKINS2_MIX(h[0], h[1], h[2]);
 		h[0] += b >> 32;
 		break;
 	case 1:
@@ -496,5 +498,5 @@ rgph_u32x3_jenkins2_f64a(const double * restrict key,
 	}
 
 	h[2] += len * sizeof(key[0]);
-	MIX(h[0], h[1], h[2]);
+	RGPH_JENKINS2_MIX(h[0], h[1], h[2]);
 }
