@@ -262,6 +262,7 @@ rgph_u32x3_jenkins2_u8a(const uint8_t * restrict key,
 	h[1] = SEED2(seed);
 	h[2] = SEED3(seed);
 
+#if !defined(RGPH_UNALIGNED_READ)
 	if ((len & 3) == 0) {
 		for (; end - key >= 12; key += 12) {
 			h[0] += htole32(*((const uint32_t *)&key[0]));
@@ -279,6 +280,7 @@ rgph_u32x3_jenkins2_u8a(const uint8_t * restrict key,
 			key += 4;
 		}
 	} else {
+#endif
 		for (; end - key >= 12; key += 12) {
 			h[0] += read32(&key[0]);
 			h[1] += read32(&key[4]);
@@ -294,7 +296,9 @@ rgph_u32x3_jenkins2_u8a(const uint8_t * restrict key,
 			h[n++] += read32(&key[0]);
 			key += 4;
 		}
+#if !defined(RGPH_UNALIGNED_READ)
 	}
+#endif
 
 	switch (end - key) {
 	case 3:
