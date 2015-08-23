@@ -33,6 +33,8 @@
 #if defined(__linux__)
 #define _BSD_SOURCE
 #include <endian.h>
+#elif defined(__APPLE__)
+#include <machine/endian.h>
 #else
 #include <sys/endian.h>
 #endif
