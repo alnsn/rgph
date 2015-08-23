@@ -74,7 +74,7 @@ rgph_u32x3_jenkins2_u16(uint16_t value, uint32_t seed, uint32_t *h)
 	h[1] = SEED2(seed);
 	h[2] = SEED3(seed);
 
-	h[0] += value;
+	h[0] += htole16(value);
 	h[2] += sizeof(value);
 	RGPH_JENKINS2_MIX(h[0], h[1], h[2]);
 }
@@ -87,7 +87,7 @@ rgph_u32x3_jenkins2_u32(uint32_t value, uint32_t seed, uint32_t *h)
 	h[1] = SEED2(seed);
 	h[2] = SEED3(seed);
 
-	h[0] += value;
+	h[0] += htole32(value);
 	h[2] += sizeof(value);
 	RGPH_JENKINS2_MIX(h[0], h[1], h[2]);
 }
@@ -100,8 +100,8 @@ rgph_u32x3_jenkins2_u64(uint64_t value, uint32_t seed, uint32_t *h)
 	h[1] = SEED2(seed);
 	h[2] = SEED3(seed);
 
-	h[0] += value & UINT32_MAX;
-	h[1] += value >> 32;
+	h[0] += htole64(value) & UINT32_MAX;
+	h[1] += htole64(value) >> 32;
 	h[2] += sizeof(value);
 	RGPH_JENKINS2_MIX(h[0], h[1], h[2]);
 }
