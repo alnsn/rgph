@@ -108,7 +108,7 @@ rgph_u32x4_murmur32_u16(uint16_t value, uint32_t seed, uint32_t *h)
 
 	h[0] = h[1] = h[2] = h[3] = seed;
 
-	k1 ^= value;
+	k1 ^= htole16(value);
 	k1 *= c1; k1 = rotl(k1, 15); k1 *= c2; h[0] ^= k1;
 
 	finalise(sizeof(value), h);
@@ -124,7 +124,7 @@ rgph_u32x4_murmur32_u32(uint32_t value, uint32_t seed, uint32_t *h)
 
 	h[0] = h[1] = h[2] = h[3] = seed;
 
-	k1 ^= value;
+	k1 ^= htole32(value);
 	k1 *= c1; k1 = rotl(k1, 15); k1 *= c2; h[0] ^= k1;
 
 	finalise(sizeof(value), h);
@@ -142,10 +142,10 @@ rgph_u32x4_murmur32_u64(uint64_t value, uint32_t seed, uint32_t *h)
 
 	h[0] = h[1] = h[2] = h[3] = seed;
 
-	k2 ^= value >> 32;
+	k2 ^= htole64(value) >> 32;
         k2 *= c2; k2 = rotl(k2, 16); k2 *= c3; h[1] ^= k2;
 
-	k1 ^= value & UINT32_MAX;
+	k1 ^= htole64(value) & UINT32_MAX;
 	k1 *= c1; k1 = rotl(k1, 15); k1 *= c2; h[0] ^= k1;
 
 	finalise(sizeof(value), h);
