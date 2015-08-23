@@ -35,6 +35,9 @@
 #include <endian.h>
 #elif defined(__APPLE__)
 #include <machine/endian.h>
+#include <libkern/OSByteOrder.h>
+#define htole64(x) OSSwapHostToLittleInt64(x)
+#define htole32(x) OSSwapHostToLittleInt32(x)
 #else
 #include <sys/endian.h>
 #endif
