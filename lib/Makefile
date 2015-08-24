@@ -1,4 +1,4 @@
-OBJ=	writer.o jenkins2.o murmur32.o
+OBJ=	writer.o jenkins2.o murmur32.o murmur32s.o
 LOBJ=	luargph.o
 
 #CFLAGS+=	-DRGPH_UNALIGNED_READ

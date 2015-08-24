@@ -7,5 +7,6 @@ int main()
 
 	rgph_test_jenkins2();
 	rgph_test_murmur32();
+	rgph_test_murmur32s();
 	return exit_status;
 }

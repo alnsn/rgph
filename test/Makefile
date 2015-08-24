@@ -1,4 +1,4 @@
-OBJ=	t_main.o t_jenkins2.o t_murmur32.o
+OBJ=	t_main.o t_jenkins2.o t_murmur32.o t_murmur32s.o
 
 WARNS?=		-Wall
 C99OPTS?=	-std=c99

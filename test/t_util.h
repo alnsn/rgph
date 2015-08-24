@@ -21,5 +21,6 @@ extern int exit_status;
  */
 void rgph_test_jenkins2(void);
 void rgph_test_murmur32(void);
+void rgph_test_murmur32s(void);
 
 #endif /* #ifndef RGPH_TEST_UTIL_H_INCLUDED */
