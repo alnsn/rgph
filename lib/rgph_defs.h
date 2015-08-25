@@ -43,11 +43,13 @@
  */
 #define	RGPH_DEFAULT       0
 
-#define	RGPH_HASH_MASK     0xff
-#define	RGPH_HASH_DEFAULT  0
-#define	RGPH_HASH_JENKINS2 1
-#define	RGPH_HASH_JENKINS3 2
-#define	RGPH_HASH_MURMUR3  3
+#define	RGPH_HASH_MASK      0xff
+#define	RGPH_HASH_DEFAULT   0
+#define	RGPH_HASH_JENKINS2  1
+#define	RGPH_HASH_JENKINS3  2 /* NIY */
+#define	RGPH_HASH_JENKINS3S 3 /* NIY */
+#define	RGPH_HASH_MURMUR32  4
+#define	RGPH_HASH_MURMUR32S 5
 
 #define	RGPH_RANK_MASK     0x100
 #define	RGPH_RANK2         0x100

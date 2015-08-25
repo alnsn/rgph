@@ -75,8 +75,12 @@ parse_flags(lua_State *L, int arg)
 			flags |= RGPH_HASH_JENKINS2;
 		else if (strcmp(tok, "jenkins3") == 0)
 			flags |= RGPH_HASH_JENKINS3;
-		else if (strcmp(tok, "murmur3") == 0)
-			flags |= RGPH_HASH_MURMUR3;
+		else if (strcmp(tok, "jenkins3s") == 0)
+			flags |= RGPH_HASH_JENKINS3S;
+		else if (strcmp(tok, "murmur32") == 0)
+			flags |= RGPH_HASH_MURMUR32;
+		else if (strcmp(tok, "murmur32s") == 0)
+			flags |= RGPH_HASH_MURMUR32S;
 		else if (strcmp(tok, "pow2") == 0)
 			flags |= RGPH_ROUND_POW2;
 		else

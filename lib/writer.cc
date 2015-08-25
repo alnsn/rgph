@@ -141,45 +141,42 @@ operator!=(const entry_iterator &a, const entry_iterator &b)
 	return a.cur != b.cur;
 }
 
-template<class T, class S, class H>
+template<class T, int R, class S, class H>
 struct hash {
 	typedef void (*func_t)(const void *, size_t, S, H *);
 	func_t func;
-	T hashes[3];
+	T hashes[4]; // Some hashes are x4.
 	S seed;
 
 	inline hash(func_t f, S s) : func(f), seed(s) {}
 
 	inline const T *
 	operator()(const void *key, size_t keylen) {
-		bool_selector<(sizeof(T) < sizeof(H))> selector;
+		bool_selector<(sizeof(T) == sizeof(H))> selector;
 		return this->hashit(selector, key, keylen);
 	}
 
 	inline const T *
-	hashit(bool_selector<false>, const void *key, size_t keylen) {
-		// H == T or H is smaller. The latter will not compile.
+	hashit(bool_selector<true>, const void *key, size_t keylen) {
 		func(key, keylen, seed, hashes);
 		return hashes;
 	}
 	inline const T *
-	hashit(bool_selector<true>, const void *key, size_t keylen) {
-		// T is smaller than H.
-		H h[3];
+	hashit(bool_selector<false>, const void *key, size_t keylen) {
+		H h[4]; // Some hashes are x4.
 		func(key, keylen, seed, h);
-		hashes[0] = (T)h[0];
-		hashes[1] = (T)h[1];
-		hashes[2] = (T)h[2];
+		for (size_t i = 0; i < R; i++)
+			hashes[i] = (T)h[i];
 		return hashes;
 	}
 };
 
-template<class T, class S, class H>
-inline hash<T,S,H>
+template<class T, int R, class S, class H>
+inline hash<T,R,S,H>
 make_hash(void (*func)(const void *, size_t, S, H *), unsigned long seed)
 {
 
-	return hash<T,S,H>(func, seed);
+	return hash<T,R,S,H>(func, seed);
 }
 
 template<class T>
@@ -513,14 +510,38 @@ build_graph(struct rgph_graph *g,
 	switch (g->flags & RGPH_HASH_MASK) {
 	case RGPH_HASH_JENKINS2:
 		if (!init_graph(keys_start, keys_end,
-		    make_hash<T>(&rgph_u32x3_jenkins2_data, seed),
+		    make_hash<T,R>(&rgph_u32x3_jenkins2_data, seed),
 		    edges, g->nkeys, oedges, g->nverts,
 		    &g->datalenmin, &g->datalenmax)) {
 			return RGPH_NOKEY;
 		}
 		break;
+	case RGPH_HASH_MURMUR32:
+		if (!init_graph(keys_start, keys_end,
+		    make_hash<T,R>(&rgph_u32x4_murmur32_data, seed),
+		    edges, g->nkeys, oedges, g->nverts,
+		    &g->datalenmin, &g->datalenmax)) {
+			return RGPH_NOKEY;
+		}
+		break;
+	case RGPH_HASH_MURMUR32S:
+		if (R == 2) {
+			if (!init_graph(keys_start, keys_end,
+			    make_hash<T,R>(&rgph_u16x2_murmur32s_data, seed),
+			    edges, g->nkeys, oedges, g->nverts,
+			    &g->datalenmin, &g->datalenmax)) {
+				return RGPH_NOKEY;
+			}
+		} else {
+			if (!init_graph(keys_start, keys_end,
+			    make_hash<T,R>(&rgph_u8x4_murmur32s_data, seed),
+			    edges, g->nkeys, oedges, g->nverts,
+			    &g->datalenmin, &g->datalenmax)) {
+				return RGPH_NOKEY;
+			}
+		}
+		break;
 	case RGPH_HASH_DEFAULT:
-	case RGPH_HASH_JENKINS3: // XXX implement jenkins3
 	default:
 		assert(0 && "rgph_alloc_graph() should have caught it");
 		return RGPH_INVAL;
@@ -790,9 +811,15 @@ rgph_alloc_graph(size_t nkeys, int flags)
 
 	switch (flags & RGPH_HASH_MASK) {
 	case RGPH_HASH_JENKINS2:
+	case RGPH_HASH_MURMUR32:
 		break;
-	case RGPH_HASH_DEFAULT:
-	case RGPH_HASH_JENKINS3: // XXX implement jenkins3
+	case RGPH_HASH_MURMUR32S:
+		if ((r == 2 && nverts > 65535) || (r == 3 && nverts > 255)) {
+			errno = ERANGE;
+			return NULL;
+		}
+		break;
+	case RGPH_HASH_DEFAULT: // XXX Decide on default.
 	default:
 		errno = EINVAL;
 		return NULL;
