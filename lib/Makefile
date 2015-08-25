@@ -17,6 +17,9 @@ LDFLAGS+=	${SHLDFLAGS}
 
 all: librgph.so # XXX .dylib on MacOS
 
+librgph.dylib: ${OBJ}
+	${CC} ${OBJ} ${LDFLAGS} -o librgph.dylib
+
 librgph.so: ${OBJ}
 	${CC} ${OBJ} ${LDFLAGS} -o librgph.so
 
@@ -51,4 +54,4 @@ lua-5.3: ${OBJ} ${LOBJ}
 	${CC} `pkg-config --cflags --libs lua-5.3` ${LDFLAGS} ${OBJ} ${LOBJ} -o librgph5.3.so
 
 clean:
-	rm -f ${OBJ} ${LOBJ} librgph*.so
+	rm -f ${OBJ} ${LOBJ} librgph*.so librgph*.dylib
