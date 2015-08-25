@@ -43,27 +43,27 @@
  */
 #define	RGPH_DEFAULT       0
 
-#define	RGPH_HASH_MASK     0x1f
+#define	RGPH_HASH_MASK     0xff
 #define	RGPH_HASH_DEFAULT  0
 #define	RGPH_HASH_JENKINS2 1
 #define	RGPH_HASH_JENKINS3 2
 #define	RGPH_HASH_MURMUR3  3
 
-#define	RGPH_RANK_MASK     0x20
-#define	RGPH_RANK2         0x20
+#define	RGPH_RANK_MASK     0x100
+#define	RGPH_RANK2         0x100
 #define	RGPH_RANK3         0
 
-#define	RGPH_ALGO_MASK     0xc0
+#define	RGPH_ALGO_MASK     0x600
 #define	RGPH_ALGO_DEFAULT  0
-#define	RGPH_ALGO_CHM      0x40
-#define	RGPH_ALGO_BDZ      0x80
+#define	RGPH_ALGO_CHM      0x200
+#define	RGPH_ALGO_BDZ      0x400
 
-#define RGPH_ROUND_MASK    0x100
+#define RGPH_ROUND_MASK    0x800
 #define RGPH_ROUND_DEFAULT 0
-#define RGPH_ROUND_POW2    0x100
+#define RGPH_ROUND_POW2    0x800
 
-#define	RGPH_INDEX_MASK    0x600
+#define	RGPH_INDEX_MASK    0x3000
 #define	RGPH_INDEX_DEFAULT 0
-#define	RGPH_INDEX_XXX     0x200
+#define	RGPH_INDEX_XXX     0x1000
 
 #endif /* !RGPH_DEFS_H_INCLUDED */

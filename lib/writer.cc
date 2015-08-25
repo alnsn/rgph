@@ -477,7 +477,7 @@ struct rgph_graph {
 };
 
 enum {
-	PUBLIC_FLAGS = 0x7ff,
+	PUBLIC_FLAGS = 0x3fff,
 	ZEROED   = 0x40000000, // The order, edges and oedges arrays are zeroed.
 	BUILT    = 0x20000000, // Graph is built.
 	INDEXED  = 0x10000000, // Peel order index is built.
