@@ -38,6 +38,7 @@
 #include <libkern/OSByteOrder.h>
 #define htole64(x) OSSwapHostToLittleInt64(x)
 #define htole32(x) OSSwapHostToLittleInt32(x)
+#define htole16(x) OSSwapHostToLittleInt16(x)
 #else
 #include <sys/endian.h>
 #endif
