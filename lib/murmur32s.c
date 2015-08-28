@@ -158,7 +158,7 @@ rgph_u32_murmur32s_u8a(const uint8_t * restrict key,
 #if defined(RGPH_UNALIGNED_READ)
 	const int down = 0;
 #else
-	uint32_t w[1]; /* XXX unroll */
+	uint32_t w[4];
 	const int down = ((uintptr_t)key) & 3;
 	uint32_t carry = len > 0 && down != 0 ? rgph_read32a(key - down) : 0;
 #endif
@@ -173,6 +173,21 @@ rgph_u32_murmur32s_u8a(const uint8_t * restrict key,
 		}
 	} else {
 #if !defined(RGPH_UNALIGNED_READ)
+		for (; end - key >= 16; key += 16) {
+			rgph_read32u(key, 4 - down, &carry, w, 4);
+			k = w[0];
+			k *= c1; k = rotl(k, 15); k *= c2; h ^= k;
+			h = rotl(h, 13); h = 5*h + RGPH_MURMUR32S_ADD1;
+			k = w[1];
+			k *= c1; k = rotl(k, 15); k *= c2; h ^= k;
+			h = rotl(h, 13); h = 5*h + RGPH_MURMUR32S_ADD1;
+			k = w[2];
+			k *= c1; k = rotl(k, 15); k *= c2; h ^= k;
+			h = rotl(h, 13); h = 5*h + RGPH_MURMUR32S_ADD1;
+			k = w[3];
+			k *= c1; k = rotl(k, 15); k *= c2; h ^= k;
+			h = rotl(h, 13); h = 5*h + RGPH_MURMUR32S_ADD1;
+		}
 		for (; end - key >= 4; key += 4) {
 			rgph_read32u(key, 4 - down, &carry, w, 1);
 			k = w[0];
