@@ -1,57 +1,52 @@
-OBJ=	writer.o jenkins2.o murmur32.o murmur32s.o
-LOBJ=	luargph.o
+.POSIX:
+
+DSO?=		so  # or dylib
+LUAPKG?=	lua # pkg-config name
+
+WARNS?=		-Wall
+PICFLAGS?=	-fPIC
+C99OPTS?=	-std=c99
+CXXOPTS?=	-nostdinc++ -fno-exceptions -fno-rtti
 
 #CFLAGS+=	-DRGPH_UNALIGNED_READ
+
+
+OBJ=		writer.o    jenkins2.o    murmur32.o    murmur32s.o
+PICOBJ=		writer.pico jenkins2.pico murmur32.pico murmur32s.pico
+LOBJ=		luargph.o
+LPICOBJ=	luargph.pico
+
+CFLAGS+=	-O2 $(WARNS) -I. $(C99OPTS)
+CXXFLAGS+=	-O2 $(WARNS) -I. $(CXXOPTS)
 
 # Comment these lines to debug.
 CFLAGS+=	-DNDEBUG
 CXXFLAGS+=	-DNDEBUG
 
-WARNS?=		-Wall
-C99OPTS?=	-std=c99
-CXXOPTS?=	-nostdinc++ -fno-exceptions -fno-rtti
-CFLAGS+=	-O2 -fPIC ${WARNS} -I. ${C99OPTS}
-CXXFLAGS+=	-O2 -fPIC ${WARNS} -I. ${CXXOPTS}
-SHLDFLAGS=	-O2 -fPIC -shared
-LDFLAGS+=	${SHLDFLAGS}
+.SUFFIXES: .c .cc .o .pico
 
-all: librgph.so # XXX .dylib on MacOS
+.cc.o:
+	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-librgph.dylib: ${OBJ}
-	${CC} ${OBJ} ${LDFLAGS} -o librgph.dylib
+.c.o:
+	$(CC) $(CFLAGS) -c $< -o $@
 
-librgph.so: ${OBJ}
-	${CC} ${OBJ} ${LDFLAGS} -o librgph.so
+.cc.pico:
+	$(CXX) $(CXXFLAGS) $(PICFLAGS) -c $< -o $@
 
-lua: ${OBJ} ${LOBJ}
-	${CC} `pkg-config --cflags --libs lua` ${LDFLAGS} ${OBJ} ${LOBJ} -o librgph5.1.so
+.c.pico:
+	$(CC) $(CFLAGS) $(PICFLAGS) -c $< -o $@
 
-lua51: ${OBJ} ${LOBJ}
-	${CC} `pkg-config --cflags --libs lua51` ${LDFLAGS} ${OBJ} ${LOBJ} -o librgph5.1.so
+all: librgph.so
 
-lua52: ${OBJ} ${LOBJ}
-	${CC} `pkg-config --cflags --libs lua52` ${LDFLAGS} ${OBJ} ${LOBJ} -o librgph5.2.so
+luargph.pico: luargph.c
+	$(CC) $(CFLAGS) $(PICFLAGS) `pkg-config --cflags --cflags $(LUAPKG)` -c $< -o $@
 
-lua53: ${OBJ} ${LOBJ}
-	${CC} `pkg-config --cflags --libs lua53` ${LDFLAGS} ${OBJ} ${LOBJ} -o librgph5.3.so
+librgph.$(DSO): $(PICOBJ)
+	$(CC) $(LDFLAGS) -shared $(PICOBJ) -o $@
 
-lua5.1: ${OBJ} ${LOBJ}
-	${CC} `pkg-config --cflags --libs lua5.1` ${LDFLAGS} ${OBJ} ${LOBJ} -o librgph5.1.so
-
-lua5.2: ${OBJ} ${LOBJ}
-	${CC} `pkg-config --cflags --libs lua5.2` ${LDFLAGS} ${OBJ} ${LOBJ} -o librgph5.2.so
-
-lua5.3: ${OBJ} ${LOBJ}
-	${CC} `pkg-config --cflags --libs lua5.3` ${LDFLAGS} ${OBJ} ${LOBJ} -o librgph5.3.so
-
-lua-5.1: ${OBJ} ${LOBJ}
-	${CC} `pkg-config --cflags --libs lua-5.1` ${LDFLAGS} ${OBJ} ${LOBJ} -o librgph5.1.so
-
-lua-5.2: ${OBJ} ${LOBJ}
-	${CC} `pkg-config --cflags --libs lua-5.2` ${LDFLAGS} ${OBJ} ${LOBJ} -o librgph5.2.so
-
-lua-5.3: ${OBJ} ${LOBJ}
-	${CC} `pkg-config --cflags --libs lua-5.3` ${LDFLAGS} ${OBJ} ${LOBJ} -o librgph5.3.so
+rgph.$(DSO): $(PICOBJ) $(LPICOBJ)
+	$(CC) `pkg-config --cflags --libs $(LUAPKG)` -shared $(PICOBJ) $(LPICOBJ) -o $@
 
 clean:
-	rm -f ${OBJ} ${LOBJ} librgph*.so librgph*.dylib
+	rm -f $(OBJ) $(PICOBJ) $(LOBJ) $(LPICOBJ) *.so *.dylib *.a
