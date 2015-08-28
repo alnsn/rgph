@@ -155,26 +155,32 @@ rgph_u32_murmur32s_u8a(const uint8_t * restrict key,
 
 	const uint8_t *end = key + len;
 	uint32_t h, k;
+#if defined(RGPH_UNALIGNED_READ)
+	const int down = 0;
+#else
+	uint32_t w[1]; /* XXX unroll */
+	const int down = ((uintptr_t)key) & 3;
+	uint32_t carry = len > 0 && down != 0 ? rgph_read32a(key - down) : 0;
+#endif
 
 	h = seed;
 
-#if !defined(RGPH_UNALIGNED_READ)
-	if ((len & 3) == 0) {
+	if (down == 0) {
 		for (; end - key >= 4; key += 4) {
-			k = htole32(*((const uint32_t *)key));
+			k = rgph_read32a(&key[0]);
 			k *= c1; k = rotl(k, 15); k *= c2; h ^= k;
 			h = rotl(h, 13); h = 5*h + RGPH_MURMUR32S_ADD1;
 		}
 	} else {
-#endif
+#if !defined(RGPH_UNALIGNED_READ)
 		for (; end - key >= 4; key += 4) {
-			k = read32(&key[0]);
+			rgph_read32u(key, 4 - down, &carry, w, 1);
+			k = w[0];
 			k *= c1; k = rotl(k, 15); k *= c2; h ^= k;
 			h = rotl(h, 13); h = 5*h + RGPH_MURMUR32S_ADD1;
 		}
-#if !defined(RGPH_UNALIGNED_READ)
-	}
 #endif
+	}
 
 	k = 0;
 	switch (end - key) {

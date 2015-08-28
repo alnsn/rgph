@@ -53,17 +53,35 @@
 #define rotr(x, r) (((x) >> (r)) | ((x) << (CHAR_BIT * sizeof(x) - (r))))
 
 /*
- * Read 4 bytes from buf in little-endian order.
+ * Read 32bit word from aligned pointer in little-endian order.
  */
-#if defined(RGPH_UNALIGNED_READ)
-#define read32(buf) htole32(*((const uint32_t *)(buf)))
-#else
-#define read32(buf) ( \
-	((uint32_t)((const uint8_t *)(buf))[3] << 24) | \
-	((uint32_t)((const uint8_t *)(buf))[2] << 16) | \
-	((uint32_t)((const uint8_t *)(buf))[1] << 8)  | \
-	((uint32_t)((const uint8_t *)(buf))[0]))
-#endif
+#define rgph_read32a(aligned) htole32(*((const uint32_t *)(aligned)))
+
+/*
+ * Read n 32bit unaligned words from ptr with a shift to align loads.
+ * When reading a stream of words, the carry argument is normally
+ * passed from the previous rgph_read32u() call. The value for the
+ * first rgph_read32u() call must be loaded from the preceding aligned
+ * word: curry = rgph_read32a(ptr + align_up - 4).
+ * The behaviour is undefined when ptr is aligned.
+ */
+static inline void
+rgph_read32u(const uint8_t * restrict ptr, int align_up,
+    uint32_t *carry, uint32_t * restrict out, size_t n)
+{
+	const uint8_t *aligned = ptr + align_up;
+	const int up_bits = 8 * align_up;
+	const int down_bits = 32 - up_bits;
+	size_t i;
+	uint32_t w;
+
+	for (i = 0; i < n; i++) {
+		w = rgph_read32a(aligned);
+		out[i] = (w << up_bits) | (*carry >> down_bits);
+		aligned += 4;
+		*carry = w;
+	}
+}
 
 static inline uint32_t
 f2u32(float f)

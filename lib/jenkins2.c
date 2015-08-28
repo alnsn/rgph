@@ -257,48 +257,56 @@ rgph_u32x3_jenkins2_u8a(const uint8_t * restrict key,
 {
 	const uint8_t *end = key + len;
 	int n = 0;
+#if defined(RGPH_UNALIGNED_READ)
+	const int down = 0;
+#else
+	uint32_t w[3];
+	const int down = ((uintptr_t)key) & 3;
+	uint32_t carry = len > 0 && down != 0 ? rgph_read32a(key - down) : 0;
+#endif
 
 	h[0] = SEED1(seed);
 	h[1] = SEED2(seed);
 	h[2] = SEED3(seed);
 
-#if !defined(RGPH_UNALIGNED_READ)
-	if ((len & 3) == 0) {
+	if (down == 0) {
 		for (; end - key >= 12; key += 12) {
-			h[0] += htole32(*((const uint32_t *)&key[0]));
-			h[1] += htole32(*((const uint32_t *)&key[4]));
-			h[2] += htole32(*((const uint32_t *)&key[8]));
+			h[0] += rgph_read32a(&key[0]);
+			h[1] += rgph_read32a(&key[4]);
+			h[2] += rgph_read32a(&key[8]);
 			RGPH_JENKINS2_MIX(h[0], h[1], h[2]);
 		}
 
 		if (end - key >= 4) {
-			h[n++] += htole32(*((const uint32_t *)&key[0]));
+			h[n++] += rgph_read32a(&key[0]);
 			key += 4;
 		}
 		if (end - key >= 4) {
-			h[n++] += htole32(*((const uint32_t *)&key[0]));
+			h[n++] += rgph_read32a(&key[0]);
 			key += 4;
 		}
 	} else {
-#endif
+#if !defined(RGPH_UNALIGNED_READ)
 		for (; end - key >= 12; key += 12) {
-			h[0] += read32(&key[0]);
-			h[1] += read32(&key[4]);
-			h[2] += read32(&key[8]);
+			rgph_read32u(key, 4 - down, &carry, w, 3);
+			h[0] += w[0];
+			h[1] += w[1];
+			h[2] += w[2];
 			RGPH_JENKINS2_MIX(h[0], h[1], h[2]);
 		}
 
 		if (end - key >= 4) {
-			h[n++] += read32(&key[0]);
+			rgph_read32u(key, 4 - down, &carry, w, 1);
+			h[n++] += w[0];
 			key += 4;
 		}
 		if (end - key >= 4) {
-			h[n++] += read32(&key[0]);
+			rgph_read32u(key, 4 - down, &carry, w, 1);
+			h[n++] += w[0];
 			key += 4;
 		}
-#if !defined(RGPH_UNALIGNED_READ)
-	}
 #endif
+	}
 
 	switch (end - key) {
 	case 3:

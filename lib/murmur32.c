@@ -307,30 +307,36 @@ rgph_u32x4_murmur32_u8a(const uint8_t * restrict key,
 
 	const uint8_t *end = key + len;
 	uint32_t k1, k2, k3, k4;
+#if defined(RGPH_UNALIGNED_READ)
+	const int down = 0;
+#else
+	uint32_t w[4];
+	const int down = ((uintptr_t)key) & 3;
+	uint32_t carry = len > 0 && down != 0 ? rgph_read32a(key - down) : 0;
+#endif
 
 	h[0] = h[1] = h[2] = h[3] = seed;
 
-#if !defined(RGPH_UNALIGNED_READ)
-	if ((len & 3) == 0) {
+	if (down == 0) {
 		for (; end - key >= 16; key += 16) {
-			k1 = htole32(*((const uint32_t *)&key[0]));
-			k2 = htole32(*((const uint32_t *)&key[4]));
-			k3 = htole32(*((const uint32_t *)&key[8]));
-			k4 = htole32(*((const uint32_t *)&key[12]));
+			k1 = rgph_read32a(&key[0]);
+			k2 = rgph_read32a(&key[4]);
+			k3 = rgph_read32a(&key[8]);
+			k4 = rgph_read32a(&key[12]);
 			RGPH_MURMUR32_MIX(k1, k2, k3, k4, h);
 		}
 	} else {
-#endif
+#if !defined(RGPH_UNALIGNED_READ)
 		for (; end - key >= 16; key += 16) {
-			k1 = read32(&key[0]);
-			k2 = read32(&key[4]);
-			k3 = read32(&key[8]);
-			k4 = read32(&key[12]);
+			rgph_read32u(key, 4 - down, &carry, w, 4);
+			k1 = w[0];
+			k2 = w[1];
+			k3 = w[2];
+			k4 = w[3];
 			RGPH_MURMUR32_MIX(k1, k2, k3, k4, h);
 		}
-#if !defined(RGPH_UNALIGNED_READ)
-	}
 #endif
+	}
 
 	k1 = k2 = k3 = k4 = 0;
 
