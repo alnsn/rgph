@@ -20,8 +20,7 @@ rgph_test_murmur32s_x4(void)
 	const uint32_t seed = 123456789;
 
 	uint8_t h[12];
-	char *s;
-	size_t i, l;
+	size_t i;
 
 	rgph_u8x4_murmur32s_data(u8, sizeof(u8[0]), seed, h);
 	rgph_u8x4_murmur32s_u8(u8[0], seed, h + 4);
@@ -149,14 +148,18 @@ rgph_test_murmur32s_x4(void)
 		CHECK(h[3] == h[8]);
 	}
 
-	/* Test data of different length with different alignment. */
-	s = malloc(sizeof(msg) + 4);
-	REQUIRE(s != NULL);
-
+	/* Test data of different lengths with different alignments. */
 	for (i = 0; i < 4; i++) {
-		memcpy(s + i, msg, sizeof(msg));
+		uint8_t h[8];
+		char *s;
+		size_t l;
+
 		for (l = 0; l <= sizeof(msg); l++) {
-			uint8_t h[8];
+
+			s = malloc(i + (l + i > 0 ? l : 1));
+			REQUIRE(s != NULL);
+			memcpy(s + i, msg, l);
+
 			rgph_u8x4_murmur32s_data(msg, l, seed, &h[0]);
 			rgph_u8x4_murmur32s_data(s+i, l, seed, &h[4]);
 			CHECK(h[0] == h[4]);
@@ -165,10 +168,10 @@ rgph_test_murmur32s_x4(void)
 			CHECK(h[3] == h[7]);
 			CHECK(rgph_u32_murmur32s_data(msg, l, seed) ==
 			      rgph_u32_murmur32s_data(s+i, l, seed));
+
+			free(s);
 		}
 	}
-
-	free(s);
 }
 
 static void
@@ -183,8 +186,7 @@ rgph_test_murmur32s_x2(void)
 	const uint32_t seed = 123456789;
 
 	uint16_t h[6];
-	char *s;
-	size_t i, l;
+	size_t i;
 
 	rgph_u16x2_murmur32s_data(u8, sizeof(u8[0]), seed, h);
 	rgph_u16x2_murmur32s_u8(u8[0], seed, h + 2);
@@ -276,24 +278,28 @@ rgph_test_murmur32s_x2(void)
 		CHECK(h[1] == h[4]);
 	}
 
-	/* Test data of different length with different alignment. */
-	s = malloc(sizeof(msg) + 4);
-	REQUIRE(s != NULL);
-
+	/* Test data of different lengths with different alignments. */
 	for (i = 0; i < 4; i++) {
-		memcpy(s + i, msg, sizeof(msg));
+		uint16_t h[4];
+		char *s;
+		size_t l;
+
 		for (l = 0; l <= sizeof(msg); l++) {
-			uint16_t h[4];
+
+			s = malloc(i + (l + i > 0 ? l : 1));
+			REQUIRE(s != NULL);
+			memcpy(s + i, msg, l);
+
 			rgph_u16x2_murmur32s_data(msg, l, seed, &h[0]);
 			rgph_u16x2_murmur32s_data(s+i, l, seed, &h[2]);
 			CHECK(h[0] == h[2]);
 			CHECK(h[1] == h[3]);
 			CHECK(rgph_u32_murmur32s_data(msg, l, seed) ==
 			      rgph_u32_murmur32s_data(s+i, l, seed));
+
+			free(s);
 		}
 	}
-
-	free(s);
 }
 
 void

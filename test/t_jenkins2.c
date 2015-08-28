@@ -21,8 +21,7 @@ rgph_test_jenkins2(void)
 
 	uint32_t h[12];
 	uint64_t h64;
-	char *s;
-	size_t i, l;
+	size_t i;
 
 	rgph_u32x3_jenkins2_data(u8, sizeof(u8[0]), seed, h);
 	rgph_u32x3_jenkins2_u8(u8[0], seed, h + 3);
@@ -246,14 +245,18 @@ rgph_test_jenkins2(void)
 #endif
 	}
 
-	/* Test data of different length with different alignment. */
-	s = malloc(sizeof(msg) + 4);
-	REQUIRE(s != NULL);
-
+	/* Test data of different lengths with different alignments. */
 	for (i = 0; i < 4; i++) {
-		memcpy(s + i, msg, sizeof(msg));
+		uint32_t h[6];
+		char *s;
+		size_t l;
+
 		for (l = 0; l <= sizeof(msg); l++) {
-			uint32_t h[6];
+
+			s = malloc(i + (l + i > 0 ? l : 1));
+			REQUIRE(s != NULL);
+			memcpy(s + i, msg, l);
+
 			rgph_u32x3_jenkins2_data(msg, l, seed, &h[0]);
 			rgph_u32x3_jenkins2_data(s+i, l, seed, &h[3]);
 			CHECK(h[0] == h[3]);
@@ -263,8 +266,8 @@ rgph_test_jenkins2(void)
 			      rgph_u32_jenkins2_data(s+i, l, seed));
 			CHECK(rgph_u64_jenkins2_data(msg, l, seed) ==
 			      rgph_u64_jenkins2_data(s+i, l, seed));
+
+			free(s);
 		}
 	}
-
-	free(s);
 }

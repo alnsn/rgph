@@ -20,8 +20,7 @@ rgph_test_murmur32(void)
 
 	uint32_t h[12];
 	uint64_t h64;
-	char *s;
-	size_t i, l;
+	size_t i;
 
 	rgph_u32x4_murmur32_data(u8, sizeof(u8[0]), seed, h);
 	rgph_u32x4_murmur32_u8(u8[0], seed, h + 4);
@@ -191,14 +190,18 @@ rgph_test_murmur32(void)
 		CHECK(h[3] == h[8]);
 	}
 
-	/* Test data of different length with different alignment. */
-	s = malloc(sizeof(msg) + 4);
-	REQUIRE(s != NULL);
-
+	/* Test data of different lengths with different alignments. */
 	for (i = 0; i < 4; i++) {
-		memcpy(s + i, msg, sizeof(msg));
+		uint32_t h[8];
+		char *s;
+		size_t l;
+
 		for (l = 0; l <= sizeof(msg); l++) {
-			uint32_t h[8];
+
+			s = malloc(i + (l + i > 0 ? l : 1));
+			REQUIRE(s != NULL);
+			memcpy(s + i, msg, l);
+
 			rgph_u32x4_murmur32_data(msg, l, seed, &h[0]);
 			rgph_u32x4_murmur32_data(s+i, l, seed, &h[4]);
 			CHECK(h[0] == h[4]);
@@ -209,9 +212,9 @@ rgph_test_murmur32(void)
 			      rgph_u32_murmur32_data(s+i, l, seed));
 			CHECK(rgph_u64_murmur32_data(msg, l, seed) ==
 			      rgph_u64_murmur32_data(s+i, l, seed));
+
+			free(s);
 		}
 	}
-
-	free(s);
 }
 
