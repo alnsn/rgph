@@ -2,6 +2,11 @@
 
 #include <rgph_hash.h>
 #include <stdlib.h> /* mi_vector_hash(3) on NetBSD. */
+#include <string.h>
+
+static const char msg[] =
+	"Richard Of York Gave Battle In Vain.\n"
+	"Ryanair Offers You Great Breaks In Venice.";
 
 void
 rgph_test_jenkins2(void)
@@ -16,7 +21,8 @@ rgph_test_jenkins2(void)
 
 	uint32_t h[12];
 	uint64_t h64;
-	size_t i;
+	char *s;
+	size_t i, l;
 
 	rgph_u32x3_jenkins2_data(u8, sizeof(u8[0]), seed, h);
 	rgph_u32x3_jenkins2_u8(u8[0], seed, h + 3);
@@ -240,5 +246,25 @@ rgph_test_jenkins2(void)
 #endif
 	}
 
-	/* XXX Compare aligned and unaligned data. */
+	/* Test data of different length with different alignment. */
+	s = malloc(sizeof(msg) + 4);
+	REQUIRE(s != NULL);
+
+	for (i = 0; i < 4; i++) {
+		memcpy(s + i, msg, sizeof(msg));
+		for (l = 0; l <= sizeof(msg); l++) {
+			uint32_t h[6];
+			rgph_u32x3_jenkins2_data(msg, l, seed, &h[0]);
+			rgph_u32x3_jenkins2_data(s+i, l, seed, &h[3]);
+			CHECK(h[0] == h[3]);
+			CHECK(h[1] == h[4]);
+			CHECK(h[2] == h[5]);
+			CHECK(rgph_u32_jenkins2_data(msg, l, seed) ==
+			      rgph_u32_jenkins2_data(s+i, l, seed));
+			CHECK(rgph_u64_jenkins2_data(msg, l, seed) ==
+			      rgph_u64_jenkins2_data(s+i, l, seed));
+		}
+	}
+
+	free(s);
 }

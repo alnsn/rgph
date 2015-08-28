@@ -1,6 +1,12 @@
 #include "t_util.h"
 
 #include <rgph_hash.h>
+#include <string.h>
+
+static const char msg[] =
+	"Richard Of York Gave Battle In Vain.\n"
+	"Ryanair Offers You Great Breaks In Venice.";
+
 
 static void
 rgph_test_murmur32s_x4(void)
@@ -14,7 +20,8 @@ rgph_test_murmur32s_x4(void)
 	const uint32_t seed = 123456789;
 
 	uint8_t h[12];
-	size_t i;
+	char *s;
+	size_t i, l;
 
 	rgph_u8x4_murmur32s_data(u8, sizeof(u8[0]), seed, h);
 	rgph_u8x4_murmur32s_u8(u8[0], seed, h + 4);
@@ -142,7 +149,26 @@ rgph_test_murmur32s_x4(void)
 		CHECK(h[3] == h[8]);
 	}
 
-	/* XXX Compare aligned and unaligned data. */
+	/* Test data of different length with different alignment. */
+	s = malloc(sizeof(msg) + 4);
+	REQUIRE(s != NULL);
+
+	for (i = 0; i < 4; i++) {
+		memcpy(s + i, msg, sizeof(msg));
+		for (l = 0; l <= sizeof(msg); l++) {
+			uint8_t h[8];
+			rgph_u8x4_murmur32s_data(msg, l, seed, &h[0]);
+			rgph_u8x4_murmur32s_data(s+i, l, seed, &h[4]);
+			CHECK(h[0] == h[4]);
+			CHECK(h[1] == h[5]);
+			CHECK(h[2] == h[6]);
+			CHECK(h[3] == h[7]);
+			CHECK(rgph_u32_murmur32s_data(msg, l, seed) ==
+			      rgph_u32_murmur32s_data(s+i, l, seed));
+		}
+	}
+
+	free(s);
 }
 
 static void
@@ -157,7 +183,8 @@ rgph_test_murmur32s_x2(void)
 	const uint32_t seed = 123456789;
 
 	uint16_t h[6];
-	size_t i;
+	char *s;
+	size_t i, l;
 
 	rgph_u16x2_murmur32s_data(u8, sizeof(u8[0]), seed, h);
 	rgph_u16x2_murmur32s_u8(u8[0], seed, h + 2);
@@ -249,7 +276,24 @@ rgph_test_murmur32s_x2(void)
 		CHECK(h[1] == h[4]);
 	}
 
-	/* XXX Compare aligned and unaligned data. */
+	/* Test data of different length with different alignment. */
+	s = malloc(sizeof(msg) + 4);
+	REQUIRE(s != NULL);
+
+	for (i = 0; i < 4; i++) {
+		memcpy(s + i, msg, sizeof(msg));
+		for (l = 0; l <= sizeof(msg); l++) {
+			uint16_t h[4];
+			rgph_u16x2_murmur32s_data(msg, l, seed, &h[0]);
+			rgph_u16x2_murmur32s_data(s+i, l, seed, &h[2]);
+			CHECK(h[0] == h[2]);
+			CHECK(h[1] == h[3]);
+			CHECK(rgph_u32_murmur32s_data(msg, l, seed) ==
+			      rgph_u32_murmur32s_data(s+i, l, seed));
+		}
+	}
+
+	free(s);
 }
 
 void

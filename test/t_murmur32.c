@@ -1,6 +1,11 @@
 #include "t_util.h"
 
 #include <rgph_hash.h>
+#include <string.h>
+
+static const char msg[] =
+	"Richard Of York Gave Battle In Vain.\n"
+	"Ryanair Offers You Great Breaks In Venice.";
 
 void
 rgph_test_murmur32(void)
@@ -15,7 +20,8 @@ rgph_test_murmur32(void)
 
 	uint32_t h[12];
 	uint64_t h64;
-	size_t i;
+	char *s;
+	size_t i, l;
 
 	rgph_u32x4_murmur32_data(u8, sizeof(u8[0]), seed, h);
 	rgph_u32x4_murmur32_u8(u8[0], seed, h + 4);
@@ -185,6 +191,27 @@ rgph_test_murmur32(void)
 		CHECK(h[3] == h[8]);
 	}
 
-	/* XXX Compare aligned and unaligned data. */
+	/* Test data of different length with different alignment. */
+	s = malloc(sizeof(msg) + 4);
+	REQUIRE(s != NULL);
+
+	for (i = 0; i < 4; i++) {
+		memcpy(s + i, msg, sizeof(msg));
+		for (l = 0; l <= sizeof(msg); l++) {
+			uint32_t h[8];
+			rgph_u32x4_murmur32_data(msg, l, seed, &h[0]);
+			rgph_u32x4_murmur32_data(s+i, l, seed, &h[4]);
+			CHECK(h[0] == h[4]);
+			CHECK(h[1] == h[5]);
+			CHECK(h[2] == h[6]);
+			CHECK(h[3] == h[7]);
+			CHECK(rgph_u32_murmur32_data(msg, l, seed) ==
+			      rgph_u32_murmur32_data(s+i, l, seed));
+			CHECK(rgph_u64_murmur32_data(msg, l, seed) ==
+			      rgph_u64_murmur32_data(s+i, l, seed));
+		}
+	}
+
+	free(s);
 }
 
