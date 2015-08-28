@@ -40,13 +40,13 @@ CXXFLAGS+=	-DNDEBUG
 all: librgph.so
 
 luargph.pico: luargph.c
-	$(CC) $(CFLAGS) $(PICFLAGS) `pkg-config --cflags --cflags $(LUAPKG)` -c $< -o $@
+	$(CC) `pkg-config --cflags --cflags $(LUAPKG)` $(CFLAGS) $(PICFLAGS) -c $< -o $@
 
 librgph.$(DSO): $(PICOBJ)
 	$(CC) $(LDFLAGS) -shared $(PICOBJ) -o $@
 
 rgph.$(DSO): $(PICOBJ) $(LPICOBJ)
-	$(CC) `pkg-config --cflags --libs $(LUAPKG)` -shared $(PICOBJ) $(LPICOBJ) -o $@
+	$(CC) `pkg-config --cflags --libs $(LUAPKG)` $(LDFLAGS) -shared $(PICOBJ) $(LPICOBJ) -o $@
 
 clean:
 	rm -f $(OBJ) $(PICOBJ) $(LOBJ) $(LPICOBJ) *.so *.dylib *.a
