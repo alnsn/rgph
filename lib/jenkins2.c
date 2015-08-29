@@ -1,4 +1,6 @@
 /*-
+ * lookup2.c, by Bob Jenkins, December 1996, Public Domain.
+ *
  * Copyright (c) 2014-2015 Alexander Nasonov.
  * All rights reserved.
  *

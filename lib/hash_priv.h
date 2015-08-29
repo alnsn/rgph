@@ -2,6 +2,8 @@
  * MurmurHash3 was written by Austin Appleby, and is placed in the public
  * domain. The author hereby disclaims copyright to this source code.
  *
+ * lookup2.c, by Bob Jenkins, December 1996, Public Domain.
+ *
  * Copyright (c) 2014-2015 Alexander Nasonov.
  * All rights reserved.
  *
