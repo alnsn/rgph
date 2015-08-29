@@ -36,100 +36,51 @@
 #include <stddef.h>
 #include <stdint.h>
 
-static inline uint32_t
-fmix(uint32_t h)
-{
-
-	h ^= h >> 16;
-	h *= RGPH_MURMUR32S_FMIXMUL1;
-	h ^= h >> 13;
-	h *= RGPH_MURMUR32S_FMIXMUL2;
-	h ^= h >> 16;
-
-	return h;
-}
-
-static inline void
-finalise(size_t len, uint32_t *h)
-{
-
-	/* Note that len > UINT32_MAX is truncated. */
-	h[0] ^= len;
-	h[0] = fmix(h[0]);
-}
-
 inline uint32_t
 rgph_u32_murmur32s_u8(uint8_t value, uint32_t seed)
 {
-	const uint32_t c1 = RGPH_MURMUR32S_MUL1;
-	const uint32_t c2 = RGPH_MURMUR32S_MUL2;
+	uint32_t h[1] = { seed };
 
-	uint32_t h, k;
+	rgph_murmur32s_mix(value, h, 1);
+	rgph_murmur32s_finalise(sizeof(value), h);
 
-	h = seed;
-	k = value;
-	k *= c1; k = rgph_rotl(k, 15); k *= c2; h ^= k;
-	finalise(sizeof(value), &h);
-	return h;
+	return h[0];
 }
 
 inline uint32_t
 rgph_u32_murmur32s_u16(uint16_t value, uint32_t seed)
 {
-	const uint32_t c1 = RGPH_MURMUR32S_MUL1;
-	const uint32_t c2 = RGPH_MURMUR32S_MUL2;
+	uint32_t h[1] = { seed };
 
-	uint32_t h, k;
+	rgph_murmur32s_mix(htole16(value), h, 1);
+	rgph_murmur32s_finalise(sizeof(value), h);
 
-	h = seed;
-	k = htole16(value);
-	k *= c1; k = rgph_rotl(k, 15); k *= c2; h ^= k;
-	finalise(sizeof(value), &h);
-	return h;
+	return h[0];
 }
 
 inline uint32_t
 rgph_u32_murmur32s_u32(uint32_t value, uint32_t seed)
 {
-	const uint32_t c1 = RGPH_MURMUR32S_MUL1;
-	const uint32_t c2 = RGPH_MURMUR32S_MUL2;
+	uint32_t h[1] = { seed };
 
-	uint32_t h, k;
+	rgph_murmur32s_mix(htole32(value), h, 0);
+	rgph_murmur32s_mix(0, h, 1);
+	rgph_murmur32s_finalise(sizeof(value), h);
 
-	h = seed;
-
-	k = htole32(value);
-	k *= c1; k = rgph_rotl(k, 15); k *= c2; h ^= k;
-	h = rgph_rotl(h, 13); h = 5*h + RGPH_MURMUR32S_ADD1;
-
-	k = 0;
-	k *= c1; k = rgph_rotl(k, 15); k *= c2; h ^= k;
-	finalise(sizeof(value), &h);
-	return h;
+	return h[0];
 }
 
 inline uint32_t
 rgph_u32_murmur32s_u64(uint64_t value, uint32_t seed)
 {
-	const uint32_t c1 = RGPH_MURMUR32S_MUL1;
-	const uint32_t c2 = RGPH_MURMUR32S_MUL2;
+	uint32_t h[1] = { seed };
 
-	uint32_t h, k;
+	rgph_murmur32s_mix(htole64(value) & UINT32_MAX, h, 0);
+	rgph_murmur32s_mix(htole64(value) >> 32, h, 0);
+	rgph_murmur32s_mix(0, h, 1);
+	rgph_murmur32s_finalise(sizeof(value), h);
 
-	h = seed;
-	k = htole64(value) & UINT32_MAX;
-	k *= c1; k = rgph_rotl(k, 15); k *= c2; h ^= k;
-
-	h = rgph_rotl(h, 13); h = 5*h + RGPH_MURMUR32S_ADD1;
-
-	k = htole64(value) >> 32;
-	k *= c1; k = rgph_rotl(k, 15); k *= c2; h ^= k;
-	h = rgph_rotl(h, 13); h = 5*h + RGPH_MURMUR32S_ADD1;
-
-	k = 0;
-	k *= c1; k = rgph_rotl(k, 15); k *= c2; h ^= k;
-	finalise(sizeof(value), &h);
-	return h;
+	return h[0];
 }
 
 inline uint32_t
@@ -150,11 +101,8 @@ inline uint32_t
 rgph_u32_murmur32s_u8a(const uint8_t * restrict key,
     size_t len, uint32_t seed)
 {
-	const uint32_t c1 = RGPH_MURMUR32S_MUL1;
-	const uint32_t c2 = RGPH_MURMUR32S_MUL2;
-
 	const uint8_t *end = key + len;
-	uint32_t h, k;
+	uint32_t k, h[1] = { seed };
 #if defined(RGPH_UNALIGNED_READ)
 	const int down = 0;
 #else
@@ -163,36 +111,21 @@ rgph_u32_murmur32s_u8a(const uint8_t * restrict key,
 	uint32_t carry = len > 0 && down != 0 ? rgph_read32a(key - down) : 0;
 #endif
 
-	h = seed;
-
 	if (down == 0) {
-		for (; end - key >= 4; key += 4) {
-			k = rgph_read32a(&key[0]);
-			k *= c1; k = rgph_rotl(k, 15); k *= c2; h ^= k;
-			h = rgph_rotl(h, 13); h = 5*h + RGPH_MURMUR32S_ADD1;
-		}
+		for (; end - key >= 4; key += 4)
+			rgph_murmur32s_mix(rgph_read32a(&key[0]), h, 0);
 	} else {
 #if !defined(RGPH_UNALIGNED_READ)
 		for (; end - key >= 16; key += 16) {
 			rgph_read32u(key, 4 - down, &carry, w, 4);
-			k = w[0];
-			k *= c1; k = rgph_rotl(k, 15); k *= c2; h ^= k;
-			h = rgph_rotl(h, 13); h = 5*h + RGPH_MURMUR32S_ADD1;
-			k = w[1];
-			k *= c1; k = rgph_rotl(k, 15); k *= c2; h ^= k;
-			h = rgph_rotl(h, 13); h = 5*h + RGPH_MURMUR32S_ADD1;
-			k = w[2];
-			k *= c1; k = rgph_rotl(k, 15); k *= c2; h ^= k;
-			h = rgph_rotl(h, 13); h = 5*h + RGPH_MURMUR32S_ADD1;
-			k = w[3];
-			k *= c1; k = rgph_rotl(k, 15); k *= c2; h ^= k;
-			h = rgph_rotl(h, 13); h = 5*h + RGPH_MURMUR32S_ADD1;
+			rgph_murmur32s_mix(w[0], h, 0);
+			rgph_murmur32s_mix(w[1], h, 0);
+			rgph_murmur32s_mix(w[2], h, 0);
+			rgph_murmur32s_mix(w[3], h, 0);
 		}
 		for (; end - key >= 4; key += 4) {
 			rgph_read32u(key, 4 - down, &carry, w, 1);
-			k = w[0];
-			k *= c1; k = rgph_rotl(k, 15); k *= c2; h ^= k;
-			h = rgph_rotl(h, 13); h = 5*h + RGPH_MURMUR32S_ADD1;
+			rgph_murmur32s_mix(w[0], h, 0);
 		}
 #endif
 	}
@@ -206,11 +139,11 @@ rgph_u32_murmur32s_u8a(const uint8_t * restrict key,
 	case 1:
 		k ^= (uint32_t)key[0];       /* FALLTHROUGH */
 	case 0:
-		k *= c1; k = rgph_rotl(k, 15); k *= c2; h ^= k;
-		finalise(len, &h);
+		rgph_murmur32s_mix(k, h, 1);
+		rgph_murmur32s_finalise(len, h);
 	}
 
-	return h;
+	return h[0];
 }
 
 inline uint32_t
@@ -235,106 +168,68 @@ inline uint32_t
 rgph_u32_murmur32s_u32a(const uint32_t * restrict key,
     size_t len, uint32_t seed)
 {
-	const uint32_t c1 = RGPH_MURMUR32S_MUL1;
-	const uint32_t c2 = RGPH_MURMUR32S_MUL2;
-
 	const uint32_t *end = key + len;
-	uint32_t h, k;
+	uint32_t h[1] = { seed };
 
-	h = seed;
+	for (; key != end; key += 1)
+		rgph_murmur32s_mix(htole32(key[0]), h, 0);
 
-	for (; key != end; key += 1) {
-		k = htole32(key[0]);
-		k *= c1; k = rgph_rotl(k, 15); k *= c2; h ^= k;
-		h = rgph_rotl(h, 13); h = 5*h + RGPH_MURMUR32S_ADD1;
-	}
+	rgph_murmur32s_mix(0, h, 1);
+	rgph_murmur32s_finalise(len * sizeof(key[0]), h);
 
-	k = 0;
-	k *= c1; k = rgph_rotl(k, 15); k *= c2; h ^= k;
-	finalise(len * sizeof(key[0]), &h);
-
-	return h;
+	return h[0];
 }
 
 inline uint32_t
 rgph_u32_murmur32s_u64a(const uint64_t * restrict key,
     size_t len, uint32_t seed)
 {
-	const uint32_t c1 = RGPH_MURMUR32S_MUL1;
-	const uint32_t c2 = RGPH_MURMUR32S_MUL2;
-
 	const uint64_t *end = key + len;
-	uint32_t h, k;
-
-	h = seed;
+	uint32_t h[1] = { seed };
 
 	for (; key != end; key += 1) {
-		k = htole64(key[0]) & UINT32_MAX;
-		k *= c1; k = rgph_rotl(k, 15); k *= c2; h ^= k;
-		h = rgph_rotl(h, 13); h = 5*h + RGPH_MURMUR32S_ADD1;
-		k = htole64(key[0]) >> 32;
-		k *= c1; k = rgph_rotl(k, 15); k *= c2; h ^= k;
-		h = rgph_rotl(h, 13); h = 5*h + RGPH_MURMUR32S_ADD1;
+		rgph_murmur32s_mix(htole64(key[0]) & UINT32_MAX, h, 0);
+		rgph_murmur32s_mix(htole64(key[0]) >> 32, h, 0);
 	}
 
-	k = 0;
-	k *= c1; k = rgph_rotl(k, 15); k *= c2; h ^= k;
-	finalise(len * sizeof(key[0]), &h);
+	rgph_murmur32s_mix(0, h, 1);
+	rgph_murmur32s_finalise(len * sizeof(key[0]), h);
 
-	return h;
+	return h[0];
 }
 
 inline uint32_t
 rgph_u32_murmur32s_f32a(const float * restrict key,
     size_t len, uint32_t seed)
 {
-	const uint32_t c1 = RGPH_MURMUR32S_MUL1;
-	const uint32_t c2 = RGPH_MURMUR32S_MUL2;
-
 	const float *end = key + len;
-	uint32_t h, k;
+	uint32_t h[1] = { seed };
 
-	h = seed;
+	for (; key != end; key += 1)
+		rgph_murmur32s_mix(htole32(f2u32(key[0])), h, 0);
 
-	for (; key != end; key += 1) {
-		k = htole32(f2u32(key[0]));
-		k *= c1; k = rgph_rotl(k, 15); k *= c2; h ^= k;
-		h = rgph_rotl(h, 13); h = 5*h + RGPH_MURMUR32S_ADD1;
-	}
+	rgph_murmur32s_mix(0, h, 1);
+	rgph_murmur32s_finalise(len * sizeof(key[0]), h);
 
-	k = 0;
-	k *= c1; k = rgph_rotl(k, 15); k *= c2; h ^= k;
-	finalise(len * sizeof(key[0]), &h);
-
-	return h;
+	return h[0];
 }
 
 inline uint32_t
 rgph_u32_murmur32s_f64a(const double * restrict key,
     size_t len, uint32_t seed)
 {
-	const uint32_t c1 = RGPH_MURMUR32S_MUL1;
-	const uint32_t c2 = RGPH_MURMUR32S_MUL2;
-
 	const double *end = key + len;
-	uint32_t h, k;
-
-	h = seed;
+	uint32_t h[1] = { seed };
 
 	for (; key != end; key += 1) {
-		k = htole64(d2u64(key[0])) & UINT32_MAX;
-		k *= c1; k = rgph_rotl(k, 15); k *= c2; h ^= k;
-		h = rgph_rotl(h, 13); h = 5*h + RGPH_MURMUR32S_ADD1;
-		k = htole64(d2u64(key[0])) >> 32;
-		k *= c1; k = rgph_rotl(k, 15); k *= c2; h ^= k;
-		h = rgph_rotl(h, 13); h = 5*h + RGPH_MURMUR32S_ADD1;
+		rgph_murmur32s_mix(htole64(d2u64(key[0])) & UINT32_MAX, h, 0);
+		rgph_murmur32s_mix(htole64(d2u64(key[0])) >> 32, h, 0);
 	}
 
-	k = 0;
-	k *= c1; k = rgph_rotl(k, 15); k *= c2; h ^= k;
-	finalise(len * sizeof(key[0]), &h);
+	rgph_murmur32s_mix(0, h, 1);
+	rgph_murmur32s_finalise(len * sizeof(key[0]), h);
 
-	return h;
+	return h[0];
 }
 
 void

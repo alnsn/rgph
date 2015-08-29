@@ -254,4 +254,41 @@ rgph_murmur32_mix(uint32_t k1, uint32_t k2,
 	h[3] = 5*h[3] + RGPH_MURMUR32_ADD4;
 }
 
+static inline uint32_t
+rgph_murmur32s_fmix(uint32_t h)
+{
+
+	h ^= h >> 16;
+	h *= RGPH_MURMUR32S_FMIXMUL1;
+	h ^= h >> 13;
+	h *= RGPH_MURMUR32S_FMIXMUL2;
+	h ^= h >> 16;
+
+	return h;
+}
+
+static inline void
+rgph_murmur32s_finalise(size_t len, uint32_t *h)
+{
+
+	/* Note that len > UINT32_MAX is truncated. */
+	h[0] ^= len;
+	h[0] = rgph_murmur32s_fmix(h[0]);
+}
+
+static inline void
+rgph_murmur32s_mix(uint32_t k, uint32_t h[/* static 1 */], int last)
+{
+
+	k *= RGPH_MURMUR32S_MUL1;
+	k = rgph_rotl(k, 15);
+	k *= RGPH_MURMUR32S_MUL2;
+	h[0] ^= k;
+
+	if (!last) {
+		h[0] = rgph_rotl(h[0], 13);
+		h[0] = 5*h[0] + RGPH_MURMUR32S_ADD1;
+	}
+}
+
 #endif /* FILE_RGPH_HASH_PRIV_H_INCLUDED */
