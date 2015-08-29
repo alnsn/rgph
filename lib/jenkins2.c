@@ -36,30 +36,13 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define SEED1(seed) RGPH_JENKINS2_SEED1
-#define SEED2(seed) RGPH_JENKINS2_SEED2
-#define SEED3(seed) seed
-
-/* XXX Move to rhpg_hash.h. */
-#define RGPH_JENKINS2_MIX(a, b, c) do { \
-        a -= b; a -= c; a ^= (c >> 13); \
-        b -= c; b -= a; b ^= (a << 8);  \
-        c -= a; c -= b; c ^= (b >> 13); \
-        a -= b; a -= c; a ^= (c >> 12); \
-        b -= c; b -= a; b ^= (a << 16); \
-        c -= a; c -= b; c ^= (b >> 5);  \
-        a -= b; a -= c; a ^= (c >> 3);  \
-        b -= c; b -= a; b ^= (a << 10); \
-        c -= a; c -= b; c ^= (b >> 15); \
-} while (/* CONSTCOND */0)
-
 inline void
 rgph_u32x3_jenkins2_u8(uint8_t value, uint32_t seed, uint32_t *h)
 {
 
-	h[0] = SEED1(seed);
-	h[1] = SEED2(seed);
-	h[2] = SEED3(seed);
+	h[0] = RGPH_JENKINS2_SEED1;
+	h[1] = RGPH_JENKINS2_SEED2;
+	h[2] = seed;
 
 	h[0] += value;
 	h[2] += sizeof(value);
@@ -70,9 +53,9 @@ inline void
 rgph_u32x3_jenkins2_u16(uint16_t value, uint32_t seed, uint32_t *h)
 {
 
-	h[0] = SEED1(seed);
-	h[1] = SEED2(seed);
-	h[2] = SEED3(seed);
+	h[0] = RGPH_JENKINS2_SEED1;
+	h[1] = RGPH_JENKINS2_SEED2;
+	h[2] = seed;
 
 	h[0] += htole16(value);
 	h[2] += sizeof(value);
@@ -83,9 +66,9 @@ inline void
 rgph_u32x3_jenkins2_u32(uint32_t value, uint32_t seed, uint32_t *h)
 {
 
-	h[0] = SEED1(seed);
-	h[1] = SEED2(seed);
-	h[2] = SEED3(seed);
+	h[0] = RGPH_JENKINS2_SEED1;
+	h[1] = RGPH_JENKINS2_SEED2;
+	h[2] = seed;
 
 	h[0] += htole32(value);
 	h[2] += sizeof(value);
@@ -96,9 +79,9 @@ inline void
 rgph_u32x3_jenkins2_u64(uint64_t value, uint32_t seed, uint32_t *h)
 {
 
-	h[0] = SEED1(seed);
-	h[1] = SEED2(seed);
-	h[2] = SEED3(seed);
+	h[0] = RGPH_JENKINS2_SEED1;
+	h[1] = RGPH_JENKINS2_SEED2;
+	h[2] = seed;
 
 	h[0] += htole64(value) & UINT32_MAX;
 	h[1] += htole64(value) >> 32;
@@ -265,9 +248,9 @@ rgph_u32x3_jenkins2_u8a(const uint8_t * restrict key,
 	uint32_t carry = len > 0 && down != 0 ? rgph_read32a(key - down) : 0;
 #endif
 
-	h[0] = SEED1(seed);
-	h[1] = SEED2(seed);
-	h[2] = SEED3(seed);
+	h[0] = RGPH_JENKINS2_SEED1;
+	h[1] = RGPH_JENKINS2_SEED2;
+	h[2] = seed;
 
 	if (down == 0) {
 		for (; end - key >= 12; key += 12) {
@@ -371,9 +354,9 @@ rgph_u32x3_jenkins2_u32a(const uint32_t * restrict key,
 {
 	const uint32_t *end = key + len;
 
-	h[0] = SEED1(seed);
-	h[1] = SEED2(seed);
-	h[2] = SEED3(seed);
+	h[0] = RGPH_JENKINS2_SEED1;
+	h[1] = RGPH_JENKINS2_SEED2;
+	h[2] = seed;
 
 	for (; end - key >= 3; key += 3) {
 		h[0] += htole32(key[0]);
@@ -400,9 +383,9 @@ rgph_u32x3_jenkins2_u64a(const uint64_t * restrict key,
 	const uint64_t *end = key + len;
 	uint64_t a, b, c;
 
-	h[0] = SEED1(seed);
-	h[1] = SEED2(seed);
-	h[2] = SEED3(seed);
+	h[0] = RGPH_JENKINS2_SEED1;
+	h[1] = RGPH_JENKINS2_SEED2;
+	h[2] = seed;
 
 	for (; end - key >= 3; key += 3) {
 		a = htole64(key[0]);
@@ -445,9 +428,9 @@ rgph_u32x3_jenkins2_f32a(const float * restrict key,
 {
 	const float *end = key + len;
 
-	h[0] = SEED1(seed);
-	h[1] = SEED2(seed);
-	h[2] = SEED3(seed);
+	h[0] = RGPH_JENKINS2_SEED1;
+	h[1] = RGPH_JENKINS2_SEED2;
+	h[2] = seed;
 
 	for (; end - key >= 3; key += 3) {
 		h[0] += htole32(f2u32(key[0]));
@@ -474,9 +457,9 @@ rgph_u32x3_jenkins2_f64a(const double * restrict key,
 	const double *end = key + len;
 	uint64_t a, b, c;
 
-	h[0] = SEED1(seed);
-	h[1] = SEED2(seed);
-	h[2] = SEED3(seed);
+	h[0] = RGPH_JENKINS2_SEED1;
+	h[1] = RGPH_JENKINS2_SEED2;
+	h[2] = seed;
 
 	for (; end - key >= 3; key += 3) {
 		a = htole64(d2u64(key[0]));
