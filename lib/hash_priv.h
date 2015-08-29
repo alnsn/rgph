@@ -77,18 +77,6 @@
 #define rgph_rotl(x, l) (((x) << (l)) | ((x) >> (CHAR_BIT * sizeof(x) - (l))))
 #define rgph_rotr(x, r) (((x) >> (r)) | ((x) << (CHAR_BIT * sizeof(x) - (r))))
 
-#define RGPH_JENKINS2_MIX(a, b, c) do { \
-        a -= b; a -= c; a ^= (c >> 13); \
-        b -= c; b -= a; b ^= (a << 8);  \
-        c -= a; c -= b; c ^= (b >> 13); \
-        a -= b; a -= c; a ^= (c >> 12); \
-        b -= c; b -= a; b ^= (a << 16); \
-        c -= a; c -= b; c ^= (b >> 5);  \
-        a -= b; a -= c; a ^= (c >> 3);  \
-        b -= c; b -= a; b ^= (a << 10); \
-        c -= a; c -= b; c ^= (b >> 15); \
-} while (/* CONSTCOND */0)
-
 /*
  * Read 32bit word from aligned pointer in little-endian order.
  */
@@ -142,6 +130,21 @@ d2u64(double d)
 	} u = { d };
 
 	return u.u;
+}
+
+static inline void
+rgph_jenkins2_mix(uint32_t h[/*static 3 */])
+{
+
+	h[0] -= h[1]; h[0] -= h[2]; h[0] ^= (h[2] >> 13);
+	h[1] -= h[2]; h[1] -= h[0]; h[1] ^= (h[0] << 8);
+	h[2] -= h[0]; h[2] -= h[1]; h[2] ^= (h[1] >> 13);
+	h[0] -= h[1]; h[0] -= h[2]; h[0] ^= (h[2] >> 12);
+	h[1] -= h[2]; h[1] -= h[0]; h[1] ^= (h[0] << 16);
+	h[2] -= h[0]; h[2] -= h[1]; h[2] ^= (h[1] >> 5);
+	h[0] -= h[1]; h[0] -= h[2]; h[0] ^= (h[2] >> 3);
+	h[1] -= h[2]; h[1] -= h[0]; h[1] ^= (h[0] << 10);
+	h[2] -= h[0]; h[2] -= h[1]; h[2] ^= (h[1] >> 15);
 }
 
 static inline uint32_t
@@ -218,7 +221,7 @@ rgph_murmur32_mix3(uint32_t k, uint32_t h[])
 
 static inline void
 rgph_murmur32_mix(uint32_t k1, uint32_t k2,
-    uint32_t k3, uint32_t k4, uint32_t h[])
+    uint32_t k3, uint32_t k4, uint32_t h[/* static 4 */])
 {
 
 	k1 *= RGPH_MURMUR32_MUL1;
