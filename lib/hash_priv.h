@@ -1,4 +1,7 @@
 /*-
+ * MurmurHash3 was written by Austin Appleby, and is placed in the public
+ * domain. The author hereby disclaims copyright to this source code.
+ *
  * Copyright (c) 2014-2015 Alexander Nasonov.
  * All rights reserved.
  *
@@ -66,6 +69,12 @@
 #define RGPH_MURMUR32S_FMIXMUL1 UINT32_C(0x85ebca6b)
 #define RGPH_MURMUR32S_FMIXMUL2 UINT32_C(0xc2b2ae35)
 
+/*
+ * Rotate left and right.
+ */
+#define rgph_rotl(x, l) (((x) << (l)) | ((x) >> (CHAR_BIT * sizeof(x) - (l))))
+#define rgph_rotr(x, r) (((x) >> (r)) | ((x) << (CHAR_BIT * sizeof(x) - (r))))
+
 #define RGPH_JENKINS2_MIX(a, b, c) do { \
         a -= b; a -= c; a ^= (c >> 13); \
         b -= c; b -= a; b ^= (a << 8);  \
@@ -77,26 +86,6 @@
         b -= c; b -= a; b ^= (a << 10); \
         c -= a; c -= b; c ^= (b >> 15); \
 } while (/* CONSTCOND */0)
-
-#define RGPH_MURMUR32_MIX(k1, k2, k3, k4, h)                              \
-	k1 *= RGPH_MURMUR32_MUL1; k1 = rgph_rotl(k1, 15);                 \
-	k1 *= RGPH_MURMUR32_MUL2; h[0] ^= k1; h[0] = rgph_rotl(h[0], 19); \
-	h[0] += h[1]; h[0] = 5*h[0] + RGPH_MURMUR32_ADD1;                 \
-	k2 *= RGPH_MURMUR32_MUL2; k2 = rgph_rotl(k2, 16);                 \
-	k2 *= RGPH_MURMUR32_MUL3; h[1] ^= k2; h[1] = rgph_rotl(h[1], 17); \
-	h[1] += h[2]; h[1] = 5*h[1] + RGPH_MURMUR32_ADD2;                 \
-	k3 *= RGPH_MURMUR32_MUL3; k3 = rgph_rotl(k3, 17);                 \
-	k3 *= RGPH_MURMUR32_MUL4; h[2] ^= k3; h[2] = rgph_rotl(h[2], 15); \
-	h[2] += h[3]; h[2] = 5*h[2] + RGPH_MURMUR32_ADD3;                 \
-	k4 *= RGPH_MURMUR32_MUL4; k4 = rgph_rotl(k4, 18);                 \
-	k4 *= RGPH_MURMUR32_MUL1; h[3] ^= k4; h[3] = rgph_rotl(h[3], 13); \
-	h[3] += h[0]; h[3] = 5*h[3] + RGPH_MURMUR32_ADD4;
-
-/*
- * Rotate left and right.
- */
-#define rgph_rotl(x, l) (((x) << (l)) | ((x) >> (CHAR_BIT * sizeof(x) - (l))))
-#define rgph_rotr(x, r) (((x) >> (r)) | ((x) << (CHAR_BIT * sizeof(x) - (r))))
 
 /*
  * Read 32bit word from aligned pointer in little-endian order.
@@ -183,6 +172,81 @@ rgph_murmur32_finalise(size_t len, uint32_t *h)
 
 	h[0] += h[1]; h[0] += h[2]; h[0] += h[3];
 	h[1] += h[0]; h[2] += h[0]; h[3] += h[0];
+}
+
+static inline void
+rgph_murmur32_mix0(uint32_t k, uint32_t h[])
+{
+
+	k *= RGPH_MURMUR32_MUL1;
+	k = rgph_rotl(k, 15);
+	k *= RGPH_MURMUR32_MUL2;
+	h[0] ^= k;
+}
+
+static inline void
+rgph_murmur32_mix1(uint32_t k, uint32_t h[])
+{
+
+	k *= RGPH_MURMUR32_MUL2;
+	k = rgph_rotl(k, 16);
+	k *= RGPH_MURMUR32_MUL3;
+	h[1] ^= k;
+}
+
+static inline void
+rgph_murmur32_mix2(uint32_t k, uint32_t h[])
+{
+
+	k *= RGPH_MURMUR32_MUL3;
+	k = rgph_rotl(k, 17);
+	k *= RGPH_MURMUR32_MUL4;
+	h[2] ^= k;
+}
+
+static inline void
+rgph_murmur32_mix3(uint32_t k, uint32_t h[])
+{
+
+	k *= RGPH_MURMUR32_MUL4;
+	k = rgph_rotl(k, 18);
+	k *= RGPH_MURMUR32_MUL1;
+	h[3] ^= k;
+}
+
+static inline void
+rgph_murmur32_mix(uint32_t k1, uint32_t k2,
+    uint32_t k3, uint32_t k4, uint32_t h[])
+{
+
+	k1 *= RGPH_MURMUR32_MUL1;
+	k1 = rgph_rotl(k1, 15);
+	k1 *= RGPH_MURMUR32_MUL2;
+	h[0] ^= k1;
+	h[0] = rgph_rotl(h[0], 19);
+	h[0] += h[1];
+	h[0] = 5*h[0] + RGPH_MURMUR32_ADD1;
+	k2 *= RGPH_MURMUR32_MUL2;
+	k2 = rgph_rotl(k2, 16);
+	k2 *= RGPH_MURMUR32_MUL3;
+	h[1] ^= k2;
+	h[1] = rgph_rotl(h[1], 17);
+	h[1] += h[2];
+	h[1] = 5*h[1] + RGPH_MURMUR32_ADD2;
+	k3 *= RGPH_MURMUR32_MUL3;
+	k3 = rgph_rotl(k3, 17);
+	k3 *= RGPH_MURMUR32_MUL4;
+	h[2] ^= k3;
+	h[2] = rgph_rotl(h[2], 15);
+	h[2] += h[3];
+	h[2] = 5*h[2] + RGPH_MURMUR32_ADD3;
+	k4 *= RGPH_MURMUR32_MUL4;
+	k4 = rgph_rotl(k4, 18);
+	k4 *= RGPH_MURMUR32_MUL1;
+	h[3] ^= k4;
+	h[3] = rgph_rotl(h[3], 13);
+	h[3] += h[0];
+	h[3] = 5*h[3] + RGPH_MURMUR32_ADD4;
 }
 
 #endif /* FILE_RGPH_HASH_PRIV_H_INCLUDED */

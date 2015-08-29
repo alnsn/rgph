@@ -39,69 +39,41 @@
 inline void
 rgph_u32x4_murmur32_u8(uint8_t value, uint32_t seed, uint32_t *h)
 {
-	const uint32_t c1 = RGPH_MURMUR32_MUL1;
-	const uint32_t c2 = RGPH_MURMUR32_MUL2;
-
-	uint32_t k1 = 0;
 
 	h[0] = h[1] = h[2] = h[3] = seed;
 
-	k1 ^= value;
-	k1 *= c1; k1 = rgph_rotl(k1, 15); k1 *= c2; h[0] ^= k1;
-
+	rgph_murmur32_mix0(value, h);
 	rgph_murmur32_finalise(sizeof(value), h);
 }
 
 inline void
 rgph_u32x4_murmur32_u16(uint16_t value, uint32_t seed, uint32_t *h)
 {
-	const uint32_t c1 = RGPH_MURMUR32_MUL1;
-	const uint32_t c2 = RGPH_MURMUR32_MUL2;
-
-	uint32_t k1 = 0;
 
 	h[0] = h[1] = h[2] = h[3] = seed;
 
-	k1 ^= htole16(value);
-	k1 *= c1; k1 = rgph_rotl(k1, 15); k1 *= c2; h[0] ^= k1;
-
+	rgph_murmur32_mix0(htole16(value), h);
 	rgph_murmur32_finalise(sizeof(value), h);
 }
 
 inline void
 rgph_u32x4_murmur32_u32(uint32_t value, uint32_t seed, uint32_t *h)
 {
-	const uint32_t c1 = RGPH_MURMUR32_MUL1;
-	const uint32_t c2 = RGPH_MURMUR32_MUL2;
-
-	uint32_t k1 = 0;
 
 	h[0] = h[1] = h[2] = h[3] = seed;
 
-	k1 ^= htole32(value);
-	k1 *= c1; k1 = rgph_rotl(k1, 15); k1 *= c2; h[0] ^= k1;
-
+	rgph_murmur32_mix0(htole32(value), h);
 	rgph_murmur32_finalise(sizeof(value), h);
 }
 
 inline void
 rgph_u32x4_murmur32_u64(uint64_t value, uint32_t seed, uint32_t *h)
 {
-	const uint32_t c1 = RGPH_MURMUR32_MUL1;
-	const uint32_t c2 = RGPH_MURMUR32_MUL2;
-	const uint32_t c3 = RGPH_MURMUR32_MUL3;
-
-	uint32_t k1 = 0;
-	uint32_t k2 = 0;
 
 	h[0] = h[1] = h[2] = h[3] = seed;
 
-	k2 ^= htole64(value) >> 32;
-        k2 *= c2; k2 = rgph_rotl(k2, 16); k2 *= c3; h[1] ^= k2;
-
-	k1 ^= htole64(value) & UINT32_MAX;
-	k1 *= c1; k1 = rgph_rotl(k1, 15); k1 *= c2; h[0] ^= k1;
-
+	rgph_murmur32_mix1(htole64(value) >> 32, h);
+	rgph_murmur32_mix0(htole64(value) & UINT32_MAX, h);
 	rgph_murmur32_finalise(sizeof(value), h);
 }
 
@@ -254,11 +226,6 @@ inline void
 rgph_u32x4_murmur32_u8a(const uint8_t * restrict key,
     size_t len, uint32_t seed, uint32_t * restrict h)
 {
-	const uint32_t c1 = RGPH_MURMUR32_MUL1;
-	const uint32_t c2 = RGPH_MURMUR32_MUL2;
-	const uint32_t c3 = RGPH_MURMUR32_MUL3;
-	const uint32_t c4 = RGPH_MURMUR32_MUL4;
-
 	const uint8_t *end = key + len;
 	uint32_t k1, k2, k3, k4;
 #if defined(RGPH_UNALIGNED_READ)
@@ -277,7 +244,7 @@ rgph_u32x4_murmur32_u8a(const uint8_t * restrict key,
 			k2 = rgph_read32a(&key[4]);
 			k3 = rgph_read32a(&key[8]);
 			k4 = rgph_read32a(&key[12]);
-			RGPH_MURMUR32_MIX(k1, k2, k3, k4, h);
+			rgph_murmur32_mix(k1, k2, k3, k4, h);
 		}
 	} else {
 #if !defined(RGPH_UNALIGNED_READ)
@@ -287,7 +254,7 @@ rgph_u32x4_murmur32_u8a(const uint8_t * restrict key,
 			k2 = w[1];
 			k3 = w[2];
 			k4 = w[3];
-			RGPH_MURMUR32_MIX(k1, k2, k3, k4, h);
+			rgph_murmur32_mix(k1, k2, k3, k4, h);
 		}
 #endif
 	}
@@ -298,25 +265,25 @@ rgph_u32x4_murmur32_u8a(const uint8_t * restrict key,
 	case 15: k4 ^= key[14] << 16;
 	case 14: k4 ^= key[13] << 8;
 	case 13: k4 ^= key[12];
-	         k4 *= c4; k4  = rgph_rotl(k4, 18); k4 *= c1; h[3] ^= k4;
+	         rgph_murmur32_mix3(k4, h);
 		 /* FALLTHROUGH */
 	case 12: k3 ^= key[11] << 24;
 	case 11: k3 ^= key[10] << 16;
 	case 10: k3 ^= key[9] << 8;
 	case  9: k3 ^= key[8];
-	         k3 *= c3; k3  = rgph_rotl(k3, 17); k3 *= c4; h[2] ^= k3;
+	         rgph_murmur32_mix2(k3, h);
 		 /* FALLTHROUGH */
 	case  8: k2 ^= key[7] << 24;
 	case  7: k2 ^= key[6] << 16;
 	case  6: k2 ^= key[5] << 8;
 	case  5: k2 ^= key[4];
-	         k2 *= c2; k2  = rgph_rotl(k2, 16); k2 *= c3; h[1] ^= k2;
+	         rgph_murmur32_mix1(k2, h);
 		 /* FALLTHROUGH */
 	case  4: k1 ^= key[3] << 24;
 	case  3: k1 ^= key[2] << 16;
 	case  2: k1 ^= key[1] << 8;
 	case  1: k1 ^= key[0];
-	         k1 *= c1; k1  = rgph_rotl(k1, 15); k1 *= c2; h[0] ^= k1;
+	         rgph_murmur32_mix0(k1, h);
 	};
 
 	rgph_murmur32_finalise(len, h);
