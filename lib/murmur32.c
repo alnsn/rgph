@@ -37,7 +37,7 @@
 #include <stdint.h>
 
 static inline uint32_t
-fmix(uint32_t h)
+rgph_murmur32_fmix(uint32_t h)
 {
 
 	h ^= h >> 16;
@@ -50,7 +50,7 @@ fmix(uint32_t h)
 }
 
 static inline void
-finalise(size_t len, uint32_t *h)
+rgph_murmur32_finalise(size_t len, uint32_t *h)
 {
 
 	/* Note that len > UINT32_MAX is truncated. */
@@ -59,10 +59,10 @@ finalise(size_t len, uint32_t *h)
 	h[0] += h[1]; h[0] += h[2]; h[0] += h[3];
 	h[1] += h[0]; h[2] += h[0]; h[3] += h[0];
 
-	h[0] = fmix(h[0]);
-	h[1] = fmix(h[1]);
-	h[2] = fmix(h[2]);
-	h[3] = fmix(h[3]);
+	h[0] = rgph_murmur32_fmix(h[0]);
+	h[1] = rgph_murmur32_fmix(h[1]);
+	h[2] = rgph_murmur32_fmix(h[2]);
+	h[3] = rgph_murmur32_fmix(h[3]);
 
 	h[0] += h[1]; h[0] += h[2]; h[0] += h[3];
 	h[1] += h[0]; h[2] += h[0]; h[3] += h[0];
@@ -81,7 +81,7 @@ rgph_u32x4_murmur32_u8(uint8_t value, uint32_t seed, uint32_t *h)
 	k1 ^= value;
 	k1 *= c1; k1 = rgph_rotl(k1, 15); k1 *= c2; h[0] ^= k1;
 
-	finalise(sizeof(value), h);
+	rgph_murmur32_finalise(sizeof(value), h);
 }
 
 inline void
@@ -97,7 +97,7 @@ rgph_u32x4_murmur32_u16(uint16_t value, uint32_t seed, uint32_t *h)
 	k1 ^= htole16(value);
 	k1 *= c1; k1 = rgph_rotl(k1, 15); k1 *= c2; h[0] ^= k1;
 
-	finalise(sizeof(value), h);
+	rgph_murmur32_finalise(sizeof(value), h);
 }
 
 inline void
@@ -113,7 +113,7 @@ rgph_u32x4_murmur32_u32(uint32_t value, uint32_t seed, uint32_t *h)
 	k1 ^= htole32(value);
 	k1 *= c1; k1 = rgph_rotl(k1, 15); k1 *= c2; h[0] ^= k1;
 
-	finalise(sizeof(value), h);
+	rgph_murmur32_finalise(sizeof(value), h);
 }
 
 inline void
@@ -134,7 +134,7 @@ rgph_u32x4_murmur32_u64(uint64_t value, uint32_t seed, uint32_t *h)
 	k1 ^= htole64(value) & UINT32_MAX;
 	k1 *= c1; k1 = rgph_rotl(k1, 15); k1 *= c2; h[0] ^= k1;
 
-	finalise(sizeof(value), h);
+	rgph_murmur32_finalise(sizeof(value), h);
 }
 
 inline void
@@ -351,7 +351,7 @@ rgph_u32x4_murmur32_u8a(const uint8_t * restrict key,
 	         k1 *= c1; k1  = rgph_rotl(k1, 15); k1 *= c2; h[0] ^= k1;
 	};
 
-	finalise(len, h);
+	rgph_murmur32_finalise(len, h);
 }
 
 inline void
