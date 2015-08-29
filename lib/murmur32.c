@@ -36,38 +36,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-static inline uint32_t
-rgph_murmur32_fmix(uint32_t h)
-{
-
-	h ^= h >> 16;
-	h *= RGPH_MURMUR32_FMIXMUL1;
-	h ^= h >> 13;
-	h *= RGPH_MURMUR32_FMIXMUL2;
-	h ^= h >> 16;
-
-	return h;
-}
-
-static inline void
-rgph_murmur32_finalise(size_t len, uint32_t *h)
-{
-
-	/* Note that len > UINT32_MAX is truncated. */
-	h[0] ^= len; h[1] ^= len; h[2] ^= len; h[3] ^= len;
-
-	h[0] += h[1]; h[0] += h[2]; h[0] += h[3];
-	h[1] += h[0]; h[2] += h[0]; h[3] += h[0];
-
-	h[0] = rgph_murmur32_fmix(h[0]);
-	h[1] = rgph_murmur32_fmix(h[1]);
-	h[2] = rgph_murmur32_fmix(h[2]);
-	h[3] = rgph_murmur32_fmix(h[3]);
-
-	h[0] += h[1]; h[0] += h[2]; h[0] += h[3];
-	h[1] += h[0]; h[2] += h[0]; h[3] += h[0];
-}
-
 inline void
 rgph_u32x4_murmur32_u8(uint8_t value, uint32_t seed, uint32_t *h)
 {

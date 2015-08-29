@@ -153,4 +153,36 @@ d2u64(double d)
 	return u.u;
 }
 
+static inline uint32_t
+rgph_murmur32_fmix(uint32_t h)
+{
+
+	h ^= h >> 16;
+	h *= RGPH_MURMUR32_FMIXMUL1;
+	h ^= h >> 13;
+	h *= RGPH_MURMUR32_FMIXMUL2;
+	h ^= h >> 16;
+
+	return h;
+}
+
+static inline void
+rgph_murmur32_finalise(size_t len, uint32_t *h)
+{
+
+	/* Note that len > UINT32_MAX is truncated. */
+	h[0] ^= len; h[1] ^= len; h[2] ^= len; h[3] ^= len;
+
+	h[0] += h[1]; h[0] += h[2]; h[0] += h[3];
+	h[1] += h[0]; h[2] += h[0]; h[3] += h[0];
+
+	h[0] = rgph_murmur32_fmix(h[0]);
+	h[1] = rgph_murmur32_fmix(h[1]);
+	h[2] = rgph_murmur32_fmix(h[2]);
+	h[3] = rgph_murmur32_fmix(h[3]);
+
+	h[0] += h[1]; h[0] += h[2]; h[0] += h[3];
+	h[1] += h[0]; h[2] += h[0]; h[3] += h[0];
+}
+
 #endif /* FILE_RGPH_HASH_PRIV_H_INCLUDED */
