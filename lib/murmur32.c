@@ -36,19 +36,19 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define RGPH_MURMUR32_MIX(k1, k2, k3, k4, h)                                   \
-	k1 *= RGPH_MURMUR32_MUL1; k1 = rotl(k1, 15); k1 *= RGPH_MURMUR32_MUL2; \
-	h[0] ^= k1; h[0] = rotl(h[0], 19); h[0] += h[1];                       \
-	h[0] = 5*h[0] + RGPH_MURMUR32_ADD1;                                    \
-	k2 *= RGPH_MURMUR32_MUL2; k2 = rotl(k2, 16); k2 *= RGPH_MURMUR32_MUL3; \
-	h[1] ^= k2; h[1] = rotl(h[1], 17); h[1] += h[2];                       \
-	h[1] = 5*h[1] + RGPH_MURMUR32_ADD2;                                    \
-	k3 *= RGPH_MURMUR32_MUL3; k3 = rotl(k3, 17); k3 *= RGPH_MURMUR32_MUL4; \
-	h[2] ^= k3; h[2] = rotl(h[2], 15);                                     \
-	h[2] += h[3]; h[2] = 5*h[2] + RGPH_MURMUR32_ADD3;                      \
-	k4 *= RGPH_MURMUR32_MUL4; k4 = rotl(k4, 18); k4 *= RGPH_MURMUR32_MUL1; \
-	h[3] ^= k4; h[3] = rotl(h[3], 13); h[3] += h[0];                       \
-	h[3] = 5*h[3] + RGPH_MURMUR32_ADD4;
+#define RGPH_MURMUR32_MIX(k1, k2, k3, k4, h)                              \
+	k1 *= RGPH_MURMUR32_MUL1; k1 = rgph_rotl(k1, 15);                 \
+	k1 *= RGPH_MURMUR32_MUL2; h[0] ^= k1; h[0] = rgph_rotl(h[0], 19); \
+	h[0] += h[1]; h[0] = 5*h[0] + RGPH_MURMUR32_ADD1;                 \
+	k2 *= RGPH_MURMUR32_MUL2; k2 = rgph_rotl(k2, 16);                 \
+	k2 *= RGPH_MURMUR32_MUL3; h[1] ^= k2; h[1] = rgph_rotl(h[1], 17); \
+	h[1] += h[2]; h[1] = 5*h[1] + RGPH_MURMUR32_ADD2;                 \
+	k3 *= RGPH_MURMUR32_MUL3; k3 = rgph_rotl(k3, 17);                 \
+	k3 *= RGPH_MURMUR32_MUL4; h[2] ^= k3; h[2] = rgph_rotl(h[2], 15); \
+	h[2] += h[3]; h[2] = 5*h[2] + RGPH_MURMUR32_ADD3;                 \
+	k4 *= RGPH_MURMUR32_MUL4; k4 = rgph_rotl(k4, 18);                 \
+	k4 *= RGPH_MURMUR32_MUL1; h[3] ^= k4; h[3] = rgph_rotl(h[3], 13); \
+	h[3] += h[0]; h[3] = 5*h[3] + RGPH_MURMUR32_ADD4;
 
 static inline uint32_t
 fmix(uint32_t h)
@@ -93,7 +93,7 @@ rgph_u32x4_murmur32_u8(uint8_t value, uint32_t seed, uint32_t *h)
 	h[0] = h[1] = h[2] = h[3] = seed;
 
 	k1 ^= value;
-	k1 *= c1; k1 = rotl(k1, 15); k1 *= c2; h[0] ^= k1;
+	k1 *= c1; k1 = rgph_rotl(k1, 15); k1 *= c2; h[0] ^= k1;
 
 	finalise(sizeof(value), h);
 }
@@ -109,7 +109,7 @@ rgph_u32x4_murmur32_u16(uint16_t value, uint32_t seed, uint32_t *h)
 	h[0] = h[1] = h[2] = h[3] = seed;
 
 	k1 ^= htole16(value);
-	k1 *= c1; k1 = rotl(k1, 15); k1 *= c2; h[0] ^= k1;
+	k1 *= c1; k1 = rgph_rotl(k1, 15); k1 *= c2; h[0] ^= k1;
 
 	finalise(sizeof(value), h);
 }
@@ -125,7 +125,7 @@ rgph_u32x4_murmur32_u32(uint32_t value, uint32_t seed, uint32_t *h)
 	h[0] = h[1] = h[2] = h[3] = seed;
 
 	k1 ^= htole32(value);
-	k1 *= c1; k1 = rotl(k1, 15); k1 *= c2; h[0] ^= k1;
+	k1 *= c1; k1 = rgph_rotl(k1, 15); k1 *= c2; h[0] ^= k1;
 
 	finalise(sizeof(value), h);
 }
@@ -143,10 +143,10 @@ rgph_u32x4_murmur32_u64(uint64_t value, uint32_t seed, uint32_t *h)
 	h[0] = h[1] = h[2] = h[3] = seed;
 
 	k2 ^= htole64(value) >> 32;
-        k2 *= c2; k2 = rotl(k2, 16); k2 *= c3; h[1] ^= k2;
+        k2 *= c2; k2 = rgph_rotl(k2, 16); k2 *= c3; h[1] ^= k2;
 
 	k1 ^= htole64(value) & UINT32_MAX;
-	k1 *= c1; k1 = rotl(k1, 15); k1 *= c2; h[0] ^= k1;
+	k1 *= c1; k1 = rgph_rotl(k1, 15); k1 *= c2; h[0] ^= k1;
 
 	finalise(sizeof(value), h);
 }
@@ -344,25 +344,25 @@ rgph_u32x4_murmur32_u8a(const uint8_t * restrict key,
 	case 15: k4 ^= key[14] << 16;
 	case 14: k4 ^= key[13] << 8;
 	case 13: k4 ^= key[12];
-	         k4 *= c4; k4  = rotl(k4, 18); k4 *= c1; h[3] ^= k4;
+	         k4 *= c4; k4  = rgph_rotl(k4, 18); k4 *= c1; h[3] ^= k4;
 		 /* FALLTHROUGH */
 	case 12: k3 ^= key[11] << 24;
 	case 11: k3 ^= key[10] << 16;
 	case 10: k3 ^= key[9] << 8;
 	case  9: k3 ^= key[8];
-	         k3 *= c3; k3  = rotl(k3, 17); k3 *= c4; h[2] ^= k3;
+	         k3 *= c3; k3  = rgph_rotl(k3, 17); k3 *= c4; h[2] ^= k3;
 		 /* FALLTHROUGH */
 	case  8: k2 ^= key[7] << 24;
 	case  7: k2 ^= key[6] << 16;
 	case  6: k2 ^= key[5] << 8;
 	case  5: k2 ^= key[4];
-	         k2 *= c2; k2  = rotl(k2, 16); k2 *= c3; h[1] ^= k2;
+	         k2 *= c2; k2  = rgph_rotl(k2, 16); k2 *= c3; h[1] ^= k2;
 		 /* FALLTHROUGH */
 	case  4: k1 ^= key[3] << 24;
 	case  3: k1 ^= key[2] << 16;
 	case  2: k1 ^= key[1] << 8;
 	case  1: k1 ^= key[0];
-	         k1 *= c1; k1  = rotl(k1, 15); k1 *= c2; h[0] ^= k1;
+	         k1 *= c1; k1  = rgph_rotl(k1, 15); k1 *= c2; h[0] ^= k1;
 	};
 
 	finalise(len, h);

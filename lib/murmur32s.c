@@ -68,7 +68,7 @@ rgph_u32_murmur32s_u8(uint8_t value, uint32_t seed)
 
 	h = seed;
 	k = value;
-	k *= c1; k = rotl(k, 15); k *= c2; h ^= k;
+	k *= c1; k = rgph_rotl(k, 15); k *= c2; h ^= k;
 	finalise(sizeof(value), &h);
 	return h;
 }
@@ -83,7 +83,7 @@ rgph_u32_murmur32s_u16(uint16_t value, uint32_t seed)
 
 	h = seed;
 	k = htole16(value);
-	k *= c1; k = rotl(k, 15); k *= c2; h ^= k;
+	k *= c1; k = rgph_rotl(k, 15); k *= c2; h ^= k;
 	finalise(sizeof(value), &h);
 	return h;
 }
@@ -99,11 +99,11 @@ rgph_u32_murmur32s_u32(uint32_t value, uint32_t seed)
 	h = seed;
 
 	k = htole32(value);
-	k *= c1; k = rotl(k, 15); k *= c2; h ^= k;
-	h = rotl(h, 13); h = 5*h + RGPH_MURMUR32S_ADD1;
+	k *= c1; k = rgph_rotl(k, 15); k *= c2; h ^= k;
+	h = rgph_rotl(h, 13); h = 5*h + RGPH_MURMUR32S_ADD1;
 
 	k = 0;
-	k *= c1; k = rotl(k, 15); k *= c2; h ^= k;
+	k *= c1; k = rgph_rotl(k, 15); k *= c2; h ^= k;
 	finalise(sizeof(value), &h);
 	return h;
 }
@@ -118,16 +118,16 @@ rgph_u32_murmur32s_u64(uint64_t value, uint32_t seed)
 
 	h = seed;
 	k = htole64(value) & UINT32_MAX;
-	k *= c1; k = rotl(k, 15); k *= c2; h ^= k;
+	k *= c1; k = rgph_rotl(k, 15); k *= c2; h ^= k;
 
-	h = rotl(h, 13); h = 5*h + RGPH_MURMUR32S_ADD1;
+	h = rgph_rotl(h, 13); h = 5*h + RGPH_MURMUR32S_ADD1;
 
 	k = htole64(value) >> 32;
-	k *= c1; k = rotl(k, 15); k *= c2; h ^= k;
-	h = rotl(h, 13); h = 5*h + RGPH_MURMUR32S_ADD1;
+	k *= c1; k = rgph_rotl(k, 15); k *= c2; h ^= k;
+	h = rgph_rotl(h, 13); h = 5*h + RGPH_MURMUR32S_ADD1;
 
 	k = 0;
-	k *= c1; k = rotl(k, 15); k *= c2; h ^= k;
+	k *= c1; k = rgph_rotl(k, 15); k *= c2; h ^= k;
 	finalise(sizeof(value), &h);
 	return h;
 }
@@ -168,31 +168,31 @@ rgph_u32_murmur32s_u8a(const uint8_t * restrict key,
 	if (down == 0) {
 		for (; end - key >= 4; key += 4) {
 			k = rgph_read32a(&key[0]);
-			k *= c1; k = rotl(k, 15); k *= c2; h ^= k;
-			h = rotl(h, 13); h = 5*h + RGPH_MURMUR32S_ADD1;
+			k *= c1; k = rgph_rotl(k, 15); k *= c2; h ^= k;
+			h = rgph_rotl(h, 13); h = 5*h + RGPH_MURMUR32S_ADD1;
 		}
 	} else {
 #if !defined(RGPH_UNALIGNED_READ)
 		for (; end - key >= 16; key += 16) {
 			rgph_read32u(key, 4 - down, &carry, w, 4);
 			k = w[0];
-			k *= c1; k = rotl(k, 15); k *= c2; h ^= k;
-			h = rotl(h, 13); h = 5*h + RGPH_MURMUR32S_ADD1;
+			k *= c1; k = rgph_rotl(k, 15); k *= c2; h ^= k;
+			h = rgph_rotl(h, 13); h = 5*h + RGPH_MURMUR32S_ADD1;
 			k = w[1];
-			k *= c1; k = rotl(k, 15); k *= c2; h ^= k;
-			h = rotl(h, 13); h = 5*h + RGPH_MURMUR32S_ADD1;
+			k *= c1; k = rgph_rotl(k, 15); k *= c2; h ^= k;
+			h = rgph_rotl(h, 13); h = 5*h + RGPH_MURMUR32S_ADD1;
 			k = w[2];
-			k *= c1; k = rotl(k, 15); k *= c2; h ^= k;
-			h = rotl(h, 13); h = 5*h + RGPH_MURMUR32S_ADD1;
+			k *= c1; k = rgph_rotl(k, 15); k *= c2; h ^= k;
+			h = rgph_rotl(h, 13); h = 5*h + RGPH_MURMUR32S_ADD1;
 			k = w[3];
-			k *= c1; k = rotl(k, 15); k *= c2; h ^= k;
-			h = rotl(h, 13); h = 5*h + RGPH_MURMUR32S_ADD1;
+			k *= c1; k = rgph_rotl(k, 15); k *= c2; h ^= k;
+			h = rgph_rotl(h, 13); h = 5*h + RGPH_MURMUR32S_ADD1;
 		}
 		for (; end - key >= 4; key += 4) {
 			rgph_read32u(key, 4 - down, &carry, w, 1);
 			k = w[0];
-			k *= c1; k = rotl(k, 15); k *= c2; h ^= k;
-			h = rotl(h, 13); h = 5*h + RGPH_MURMUR32S_ADD1;
+			k *= c1; k = rgph_rotl(k, 15); k *= c2; h ^= k;
+			h = rgph_rotl(h, 13); h = 5*h + RGPH_MURMUR32S_ADD1;
 		}
 #endif
 	}
@@ -206,7 +206,7 @@ rgph_u32_murmur32s_u8a(const uint8_t * restrict key,
 	case 1:
 		k ^= (uint32_t)key[0];       /* FALLTHROUGH */
 	case 0:
-		k *= c1; k = rotl(k, 15); k *= c2; h ^= k;
+		k *= c1; k = rgph_rotl(k, 15); k *= c2; h ^= k;
 		finalise(len, &h);
 	}
 
@@ -245,12 +245,12 @@ rgph_u32_murmur32s_u32a(const uint32_t * restrict key,
 
 	for (; key != end; key += 1) {
 		k = htole32(key[0]);
-		k *= c1; k = rotl(k, 15); k *= c2; h ^= k;
-		h = rotl(h, 13); h = 5*h + RGPH_MURMUR32S_ADD1;
+		k *= c1; k = rgph_rotl(k, 15); k *= c2; h ^= k;
+		h = rgph_rotl(h, 13); h = 5*h + RGPH_MURMUR32S_ADD1;
 	}
 
 	k = 0;
-	k *= c1; k = rotl(k, 15); k *= c2; h ^= k;
+	k *= c1; k = rgph_rotl(k, 15); k *= c2; h ^= k;
 	finalise(len * sizeof(key[0]), &h);
 
 	return h;
@@ -270,15 +270,15 @@ rgph_u32_murmur32s_u64a(const uint64_t * restrict key,
 
 	for (; key != end; key += 1) {
 		k = htole64(key[0]) & UINT32_MAX;
-		k *= c1; k = rotl(k, 15); k *= c2; h ^= k;
-		h = rotl(h, 13); h = 5*h + RGPH_MURMUR32S_ADD1;
+		k *= c1; k = rgph_rotl(k, 15); k *= c2; h ^= k;
+		h = rgph_rotl(h, 13); h = 5*h + RGPH_MURMUR32S_ADD1;
 		k = htole64(key[0]) >> 32;
-		k *= c1; k = rotl(k, 15); k *= c2; h ^= k;
-		h = rotl(h, 13); h = 5*h + RGPH_MURMUR32S_ADD1;
+		k *= c1; k = rgph_rotl(k, 15); k *= c2; h ^= k;
+		h = rgph_rotl(h, 13); h = 5*h + RGPH_MURMUR32S_ADD1;
 	}
 
 	k = 0;
-	k *= c1; k = rotl(k, 15); k *= c2; h ^= k;
+	k *= c1; k = rgph_rotl(k, 15); k *= c2; h ^= k;
 	finalise(len * sizeof(key[0]), &h);
 
 	return h;
@@ -298,12 +298,12 @@ rgph_u32_murmur32s_f32a(const float * restrict key,
 
 	for (; key != end; key += 1) {
 		k = htole32(f2u32(key[0]));
-		k *= c1; k = rotl(k, 15); k *= c2; h ^= k;
-		h = rotl(h, 13); h = 5*h + RGPH_MURMUR32S_ADD1;
+		k *= c1; k = rgph_rotl(k, 15); k *= c2; h ^= k;
+		h = rgph_rotl(h, 13); h = 5*h + RGPH_MURMUR32S_ADD1;
 	}
 
 	k = 0;
-	k *= c1; k = rotl(k, 15); k *= c2; h ^= k;
+	k *= c1; k = rgph_rotl(k, 15); k *= c2; h ^= k;
 	finalise(len * sizeof(key[0]), &h);
 
 	return h;
@@ -323,15 +323,15 @@ rgph_u32_murmur32s_f64a(const double * restrict key,
 
 	for (; key != end; key += 1) {
 		k = htole64(d2u64(key[0])) & UINT32_MAX;
-		k *= c1; k = rotl(k, 15); k *= c2; h ^= k;
-		h = rotl(h, 13); h = 5*h + RGPH_MURMUR32S_ADD1;
+		k *= c1; k = rgph_rotl(k, 15); k *= c2; h ^= k;
+		h = rgph_rotl(h, 13); h = 5*h + RGPH_MURMUR32S_ADD1;
 		k = htole64(d2u64(key[0])) >> 32;
-		k *= c1; k = rotl(k, 15); k *= c2; h ^= k;
-		h = rotl(h, 13); h = 5*h + RGPH_MURMUR32S_ADD1;
+		k *= c1; k = rgph_rotl(k, 15); k *= c2; h ^= k;
+		h = rgph_rotl(h, 13); h = 5*h + RGPH_MURMUR32S_ADD1;
 	}
 
 	k = 0;
-	k *= c1; k = rotl(k, 15); k *= c2; h ^= k;
+	k *= c1; k = rgph_rotl(k, 15); k *= c2; h ^= k;
 	finalise(len * sizeof(key[0]), &h);
 
 	return h;
