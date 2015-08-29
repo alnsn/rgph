@@ -36,20 +36,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-#define RGPH_MURMUR32_MIX(k1, k2, k3, k4, h)                              \
-	k1 *= RGPH_MURMUR32_MUL1; k1 = rgph_rotl(k1, 15);                 \
-	k1 *= RGPH_MURMUR32_MUL2; h[0] ^= k1; h[0] = rgph_rotl(h[0], 19); \
-	h[0] += h[1]; h[0] = 5*h[0] + RGPH_MURMUR32_ADD1;                 \
-	k2 *= RGPH_MURMUR32_MUL2; k2 = rgph_rotl(k2, 16);                 \
-	k2 *= RGPH_MURMUR32_MUL3; h[1] ^= k2; h[1] = rgph_rotl(h[1], 17); \
-	h[1] += h[2]; h[1] = 5*h[1] + RGPH_MURMUR32_ADD2;                 \
-	k3 *= RGPH_MURMUR32_MUL3; k3 = rgph_rotl(k3, 17);                 \
-	k3 *= RGPH_MURMUR32_MUL4; h[2] ^= k3; h[2] = rgph_rotl(h[2], 15); \
-	h[2] += h[3]; h[2] = 5*h[2] + RGPH_MURMUR32_ADD3;                 \
-	k4 *= RGPH_MURMUR32_MUL4; k4 = rgph_rotl(k4, 18);                 \
-	k4 *= RGPH_MURMUR32_MUL1; h[3] ^= k4; h[3] = rgph_rotl(h[3], 13); \
-	h[3] += h[0]; h[3] = 5*h[3] + RGPH_MURMUR32_ADD4;
-
 static inline uint32_t
 fmix(uint32_t h)
 {
