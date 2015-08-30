@@ -30,7 +30,7 @@
  * SUCH DAMAGE.
  */
 
-#include "hash_priv.h"
+#include "rgph_hash_impl.h"
 #include "rgph_hash.h"
 
 #include <stddef.h>

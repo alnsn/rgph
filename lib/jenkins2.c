@@ -32,7 +32,7 @@
 /*
  * Based on http://www.burtleburtle.net/bob/c/lookup2.c.
  */
-#include "hash_priv.h"
+#include "rgph_hash_impl.h"
 #include "rgph_hash.h"
 
 #include <stddef.h>
