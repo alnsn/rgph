@@ -31,8 +31,8 @@
  * OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
  */
-#ifndef FILE_RGPH_HASH_PRIV_H_INCLUDED
-#define FILE_RGPH_HASH_PRIV_H_INCLUDED
+#ifndef FILE_RGPH_HASH_IMPL_H_INCLUDED
+#define FILE_RGPH_HASH_IMPL_H_INCLUDED
 
 /* XXX https://gist.github.com/panzi/6856583 */
 #if defined(__linux__)
@@ -291,4 +291,4 @@ rgph_murmur32s_mix(uint32_t k, uint32_t h[/* static 1 */], int last)
 	}
 }
 
-#endif /* FILE_RGPH_HASH_PRIV_H_INCLUDED */
+#endif /* FILE_RGPH_HASH_IMPL_H_INCLUDED */
