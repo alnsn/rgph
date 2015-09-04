@@ -133,7 +133,7 @@ d2u64(double d)
 }
 
 static inline void
-rgph_jenkins2_mix(uint32_t h[/*static 3 */])
+rgph_jenkins2_mix(uint32_t h[/* static 3 */])
 {
 
 	h[0] -= h[1]; h[0] -= h[2]; h[0] ^= (h[2] >> 13);
@@ -161,7 +161,7 @@ rgph_murmur32_fmix(uint32_t h)
 }
 
 static inline void
-rgph_murmur32_finalise(size_t len, uint32_t *h)
+rgph_murmur32_finalise(size_t len, uint32_t h[/* static 4 */])
 {
 
 	/* Note that len > UINT32_MAX is truncated. */
@@ -180,7 +180,7 @@ rgph_murmur32_finalise(size_t len, uint32_t *h)
 }
 
 static inline void
-rgph_murmur32_mix0(uint32_t k, uint32_t h[])
+rgph_murmur32_mix0(uint32_t k, uint32_t h[/* static 4 */])
 {
 
 	k *= RGPH_MURMUR32_MUL1;
@@ -190,7 +190,7 @@ rgph_murmur32_mix0(uint32_t k, uint32_t h[])
 }
 
 static inline void
-rgph_murmur32_mix1(uint32_t k, uint32_t h[])
+rgph_murmur32_mix1(uint32_t k, uint32_t h[/* static 4 */])
 {
 
 	k *= RGPH_MURMUR32_MUL2;
@@ -200,7 +200,7 @@ rgph_murmur32_mix1(uint32_t k, uint32_t h[])
 }
 
 static inline void
-rgph_murmur32_mix2(uint32_t k, uint32_t h[])
+rgph_murmur32_mix2(uint32_t k, uint32_t h[/* static 4 */])
 {
 
 	k *= RGPH_MURMUR32_MUL3;
@@ -210,7 +210,7 @@ rgph_murmur32_mix2(uint32_t k, uint32_t h[])
 }
 
 static inline void
-rgph_murmur32_mix3(uint32_t k, uint32_t h[])
+rgph_murmur32_mix3(uint32_t k, uint32_t h[/* static 4 */])
 {
 
 	k *= RGPH_MURMUR32_MUL4;
@@ -268,7 +268,7 @@ rgph_murmur32s_fmix(uint32_t h)
 }
 
 static inline void
-rgph_murmur32s_finalise(size_t len, uint32_t *h)
+rgph_murmur32s_finalise(size_t len, uint32_t h[/* static 1 */])
 {
 
 	/* Note that len > UINT32_MAX is truncated. */
