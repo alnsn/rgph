@@ -81,14 +81,14 @@ inline void
 rgph_u32x4_murmur32_f32(float value, uint32_t seed, uint32_t *h)
 {
 
-	rgph_u32x4_murmur32_u32(f2u32(value), seed, h);
+	rgph_u32x4_murmur32_u32(rgph_f2u32(value), seed, h);
 }
 
 inline void
 rgph_u32x4_murmur32_f64(double value, uint32_t seed, uint32_t *h)
 {
 
-	rgph_u32x4_murmur32_u64(d2u64(value), seed, h);
+	rgph_u32x4_murmur32_u64(rgph_d2u64(value), seed, h);
 }
 
 uint32_t

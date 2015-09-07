@@ -95,14 +95,14 @@ inline void
 rgph_u32x3_jenkins2_f32(float value, uint32_t seed, uint32_t *h)
 {
 
-	rgph_u32x3_jenkins2_u32(f2u32(value), seed, h);
+	rgph_u32x3_jenkins2_u32(rgph_f2u32(value), seed, h);
 }
 
 inline void
 rgph_u32x3_jenkins2_f64(double value, uint32_t seed, uint32_t *h)
 {
 
-	rgph_u32x3_jenkins2_u64(d2u64(value), seed, h);
+	rgph_u32x3_jenkins2_u64(rgph_d2u64(value), seed, h);
 }
 
 uint32_t
@@ -435,17 +435,17 @@ rgph_u32x3_jenkins2_f32a(const float * restrict key,
 	h[2] = seed;
 
 	for (; end - key >= 3; key += 3) {
-		h[0] += htole32(f2u32(key[0]));
-		h[1] += htole32(f2u32(key[1]));
-		h[2] += htole32(f2u32(key[2]));
+		h[0] += htole32(rgph_f2u32(key[0]));
+		h[1] += htole32(rgph_f2u32(key[1]));
+		h[2] += htole32(rgph_f2u32(key[2]));
 		rgph_jenkins2_mix(h);
 	}
 
 	switch (end - key) {
 	case 2:
-		h[1] += htole32(f2u32(key[1])); /* FALLTHROUGH */
+		h[1] += htole32(rgph_f2u32(key[1])); /* FALLTHROUGH */
 	case 1:
-		h[0] += htole32(f2u32(key[0])); /* FALLTHROUGH */
+		h[0] += htole32(rgph_f2u32(key[0])); /* FALLTHROUGH */
 	case 0:
 		h[2] += len * sizeof(key[0]);
 		rgph_jenkins2_mix(h);
@@ -464,9 +464,9 @@ rgph_u32x3_jenkins2_f64a(const double * restrict key,
 	h[2] = seed;
 
 	for (; end - key >= 3; key += 3) {
-		a = htole64(d2u64(key[0]));
-		b = htole64(d2u64(key[1]));
-		c = htole64(d2u64(key[2]));
+		a = htole64(rgph_d2u64(key[0]));
+		b = htole64(rgph_d2u64(key[1]));
+		c = htole64(rgph_d2u64(key[2]));
 		h[0] += a & UINT32_MAX;
 		h[1] += a >> 32;
 		h[2] += b & UINT32_MAX;
@@ -479,8 +479,8 @@ rgph_u32x3_jenkins2_f64a(const double * restrict key,
 
 	switch (end - key) {
 	case 2:
-		a = htole64(d2u64(key[0]));
-		b = htole64(d2u64(key[1]));
+		a = htole64(rgph_d2u64(key[0]));
+		b = htole64(rgph_d2u64(key[1]));
 		h[0] += a & UINT32_MAX;
 		h[1] += a >> 32;
 		h[2] += b & UINT32_MAX;
@@ -488,7 +488,7 @@ rgph_u32x3_jenkins2_f64a(const double * restrict key,
 		h[0] += b >> 32;
 		break;
 	case 1:
-		a = htole64(d2u64(key[0]));
+		a = htole64(rgph_d2u64(key[0]));
 		h[0] += a & UINT32_MAX;
 		h[1] += a >> 32;
 		break;

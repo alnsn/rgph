@@ -109,7 +109,7 @@ rgph_read32u(const uint8_t * restrict ptr, int align_up,
 }
 
 static inline uint32_t
-f2u32(float f)
+rgph_f2u32(float f)
 {
 	/* This conversion isn't well defined but it's faster than memcpy(3). */
 	union {
@@ -121,7 +121,7 @@ f2u32(float f)
 }
 
 static inline uint64_t
-d2u64(double d)
+rgph_d2u64(double d)
 {
 	/* Weird half little-endian half big-endian FP isn't supported. */
 	union {

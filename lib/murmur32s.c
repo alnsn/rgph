@@ -87,14 +87,14 @@ inline uint32_t
 rgph_u32_murmur32s_f32(float value, uint32_t seed)
 {
 
-	return rgph_u32_murmur32s_u32(f2u32(value), seed);
+	return rgph_u32_murmur32s_u32(rgph_f2u32(value), seed);
 }
 
 inline uint32_t
 rgph_u32_murmur32s_f64(double value, uint32_t seed)
 {
 
-	return rgph_u32_murmur32s_u64(d2u64(value), seed);
+	return rgph_u32_murmur32s_u64(rgph_d2u64(value), seed);
 }
 
 inline uint32_t
@@ -206,7 +206,7 @@ rgph_u32_murmur32s_f32a(const float * restrict key,
 	uint32_t h[1] = { seed };
 
 	for (; key != end; key += 1)
-		rgph_murmur32s_mix(htole32(f2u32(key[0])), h, 0);
+		rgph_murmur32s_mix(htole32(rgph_f2u32(key[0])), h, 0);
 
 	rgph_murmur32s_mix(0, h, 1);
 	rgph_murmur32s_finalise(len * sizeof(key[0]), h);
@@ -222,8 +222,9 @@ rgph_u32_murmur32s_f64a(const double * restrict key,
 	uint32_t h[1] = { seed };
 
 	for (; key != end; key += 1) {
-		rgph_murmur32s_mix(htole64(d2u64(key[0])) & UINT32_MAX, h, 0);
-		rgph_murmur32s_mix(htole64(d2u64(key[0])) >> 32, h, 0);
+		rgph_murmur32s_mix(htole64(rgph_d2u64(key[0])) & UINT32_MAX,
+		    h, 0);
+		rgph_murmur32s_mix(htole64(rgph_d2u64(key[0])) >> 32, h, 0);
 	}
 
 	rgph_murmur32s_mix(0, h, 1);
@@ -284,14 +285,14 @@ void
 rgph_u8x4_murmur32s_f32(float value, uint32_t seed, uint8_t *h8)
 {
 
-	rgph_u8x4_murmur32s_u32(f2u32(value), seed, h8);
+	rgph_u8x4_murmur32s_u32(rgph_f2u32(value), seed, h8);
 }
 
 void
 rgph_u8x4_murmur32s_f64(double value, uint32_t seed, uint8_t *h8)
 {
 
-	rgph_u8x4_murmur32s_u64(d2u64(value), seed, h8);
+	rgph_u8x4_murmur32s_u64(rgph_d2u64(value), seed, h8);
 }
 
 void
@@ -430,14 +431,14 @@ void
 rgph_u16x2_murmur32s_f32(float value, uint32_t seed, uint16_t *h16)
 {
 
-	rgph_u16x2_murmur32s_u32(f2u32(value), seed, h16);
+	rgph_u16x2_murmur32s_u32(rgph_f2u32(value), seed, h16);
 }
 
 void
 rgph_u16x2_murmur32s_f64(double value, uint32_t seed, uint16_t *h16)
 {
 
-	rgph_u16x2_murmur32s_u64(d2u64(value), seed, h16);
+	rgph_u16x2_murmur32s_u64(rgph_d2u64(value), seed, h16);
 }
 
 void
