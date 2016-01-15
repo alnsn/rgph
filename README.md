@@ -10,7 +10,7 @@ stuff and there is no support for auto configuration.
 Typing `(cd lib && make)` should work but it may produce unoptimised
 binaries. It's best to set optimisation flags in `CFLAGS` and
 `CXXFLAGS` variables. Some platforms support unaligned loads are
-they're fast. You may want to pass `-DRGPH_UNALIGNED_READ` when
+they're fast. You may want to pass `-DUNALIGNED_READ` when
 building for those platforms.
 
 To build a shared library:

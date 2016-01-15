@@ -3,18 +3,21 @@
 DSO?=		so  # or dylib
 LUAPKG?=	lua # pkg-config name
 
-WARNS?=		-Wall
+WARNS?=		-Wall -Wextra
 PICFLAGS?=	-fPIC
 PICLDFLAGS?=	-fPIC
-C99OPTS?=	-std=c99
+C99OPTS?=	-std=gnu99 # GNU for WEAK_ALIASES
 CXXOPTS?=	-nostdinc++ -fno-exceptions -fno-rtti
+
+CPPFLAGS+=	-DWEAK_ALIASES
 
 # PACKAGE DEVELOPERS: don't uncomment the lines below, pass those flags
 # to your make instead: make CFLAGS='-O2 -UNDEBUG' CXXFLAGS='-O2 -UNDEBUG'.
-#CFLAGS+=	-DRGPH_UNALIGNED_READ
-#CXXFLAGS+=	-DRGPH_UNALIGNED_READ
+#CFLAGS+=	-DUNALIGNED_READ
+#CXXFLAGS+=	-DUNALIGNED_READ
 #CFLAGS+=	-UNDEBUG
 #CXXFLAGS+=	-UNDEBUG
+#CFLAGS+=	-UWEAK_ALIASES
 
 
 OBJ=		writer.o    jenkins2.o    murmur32.o    murmur32s.o
@@ -22,8 +25,8 @@ PICOBJ=		writer.pico jenkins2.pico murmur32.pico murmur32s.pico
 LOBJ=		luargph.o
 LPICOBJ=	luargph.pico
 
-XCFLAGS+=	-I. -DNDEBUG $(WARNS) $(C99OPTS)
-XCXXFLAGS+=	-I. -DNDEBUG $(WARNS) $(CXXOPTS)
+XCFLAGS+=	-I. -DNDEBUG -DWEAK_ALIASES $(WARNS) $(C99OPTS)
+XCXXFLAGS+=	-I. -DNDEBUG -DWEAK_ALIASES $(WARNS) $(CXXOPTS)
 
 
 .SUFFIXES: .c .cc .o .pico

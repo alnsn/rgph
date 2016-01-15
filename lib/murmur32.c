@@ -2,7 +2,7 @@
  * MurmurHash3 was written by Austin Appleby, and is placed in the public
  * domain. The author hereby disclaims copyright to this source code.
  *
- * Copyright (c) 2015 Alexander Nasonov.
+ * Copyright (c) 2015-2016 Alexander Nasonov.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,11 +30,21 @@
  * SUCH DAMAGE.
  */
 
+ /*
+  * XXX use rgph_unalias.
+  */
+
 #include "rgph_hash_impl.h"
 #include "rgph_hash.h"
 
 #include <stddef.h>
 #include <stdint.h>
+
+#if defined(WEAK_ALIASES) && !defined(__STRICT_ANSI__)
+/* Non-public external symbols for aliasing. */
+void rgph_u32x4_murmur32_data32(const void *, size_t, uint32_t, uint32_t *);
+void rgph_u32x4_murmur32_data64(const void *, size_t, uint32_t, uint32_t *);
+#endif
 
 inline void
 rgph_u32x4_murmur32_u8(uint8_t value, uint32_t seed, uint32_t *h)
@@ -223,12 +233,13 @@ rgph_u64_murmur32_f64(double value, uint32_t seed)
 }
 
 inline void
-rgph_u32x4_murmur32_u8a(const uint8_t * restrict key,
+rgph_u32x4_murmur32_data(const void * restrict data,
     size_t len, uint32_t seed, uint32_t * restrict h)
 {
+	const uint8_t *key = (const uint8_t *)data;
 	const uint8_t *end = key + len;
 	uint32_t w[4];
-#if defined(RGPH_UNALIGNED_READ)
+#if defined(UNALIGNED_READ)
 	const int down = 0;
 #else
 	const int down = ((uintptr_t)key) & 3;
@@ -246,7 +257,7 @@ rgph_u32x4_murmur32_u8a(const uint8_t * restrict key,
 			rgph_murmur32_mix(w, h);
 		}
 	} else {
-#if !defined(RGPH_UNALIGNED_READ)
+#if !defined(UNALIGNED_READ)
 		for (; end - key >= 16; key += 16) {
 			rgph_read32u(key, 4 - down, &carry, w, 4);
 			rgph_murmur32_mix(w, h);
@@ -285,34 +296,52 @@ rgph_u32x4_murmur32_u8a(const uint8_t * restrict key,
 }
 
 inline void
-rgph_u32x4_murmur32_data(const void * restrict data,
+rgph_u32x4_murmur32_data32(const void * restrict data,
     size_t len, uint32_t seed, uint32_t * restrict h)
 {
-	const uint8_t *key = (const uint8_t *)(const char *)data;
 
-	rgph_u32x4_murmur32_u8a(key, len, seed, h);
+	/* XXX implement */
+	return rgph_u32x4_murmur32_data(data, len * sizeof(uint32_t), seed, h);
 }
 
-uint32_t
-rgph_u32_murmur32_data(const void * restrict data,
-    size_t len, uint32_t seed)
+inline void
+rgph_u32x4_murmur32_data64(const void * restrict data,
+    size_t len, uint32_t seed, uint32_t * restrict h)
 {
-	const uint8_t *key = (const uint8_t *)(const char *)data;
+
+	/* XXX implement */
+	return rgph_u32x4_murmur32_data(data, len * sizeof(uint64_t), seed, h);
+}
+
+#if defined(WEAK_ALIASES) && !defined(__STRICT_ANSI__)
+void rgph_u32x4_murmur32_u8a(const uint8_t *, size_t, uint32_t,
+    uint32_t *) __attribute__((weak,alias("rgph_u32x4_murmur32_data")));
+#else
+void
+rgph_u32x4_murmur32_u8a(const uint8_t * restrict key,
+    size_t len, uint32_t seed, uint32_t * restrict h)
+{
+
+	rgph_u32x4_murmur32_data(key, len, seed, h);
+}
+#endif
+
+uint32_t
+rgph_u32_murmur32_data(const void *data, size_t len, uint32_t seed)
+{
 	uint32_t h[4];
 
-	rgph_u32x4_murmur32_u8a(key, len, seed, h);
+	rgph_u32x4_murmur32_data(data, len, seed, h);
 	return h[0];
 }
 
 uint64_t
-rgph_u64_murmur32_data(const void * restrict data,
-    size_t len, uint32_t seed)
+rgph_u64_murmur32_data(const void *data, size_t len, uint32_t seed)
 {
-	const uint8_t *key = (const uint8_t *)(const char *)data;
 	uint64_t res;
 	uint32_t h[4];
 
-	rgph_u32x4_murmur32_u8a(key, len, seed, h);
+	rgph_u32x4_murmur32_data(data, len, seed, h);
 
 	res = h[1];
 	res = h[0] | (res << 32);
@@ -323,47 +352,61 @@ void
 rgph_u32x4_murmur32_u16a(const uint16_t * restrict key,
     size_t len, uint32_t seed, uint32_t * restrict h)
 {
+	const uint8_t *arg = (const uint8_t *)(const char *)key;
 
-	return rgph_u32x4_murmur32_data((const void *)key,
-	    len * sizeof(key[0]), seed, h);
+	// "add %rsi,%rsi; jmp rgph_u32x4_murmur32_u8a" is smaller than inlined
+	//rgph_u32x4_murmur32_data(key, len * sizeof(key[0]), seed, h);
+	rgph_u32x4_murmur32_u8a(arg, len * sizeof(key[0]), seed, h);
 }
 
+#if defined(WEAK_ALIASES) && !defined(__STRICT_ANSI__)
+void rgph_u32x4_murmur32_u32a(const uint32_t *, size_t, uint32_t,
+    uint32_t *) __attribute__((weak,alias("rgph_u32x4_murmur32_data32")));
+#else
 void
 rgph_u32x4_murmur32_u32a(const uint32_t * restrict key,
     size_t len, uint32_t seed, uint32_t * restrict h)
 {
 
-	/* XXX implement */
-	return rgph_u32x4_murmur32_data((const void *)key,
-	    len * sizeof(key[0]), seed, h);
+	rgph_u32x4_murmur32_data32(key, len, seed, h);
 }
+#endif
 
+#if defined(WEAK_ALIASES) && !defined(__STRICT_ANSI__)
+void rgph_u32x4_murmur32_u64a(const uint64_t *, size_t, uint32_t,
+    uint32_t *) __attribute__((weak,alias("rgph_u32x4_murmur32_data64")));
+#else
 void
 rgph_u32x4_murmur32_u64a(const uint64_t * restrict key,
     size_t len, uint32_t seed, uint32_t * restrict h)
 {
 
-	/* XXX implement */
-	return rgph_u32x4_murmur32_data((const void *)key,
-	    len * sizeof(key[0]), seed, h);
+	rgph_u32x4_murmur32_data64(key, len, seed, h);
 }
+#endif
 
+#if defined(WEAK_ALIASES) && !defined(__STRICT_ANSI__)
+void rgph_u32x4_murmur32_f32a(const float *, size_t, uint32_t,
+    uint32_t *) __attribute__((weak,alias("rgph_u32x4_murmur32_data32")));
+#else
 void
 rgph_u32x4_murmur32_f32a(const float * restrict key,
     size_t len, uint32_t seed, uint32_t * restrict h)
 {
 
-	/* XXX implement */
-	return rgph_u32x4_murmur32_data((const void *)key,
-	    len * sizeof(key[0]), seed, h);
+	return rgph_u32x4_murmur32_data32(key, len, seed, h);
 }
+#endif
 
+#if defined(WEAK_ALIASES) && !defined(__STRICT_ANSI__)
+void rgph_u32x4_murmur32_f64a(const double *, size_t, uint32_t,
+    uint32_t *) __attribute__((weak,alias("rgph_u32x4_murmur32_data64")));
+#else
 void
 rgph_u32x4_murmur32_f64a(const double * restrict key,
     size_t len, uint32_t seed, uint32_t * restrict h)
 {
 
-	/* XXX implement */
-	return rgph_u32x4_murmur32_data((const void *)key,
-	    len * sizeof(key[0]), seed, h);
+	return rgph_u32x4_murmur32_data64(key, len, seed, h);
 }
+#endif
