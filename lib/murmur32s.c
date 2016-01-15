@@ -327,8 +327,8 @@ rgph_u8x4_murmur32s_f64(double value, uint32_t seed, uint8_t *h8)
 }
 
 inline void
-rgph_u8x4_murmur32s_data(const void * restrict key,
-    size_t len, uint32_t seed, uint8_t * restrict h8)
+rgph_u8x4_murmur32s_data(const void *key,
+    size_t len, uint32_t seed, uint8_t *h8)
 {
 	uint32_t h;
 
@@ -340,8 +340,8 @@ rgph_u8x4_murmur32s_data(const void * restrict key,
 }
 
 inline void
-rgph_u8x4_murmur32s_data32(const void * restrict data,
-    size_t len, uint32_t seed, uint8_t * restrict h8)
+rgph_u8x4_murmur32s_data32(const void *data,
+    size_t len, uint32_t seed, uint8_t *h8)
 {
 	uint32_t h;
 
@@ -353,8 +353,8 @@ rgph_u8x4_murmur32s_data32(const void * restrict data,
 }
 
 inline void
-rgph_u8x4_murmur32s_data64(const void * restrict data,
-    size_t len, uint32_t seed, uint8_t * restrict h8)
+rgph_u8x4_murmur32s_data64(const void *data,
+    size_t len, uint32_t seed, uint8_t *h8)
 {
 	uint32_t h;
 
@@ -370,8 +370,8 @@ void rgph_u8x4_murmur32s_u8a(const uint8_t *, size_t, uint32_t,
     uint8_t *) __attribute__((weak,alias("rgph_u8x4_murmur32s_data")));
 #else
 void
-rgph_u8x4_murmur32s_u8a(const uint8_t * restrict key,
-    size_t len, uint32_t seed, uint8_t * restrict h8)
+rgph_u8x4_murmur32s_u8a(const uint8_t *key,
+    size_t len, uint32_t seed, uint8_t *h8)
 {
 
 	rgph_u8x4_murmur32s_data(key, len, seed, h8);
@@ -379,8 +379,8 @@ rgph_u8x4_murmur32s_u8a(const uint8_t * restrict key,
 #endif
 
 void
-rgph_u8x4_murmur32s_u16a(const uint16_t * restrict key,
-    size_t len, uint32_t seed, uint8_t * restrict h8)
+rgph_u8x4_murmur32s_u16a(const uint16_t *key,
+    size_t len, uint32_t seed, uint8_t *h8)
 {
 	const uint8_t *arg = (const uint8_t *)(const char *)key;
 
@@ -394,8 +394,8 @@ void rgph_u8x4_murmur32s_u32a(const uint32_t *, size_t, uint32_t,
     uint8_t *) __attribute__((weak,alias("rgph_u8x4_murmur32s_data32")));
 #else
 void
-rgph_u8x4_murmur32s_u32a(const uint32_t * restrict key,
-    size_t len, uint32_t seed, uint8_t * restrict h8)
+rgph_u8x4_murmur32s_u32a(const uint32_t *key,
+    size_t len, uint32_t seed, uint8_t *h8)
 {
 
 	rgph_u8x4_murmur32s_data32(key, len, seed, h8);
@@ -407,8 +407,8 @@ void rgph_u8x4_murmur32s_u64a(const uint64_t *, size_t, uint32_t,
     uint8_t *) __attribute__((weak,alias("rgph_u8x4_murmur32s_data64")));
 #else
 void
-rgph_u8x4_murmur32s_u64a(const uint64_t * restrict key,
-    size_t len, uint32_t seed, uint8_t * restrict h8)
+rgph_u8x4_murmur32s_u64a(const uint64_t *key,
+    size_t len, uint32_t seed, uint8_t *h8)
 {
 
 	rgph_u8x4_murmur32s_data64(key, len, seed, h8);
@@ -420,8 +420,8 @@ void rgph_u8x4_murmur32s_f32a(const float *, size_t, uint32_t,
     uint8_t *) __attribute__((weak,alias("rgph_u8x4_murmur32s_data32")));
 #else
 void
-rgph_u8x4_murmur32s_f32a(const float * restrict key,
-    size_t len, uint32_t seed, uint8_t * restrict h8)
+rgph_u8x4_murmur32s_f32a(const float *key,
+    size_t len, uint32_t seed, uint8_t *h8)
 {
 
 	rgph_u8x4_murmur32s_data32(key, len, seed, h8);
@@ -433,8 +433,8 @@ void rgph_u8x4_murmur32s_f64a(const double *, size_t, uint32_t,
     uint8_t *) __attribute__((weak,alias("rgph_u8x4_murmur32s_data64")));
 #else
 void
-rgph_u8x4_murmur32s_f64a(const double * restrict key,
-    size_t len, uint32_t seed, uint8_t * restrict h8)
+rgph_u8x4_murmur32s_f64a(const double *key,
+    size_t len, uint32_t seed, uint8_t *h8)
 {
 
 	rgph_u8x4_murmur32s_data64(key, len, seed, h8);
@@ -496,8 +496,8 @@ rgph_u16x2_murmur32s_f64(double value, uint32_t seed, uint16_t *h16)
 }
 
 inline void
-rgph_u16x2_murmur32s_data(const void * restrict data,
-    size_t len, uint32_t seed, uint16_t * restrict h16)
+rgph_u16x2_murmur32s_data(const void *data,
+    size_t len, uint32_t seed, uint16_t *h16)
 {
 	uint32_t h;
 
@@ -507,8 +507,8 @@ rgph_u16x2_murmur32s_data(const void * restrict data,
 }
 
 inline void
-rgph_u16x2_murmur32s_data32(const void * restrict data,
-    size_t len, uint32_t seed, uint16_t * restrict h16)
+rgph_u16x2_murmur32s_data32(const void *data,
+    size_t len, uint32_t seed, uint16_t *h16)
 {
 	uint32_t h;
 
@@ -518,8 +518,8 @@ rgph_u16x2_murmur32s_data32(const void * restrict data,
 }
 
 inline void
-rgph_u16x2_murmur32s_data64(const void * restrict data,
-    size_t len, uint32_t seed, uint16_t * restrict h16)
+rgph_u16x2_murmur32s_data64(const void *data,
+    size_t len, uint32_t seed, uint16_t *h16)
 {
 	uint32_t h;
 
@@ -533,8 +533,8 @@ void rgph_u16x2_murmur32s_u8a(const uint8_t *, size_t, uint32_t,
     uint16_t *) __attribute__((weak,alias("rgph_u16x2_murmur32s_data")));
 #else
 void
-rgph_u16x2_murmur32s_u8a(const uint8_t * restrict key,
-    size_t len, uint32_t seed, uint16_t * restrict h16)
+rgph_u16x2_murmur32s_u8a(const uint8_t *key,
+    size_t len, uint32_t seed, uint16_t *h16)
 {
 
 	rgph_u16x2_murmur32s_data(key, len, seed, h16);
@@ -542,8 +542,8 @@ rgph_u16x2_murmur32s_u8a(const uint8_t * restrict key,
 #endif
 
 void
-rgph_u16x2_murmur32s_u16a(const uint16_t * restrict key,
-    size_t len, uint32_t seed, uint16_t * restrict h16)
+rgph_u16x2_murmur32s_u16a(const uint16_t *key,
+    size_t len, uint32_t seed, uint16_t *h16)
 {
 	const uint8_t *arg = (const uint8_t *)(const char *)key;
 
@@ -557,8 +557,8 @@ void rgph_u16x2_murmur32s_u32a(const uint32_t *, size_t, uint32_t,
     uint16_t *) __attribute__((weak,alias("rgph_u16x2_murmur32s_data32")));
 #else
 void
-rgph_u16x2_murmur32s_u32a(const uint32_t * restrict key,
-    size_t len, uint32_t seed, uint16_t * restrict h16)
+rgph_u16x2_murmur32s_u32a(const uint32_t *key,
+    size_t len, uint32_t seed, uint16_t *h16)
 {
 
 	rgph_u16x2_murmur32s_data32(key, len, seed, h16);
@@ -570,8 +570,8 @@ void rgph_u16x2_murmur32s_u64a(const uint64_t *, size_t, uint32_t,
     uint16_t *) __attribute__((weak,alias("rgph_u16x2_murmur32s_data64")));
 #else
 void
-rgph_u16x2_murmur32s_u64a(const uint64_t * restrict key,
-    size_t len, uint32_t seed, uint16_t * restrict h16)
+rgph_u16x2_murmur32s_u64a(const uint64_t *key,
+    size_t len, uint32_t seed, uint16_t *h16)
 {
 
 	rgph_u16x2_murmur32s_data64(key, len, seed, h16);
@@ -583,8 +583,8 @@ void rgph_u16x2_murmur32s_f32a(const float *, size_t, uint32_t,
     uint16_t *) __attribute__((weak,alias("rgph_u16x2_murmur32s_data32")));
 #else
 void
-rgph_u16x2_murmur32s_f32a(const float * restrict key,
-    size_t len, uint32_t seed, uint16_t * restrict h16)
+rgph_u16x2_murmur32s_f32a(const float *key,
+    size_t len, uint32_t seed, uint16_t *h16)
 {
 
 	rgph_u16x2_murmur32s_data32(key, len, seed, h16);
@@ -596,8 +596,8 @@ void rgph_u16x2_murmur32s_f64a(const double *, size_t, uint32_t,
     uint16_t *) __attribute__((weak,alias("rgph_u16x2_murmur32s_data64")));
 #else
 void
-rgph_u16x2_murmur32s_f64a(const double * restrict key,
-    size_t len, uint32_t seed, uint16_t * restrict h16)
+rgph_u16x2_murmur32s_f64a(const double *key,
+    size_t len, uint32_t seed, uint16_t *h16)
 {
 
 	rgph_u16x2_murmur32s_data64(key, len, seed, h16);
