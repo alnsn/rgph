@@ -248,9 +248,9 @@ rgph_u64_jenkins2_f64(double value, uint32_t seed)
 
 inline void
 rgph_u32x3_jenkins2_data(const void *data,
-    size_t len, uint32_t seed, uint32_t *h)
+    size_t len, uint32_t seed, uint32_t * restrict h)
 {
-	const uint8_t *key = (const uint8_t *)(const char *)data;
+	const uint8_t * restrict key = (const uint8_t *)(const char *)data;
 	const uint8_t *end = key + len;
 	int n = 0;
 #if defined(UNALIGNED_READ)
@@ -319,9 +319,9 @@ rgph_u32x3_jenkins2_data(const void *data,
 
 inline void
 rgph_u32x3_jenkins2_data32(const void *data,
-    size_t len, uint32_t seed, uint32_t *h)
+    size_t len, uint32_t seed, uint32_t * restrict h)
 {
-	const uint32_t *key = (const uint32_t *)(const char *)data;
+	const uint32_t * restrict key = (const uint32_t *)(const char *)data;
 	const uint32_t *end = key + len;
 
 	h[0] = RGPH_JENKINS2_SEED1;
@@ -348,9 +348,9 @@ rgph_u32x3_jenkins2_data32(const void *data,
 
 inline void
 rgph_u32x3_jenkins2_data64(const void *data,
-    size_t len, uint32_t seed, uint32_t *h)
+    size_t len, uint32_t seed, uint32_t * restrict h)
 {
-	const uint64_t *key = (const uint64_t *)(const char *)data;
+	const uint64_t * restrict key = (const uint64_t *)(const char *)data;
 	const uint64_t *end = key + len;
 	uint64_t a, b, c;
 
