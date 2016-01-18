@@ -30,10 +30,6 @@
  * SUCH DAMAGE.
  */
 
- /*
-  * XXX use rgph_unalias.
-  */
-
 #include "rgph_hash_impl.h"
 #include "rgph_hash.h"
 
@@ -236,7 +232,7 @@ inline void
 rgph_u32x4_murmur32_data(const void *data,
     size_t len, uint32_t seed, uint32_t * restrict h)
 {
-	const uint8_t * restrict key = (const uint8_t *)data;
+	const uint8_t * restrict key = data;
 	const uint8_t *end = key + len;
 	uint32_t w[4];
 #if defined(UNALIGNED_READ)
@@ -352,7 +348,7 @@ void
 rgph_u32x4_murmur32_u16a(const uint16_t *key,
     size_t len, uint32_t seed, uint32_t *h)
 {
-	const uint8_t *arg = (const uint8_t *)(const char *)key;
+	const uint8_t *arg = rgph_unalias(const uint8_t *, key);
 
 	// "add %rsi,%rsi; jmp rgph_u32x4_murmur32_u8a" is smaller than inlined
 	//rgph_u32x4_murmur32_data(key, len * sizeof(key[0]), seed, h);

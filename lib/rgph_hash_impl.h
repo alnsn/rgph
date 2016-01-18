@@ -4,7 +4,7 @@
  *
  * lookup2.c, by Bob Jenkins, December 1996, Public Domain.
  *
- * Copyright (c) 2014-2015 Alexander Nasonov.
+ * Copyright (c) 2014-2016 Alexander Nasonov.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -48,8 +48,9 @@
 #include <sys/endian.h>
 #endif
 
-#include <stdint.h>
 #include <limits.h>
+#include <stdint.h>
+#include <string.h> /* memcpy */
 
 #define RGPH_JENKINS2_SEED1 UINT32_C(0x9e3779b9)
 #define RGPH_JENKINS2_SEED2 UINT32_C(0x9e3779b9)
@@ -71,6 +72,9 @@
 #define RGPH_MURMUR32S_FMIXMUL1 UINT32_C(0x85ebca6b)
 #define RGPH_MURMUR32S_FMIXMUL2 UINT32_C(0xc2b2ae35)
 
+/* XXX Check with the C99 standard. */
+#define rgph_unalias(T, p) ((T)(const char *)(p))
+
 /*
  * Rotate left and right.
  */
@@ -80,7 +84,8 @@
 /*
  * Read 32bit word from aligned pointer in little-endian order.
  */
-#define rgph_read32a(aligned) htole32(*((const uint32_t *)(aligned)))
+#define rgph_read32a(aligned) \
+	htole32(*(rgph_unalias(const uint32_t *, (aligned))))
 
 /*
  * Read n 32bit unaligned words from ptr with a shift to align loads.
@@ -111,25 +116,38 @@ rgph_read32u(const uint8_t * restrict ptr, int align_up,
 static inline uint32_t
 rgph_f2u32(float f)
 {
-	/* This conversion isn't well defined but it's faster than memcpy(3). */
+	uint32_t res;
+
+#if !defined(__STRICT_ANSI__) /* XXX || C99+TC3 || C11 */
 	union {
 		float f;
-		uint64_t u;
+		uint32_t u;
 	} u = { f };
 
-	return u.u;
+	res = u.u;
+#else
+	memcpy(&res, &f, sizeof(f));
+#endif
+	return res;
 }
 
 static inline uint64_t
 rgph_d2u64(double d)
 {
+	uint64_t res;
+
+#if !defined(__STRICT_ANSI__) /* XXX || C99+TC3 || C11 */
 	/* Weird half little-endian half big-endian FP isn't supported. */
 	union {
 		double d;
 		uint64_t u;
 	} u = { d };
 
-	return u.u;
+	res = u.u;
+#else
+	memcpy(&res, &d, sizeof(d));
+#endif
+	return res;
 }
 
 static inline void

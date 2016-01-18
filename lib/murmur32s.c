@@ -30,10 +30,6 @@
  * SUCH DAMAGE.
  */
 
- /*
-  * XXX use rgph_unalias.
-  */
-
 #include "rgph_hash_impl.h"
 #include "rgph_hash.h"
 
@@ -114,7 +110,7 @@ rgph_u32_murmur32s_f64(double value, uint32_t seed)
 inline uint32_t
 rgph_u32_murmur32s_data(const void *data, size_t len, uint32_t seed)
 {
-	const uint8_t *key = (const uint8_t *)(const char *)data;
+	const uint8_t *key = data;
 	const uint8_t *end = key + len;
 	uint32_t k, h[1] = { seed };
 #if defined(UNALIGNED_READ)
@@ -163,7 +159,7 @@ rgph_u32_murmur32s_data(const void *data, size_t len, uint32_t seed)
 inline uint32_t
 rgph_u32_murmur32s_data32(const void *data, size_t len, uint32_t seed)
 {
-	const uint32_t *key = (const uint32_t *)(const char *)data;
+	const uint32_t *key = data;
 	const uint32_t *end = key + len;
 	uint32_t h[1] = { seed };
 
@@ -179,7 +175,7 @@ rgph_u32_murmur32s_data32(const void *data, size_t len, uint32_t seed)
 inline uint32_t
 rgph_u32_murmur32s_data64(const void *data, size_t len, uint32_t seed)
 {
-	const uint64_t *key = (const uint64_t *)(const char *)data;
+	const uint64_t *key = data;
 	const uint64_t *end = key + len;
 	uint32_t h[1] = { seed };
 
@@ -209,7 +205,7 @@ rgph_u32_murmur32s_u8a(const uint8_t *key, size_t len, uint32_t seed)
 inline uint32_t
 rgph_u32_murmur32s_u16a(const uint16_t *key, size_t len, uint32_t seed)
 {
-	const uint8_t *arg = (const uint8_t *)(const char *)key;
+	const uint8_t *arg = rgph_unalias(const uint8_t *, key);
 
 	// "add %rsi,%rsi; jmp rgph_u32_murmur32s_u8a" is smaller than inlined
 	//return rgph_u32_murmur32s_data(key, len * sizeof(key[0]), seed);
@@ -382,7 +378,7 @@ void
 rgph_u8x4_murmur32s_u16a(const uint16_t *key,
     size_t len, uint32_t seed, uint8_t *h8)
 {
-	const uint8_t *arg = (const uint8_t *)(const char *)key;
+	const uint8_t *arg = rgph_unalias(const uint8_t *, key);
 
 	// "add %rsi,%rsi; jmp rgph_u8x4_murmur32s_u8a" is smaller than inlined
 	//rgph_u8x4_murmur32s_data(key, len * sizeof(key[0]), seed, h8);
@@ -545,7 +541,7 @@ void
 rgph_u16x2_murmur32s_u16a(const uint16_t *key,
     size_t len, uint32_t seed, uint16_t *h16)
 {
-	const uint8_t *arg = (const uint8_t *)(const char *)key;
+	const uint8_t *arg = rgph_unalias(const uint8_t *, key);
 
 	// "add %rsi,%rsi; jmp rgph_u16x2_murmur32s_u8a" is smaller than inlined
 	//rgph_u16x2_murmur32s_data(key, len * sizeof(key[0]), seed, h16);

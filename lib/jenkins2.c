@@ -29,10 +29,6 @@
  * SUCH DAMAGE.
  */
 
- /*
-  * XXX use rgph_unalias.
-  */
-
 /*
  * Based on http://www.burtleburtle.net/bob/c/lookup2.c.
  */
@@ -250,7 +246,7 @@ inline void
 rgph_u32x3_jenkins2_data(const void *data,
     size_t len, uint32_t seed, uint32_t * restrict h)
 {
-	const uint8_t * restrict key = (const uint8_t *)(const char *)data;
+	const uint8_t * restrict key = data;
 	const uint8_t *end = key + len;
 	int n = 0;
 #if defined(UNALIGNED_READ)
@@ -321,7 +317,7 @@ inline void
 rgph_u32x3_jenkins2_data32(const void *data,
     size_t len, uint32_t seed, uint32_t * restrict h)
 {
-	const uint32_t * restrict key = (const uint32_t *)(const char *)data;
+	const uint32_t * restrict key = data;
 	const uint32_t *end = key + len;
 
 	h[0] = RGPH_JENKINS2_SEED1;
@@ -350,7 +346,7 @@ inline void
 rgph_u32x3_jenkins2_data64(const void *data,
     size_t len, uint32_t seed, uint32_t * restrict h)
 {
-	const uint64_t * restrict key = (const uint64_t *)(const char *)data;
+	const uint64_t * restrict key = data;
 	const uint64_t *end = key + len;
 	uint64_t a, b, c;
 
@@ -433,7 +429,7 @@ void
 rgph_u32x3_jenkins2_u16a(const uint16_t *key,
     size_t len, uint32_t seed, uint32_t *h)
 {
-	const uint8_t *arg = (const uint8_t *)(const char *)key;
+	const uint8_t *arg = rgph_unalias(const uint8_t *, key);
 
 	// "add %rsi,%rsi; jmp rgph_u32x3_jenkins2_u8a" is smaller than inlined
 	//rgph_u32x3_jenkins2_data(key, len * sizeof(key[0]), seed, h);
