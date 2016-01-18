@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2015 Alexander Nasonov.
+ * Copyright (c) 2015-2016 Alexander Nasonov.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -63,7 +63,7 @@ template<bool C> struct bool_selector {};
  /*
   * Generated graphs are always R-partite. This means that v0 is less
   * than (nverts / R), v1 starts from (nverts / R) and is less than
-  * (2 * nverts / R). If R=3, v2 takes the remaining range.
+  * (2 * nverts / R). If R==3, v2 takes the remaining range.
   * To simplify code, nverts is always rounded to make sure that R always
   * divides it exactly.
   */
@@ -76,12 +76,13 @@ struct edge {
  * Data type for a valid oriented edge (v0, v1, v2), v1 < v2.
  * The first vertex v0 is implicit and is determined by an index
  * of the corresponding element in the oedges array.
- * If the degree of v0 is greater than 1, other members don't make
- * sense because they're a result of XORing multiple random values.
+ * When the algorithm starts, the degree and overts are set to zeroes.
+ * Every time an edge is added or removed, the edge's verts values
+ * are XORed with corresponding overts values.
  */
 template<class T, int R>
 struct oedge {
-	T overts[R-1]; // v1 (and v2, if R==3).
+	T overts[R-1]; // XORed v1 (and v2, if R==3).
 	T degree;      // Degree of v0.
 	T edge;
 };
@@ -166,7 +167,7 @@ struct hash {
 		H h[4]; // Some hashes are x4.
 		func(key, keylen, seed, h);
 		for (size_t i = 0; i < R; i++)
-			hashes[i] = (T)h[i];
+			hashes[i] = h[i];
 		return hashes;
 	}
 };
@@ -557,10 +558,10 @@ template<class T, int R>
 static T *
 build_peel_index(struct rgph_graph *g)
 {
-	const size_t hashsz = duphash_size<T,R>(g->nverts);
-	T *index = (T *)((char *)g->oedges + hashsz); // Reuse oedges.
+	const size_t hash_sz = duphash_size<T,R>(g->nverts);
+	T *index = (T *)((char *)g->oedges + hash_sz); // Reuse oedges.
 
-	assert(hashsz != 0);
+	assert(hash_sz != 0);
 
 	if (!(g->flags & INDEXED)) {
 		const T *order = (const T *)g->order;
@@ -606,11 +607,11 @@ find_duplicates(struct rgph_graph *g,
 
 	assert((g->nverts % R) == 0);
 
-	const size_t hashsz = g->nverts / R;
+	const size_t hash_sz = g->nverts / R;
 	const size_t maxfill = g->nverts / 4; // Fill factor is 50% or 75%.
 	duphash_entry_t *hash = (duphash_entry_t *)g->oedges; // Reuse oedges.
 
-	for (size_t i = 0; i < hashsz; i++)
+	for (size_t i = 0; i < hash_sz; i++)
 		hash[i] = NULL;
 
 	int res = RGPH_NOKEY;
@@ -637,10 +638,10 @@ find_duplicates(struct rgph_graph *g,
 		const size_t keylen = keys->keylen;
 		const T v0 = edges[e].verts[0];
 
-		assert(v0 < hashsz);
+		assert(v0 < hash_sz);
 
 		// Linear probing with a wrap-around.
-		size_t v = v0, vend = hashsz;
+		size_t v = v0, vend = hash_sz;
 		for (int i = 0; i < 2; i++) {
 			for (; v < vend && hash[v] != NULL; v++) {
 				if (keylen == hash[v][1] &&
@@ -680,7 +681,7 @@ find_duplicates(struct rgph_graph *g,
 		memcpy(&hash[v][2], key, keylen);
 	}
 out:
-	for (size_t i = 0; i < hashsz; i++) {
+	for (size_t i = 0; i < hash_sz; i++) {
 		if (hash[i] != NULL)
 			free(hash[i]);
 	}
