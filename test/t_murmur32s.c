@@ -7,7 +7,6 @@ static const char msg[] =
 	"Richard Of York Gave Battle In Vain.\n"
 	"Ryanair Offers You Great Breaks In Venice.";
 
-
 static void
 rgph_test_murmur32s_x4(void)
 {
