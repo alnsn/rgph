@@ -126,13 +126,6 @@ rgph_u32_murmur32s_data(const void *data, size_t len, uint32_t seed)
 			rgph_murmur32s_mix(rgph_read32a(&key[0]), h, 0);
 	} else {
 #if !defined(UNALIGNED_READ)
-		for (; end - key >= 16; key += 16) {
-			rgph_read32u(key, 4 - down, &carry, w, 4);
-			rgph_murmur32s_mix(w[0], h, 0);
-			rgph_murmur32s_mix(w[1], h, 0);
-			rgph_murmur32s_mix(w[2], h, 0);
-			rgph_murmur32s_mix(w[3], h, 0);
-		}
 		for (; end - key >= 4; key += 4) {
 			rgph_read32u(key, 4 - down, &carry, w, 1);
 			rgph_murmur32s_mix(w[0], h, 0);
