@@ -4,6 +4,10 @@
  *
  * lookup2.c, by Bob Jenkins, December 1996, Public Domain.
  *
+ * xxHash - Fast Hash algorithm
+ * Copyright (C) 2012-2014, Yann Collet.
+ * BSD 2-Clause License (http://www.opensource.org/licenses/bsd-license.php)
+ *
  * Copyright (c) 2014-2016 Alexander Nasonov.
  * All rights reserved.
  *
@@ -71,6 +75,12 @@
 #define RGPH_MURMUR32S_ADD1 UINT32_C(0xe6546b64)
 #define RGPH_MURMUR32S_FMIXMUL1 UINT32_C(0x85ebca6b)
 #define RGPH_MURMUR32S_FMIXMUL2 UINT32_C(0xc2b2ae35)
+
+#define RGPH_XXH32S_PRIME1 UINT32_C(2654435761)
+#define RGPH_XXH32S_PRIME2 UINT32_C(2246822519)
+#define RGPH_XXH32S_PRIME3 UINT32_C(3266489917)
+#define RGPH_XXH32S_PRIME4 UINT32_C(668265263)
+#define RGPH_XXH32S_PRIME5 UINT32_C(374761393)
 
 /* XXX Check with the C99 standard. */
 #define rgph_unalias(T, p) ((T)(const char *)(p))
@@ -302,6 +312,74 @@ rgph_murmur32s_mix(uint32_t k, uint32_t h[/* static 1 */], int last)
 		h[0] = rgph_rotl(h[0], 13);
 		h[0] = 5*h[0] + RGPH_MURMUR32S_ADD1;
 	}
+}
+
+static inline void
+rgph_xxh32s_init(size_t len, uint32_t seed, uint32_t h[/* static 4 */])
+{
+
+	if (len < 4) {
+		h[0] = seed + RGPH_XXH32S_PRIME5;
+	} else {
+		h[0] = seed + (RGPH_XXH32S_PRIME1 + RGPH_XXH32S_PRIME2);
+		h[1] = seed + RGPH_XXH32S_PRIME2;
+		h[2] = seed + 0;
+		h[3] = seed - RGPH_XXH32S_PRIME1;
+	}
+}
+
+static inline void
+rgph_xxh32s_mix(const uint32_t w[/* static 4 */],
+    uint32_t h[/* static 4 */])
+{
+	size_t i;
+
+	for (i = 0; i < 4; i++) {
+		h[i] += w[i] * RGPH_XXH32S_PRIME2;
+		h[i] = rgph_rotl(h[i], 13) * RGPH_XXH32S_PRIME1;
+	}
+}
+
+static inline void
+rgph_xxh32s_fmix4(const uint32_t w, uint32_t h[/* static 1 */])
+{
+
+	h[0] += w * RGPH_XXH32S_PRIME3;
+	h[0] = rgph_rotl(h[0], 17) * RGPH_XXH32S_PRIME4;
+}
+
+static inline void
+rgph_xxh32s_fmix1(const uint8_t w, uint32_t h[/* static 1 */])
+{
+
+	h[0] += w * RGPH_XXH32S_PRIME5;
+	h[0] = rgph_rotl(h[0], 11) * RGPH_XXH32S_PRIME1;
+}
+
+static inline void
+rgph_xxh32s_fold(size_t len, uint32_t h[/* static 4 */])
+{
+
+	if (len >= 16) {
+		h[0] = rgph_rotl(h[0], 1) +
+		       rgph_rotl(h[1], 7) +
+		       rgph_rotl(h[2], 12) +
+		       rgph_rotl(h[3], 18);
+	}
+
+	/* Note that len > UINT32_MAX is truncated. */
+	h[0] += len;
+}
+
+static inline void
+rgph_xxh32s_finalise(uint32_t h[/* static 1 */])
+{
+
+	h[0] ^= h[0] >> 15;
+	h[0] *= RGPH_XXH32S_PRIME2;
+	h[0] ^= h[0] >> 13;
+	h[0] *= RGPH_XXH32S_PRIME3;
+	h[0] ^= h[0] >> 16;
 }
 
 #endif /* FILE_RGPH_HASH_IMPL_H_INCLUDED */

@@ -20,13 +20,13 @@ CPPFLAGS+=	-DWEAK_ALIASES
 #CFLAGS+=	-UWEAK_ALIASES
 
 
-OBJ=		writer.o    jenkins2.o    murmur32.o    murmur32s.o
-PICOBJ=		writer.pico jenkins2.pico murmur32.pico murmur32s.pico
+OBJ=		writer.o    jenkins2.o    murmur32.o    murmur32s.o    xxh32s.o
+PICOBJ=		writer.pico jenkins2.pico murmur32.pico murmur32s.pico xxh32s.pico
 LOBJ=		luargph.o
 LPICOBJ=	luargph.pico
 
-XCFLAGS+=	-I. -DNDEBUG -DWEAK_ALIASES $(WARNS) $(C99OPTS)
-XCXXFLAGS+=	-I. -DNDEBUG -DWEAK_ALIASES $(WARNS) $(CXXOPTS)
+XCFLAGS=	-I. -DNDEBUG -DWEAK_ALIASES $(WARNS) $(C99OPTS)
+XCXXFLAGS=	-I. -DNDEBUG -DWEAK_ALIASES $(WARNS) $(CXXOPTS)
 
 
 .SUFFIXES: .c .cc .o .pico
