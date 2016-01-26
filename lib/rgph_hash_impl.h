@@ -318,7 +318,7 @@ static inline void
 rgph_xxh32s_init(size_t len, uint32_t seed, uint32_t h[/* static 4 */])
 {
 
-	if (len < 4) {
+	if (len < 16) {
 		h[0] = seed + RGPH_XXH32S_PRIME5;
 	} else {
 		h[0] = seed + (RGPH_XXH32S_PRIME1 + RGPH_XXH32S_PRIME2);
