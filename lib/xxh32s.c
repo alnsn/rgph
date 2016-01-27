@@ -104,6 +104,7 @@ rgph_u32_xxh32s_u64(uint64_t value, uint32_t seed)
 
 	return h[0];
 }
+
 inline uint32_t
 rgph_u32_xxh32s_f32(float value, uint32_t seed)
 {
