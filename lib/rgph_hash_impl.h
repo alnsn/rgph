@@ -421,7 +421,7 @@ rgph_xxh32s_finalise(uint32_t h[/* static 1 */])
 }
 
 static inline void
-rgph_xxh64s_init(size_t len, uint64_t seed, uint64_t h[/* static 4 */])
+rgph_xxh64s_init(size_t len, uint32_t seed, uint64_t h[/* static 4 */])
 {
 
 	if (len < 32) {
