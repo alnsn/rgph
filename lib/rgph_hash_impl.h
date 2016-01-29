@@ -367,8 +367,7 @@ rgph_xxh32s_init(size_t len, uint32_t seed, uint32_t h[/* static 4 */])
 }
 
 static inline void
-rgph_xxh32s_mix(const uint32_t w[/* static 4 */],
-    uint32_t h[/* static 4 */])
+rgph_xxh32s_mix(const uint32_t w[/* static 4 */], uint32_t h[/* static 4 */])
 {
 	size_t i;
 
@@ -435,8 +434,7 @@ rgph_xxh64s_init(size_t len, uint32_t seed, uint64_t h[/* static 4 */])
 }
 
 static inline void
-rgph_xxh64s_mix(const uint64_t w[/* static 4 */],
-    uint64_t h[/* static 4 */])
+rgph_xxh64s_mix(const uint64_t w[/* static 4 */], uint64_t h[/* static 4 */])
 {
 	size_t i;
 
