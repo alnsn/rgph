@@ -386,7 +386,7 @@ rgph_xxh32s_fmix4(uint32_t w, uint32_t h[/* static 1 */])
 }
 
 static inline void
-rgph_xxh32s_fmix1(const uint8_t w, uint32_t h[/* static 1 */])
+rgph_xxh32s_fmix1(uint8_t w, uint32_t h[/* static 1 */])
 {
 
 	h[0] += w * RGPH_XXH32S_PRIME5;
@@ -463,7 +463,7 @@ rgph_xxh64s_fmix4(uint32_t w, uint64_t h[/* static 1 */])
 }
 
 static inline void
-rgph_xxh64s_fmix1(const uint8_t w, uint64_t h[/* static 1 */])
+rgph_xxh64s_fmix1(uint8_t w, uint64_t h[/* static 1 */])
 {
 
 	h[0] ^= w * RGPH_XXH64S_PRIME5;
