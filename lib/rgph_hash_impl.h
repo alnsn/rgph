@@ -82,6 +82,12 @@
 #define RGPH_XXH32S_PRIME4 UINT32_C(668265263)
 #define RGPH_XXH32S_PRIME5 UINT32_C(374761393)
 
+#define RGPH_XXH64S_PRIME1 UINT64_C(11400714785074694791)
+#define RGPH_XXH64S_PRIME2 UINT64_C(14029467366897019727)
+#define RGPH_XXH64S_PRIME3 UINT64_C(1609587929392839161)
+#define RGPH_XXH64S_PRIME4 UINT64_C(9650029242287828579)
+#define RGPH_XXH64S_PRIME5 UINT64_C(2870177450012600261)
+
 /* XXX Check with the C99 standard. */
 #define rgph_unalias(T, p) ((T)(const char *)(p))
 
@@ -98,6 +104,12 @@
 	htole32(*(rgph_unalias(const uint32_t *, (aligned))))
 
 /*
+ * Read 64bit word from aligned pointer in little-endian order.
+ */
+#define rgph_read64a(aligned) \
+	htole64(*(rgph_unalias(const uint64_t *, (aligned))))
+
+/*
  * Read n 32bit unaligned words from ptr with a shift to align loads.
  * When reading a stream of words, the carry argument is normally
  * passed from the previous rgph_read32u() call. The value for the
@@ -110,15 +122,41 @@ rgph_read32u(const uint8_t * restrict ptr, int align_up,
     uint32_t *carry, uint32_t * restrict out, size_t n)
 {
 	const uint8_t *aligned = ptr + align_up;
-	const int up_bits = 8 * align_up;
-	const int down_bits = 32 - up_bits;
+	const int up_bits = align_up * CHAR_BIT;
+	const int down_bits = sizeof(*carry) * CHAR_BIT - up_bits;
 	size_t i;
 	uint32_t w;
 
 	for (i = 0; i < n; i++) {
 		w = rgph_read32a(aligned);
 		out[i] = (w << up_bits) | (*carry >> down_bits);
-		aligned += 4;
+		aligned += sizeof(*carry);
+		*carry = w;
+	}
+}
+
+/*
+ * Read n 64bit unaligned words from ptr with a shift to align loads.
+ * When reading a stream of words, the carry argument is normally
+ * passed from the previous rgph_read64u() call. The value for the
+ * first rgph_read64u() call must be loaded from the preceding aligned
+ * word: curry = rgph_read64a(ptr + align_up - 8).
+ * The behaviour is undefined when ptr is aligned.
+ */
+static inline void
+rgph_read64u(const uint8_t * restrict ptr, int align_up,
+    uint64_t *carry, uint64_t * restrict out, size_t n)
+{
+	const uint8_t *aligned = ptr + align_up;
+	const int up_bits = align_up * CHAR_BIT;
+	const int down_bits = sizeof(*carry) * CHAR_BIT - up_bits;
+	size_t i;
+	uint64_t w;
+
+	for (i = 0; i < n; i++) {
+		w = rgph_read64a(aligned);
+		out[i] = (w << up_bits) | (*carry >> down_bits);
+		aligned += sizeof(*carry);
 		*carry = w;
 	}
 }
@@ -341,7 +379,7 @@ rgph_xxh32s_mix(const uint32_t w[/* static 4 */],
 }
 
 static inline void
-rgph_xxh32s_fmix4(const uint32_t w, uint32_t h[/* static 1 */])
+rgph_xxh32s_fmix4(uint32_t w, uint32_t h[/* static 1 */])
 {
 
 	h[0] += w * RGPH_XXH32S_PRIME3;
@@ -380,6 +418,110 @@ rgph_xxh32s_finalise(uint32_t h[/* static 1 */])
 	h[0] ^= h[0] >> 13;
 	h[0] *= RGPH_XXH32S_PRIME3;
 	h[0] ^= h[0] >> 16;
+}
+
+static inline void
+rgph_xxh64s_init(size_t len, uint64_t seed, uint64_t h[/* static 4 */])
+{
+
+	if (len < 32) {
+		h[0] = seed + RGPH_XXH64S_PRIME5;
+	} else {
+		h[0] = seed + (RGPH_XXH64S_PRIME1 + RGPH_XXH64S_PRIME2);
+		h[1] = seed + RGPH_XXH64S_PRIME2;
+		h[2] = seed + 0;
+		h[3] = seed - RGPH_XXH64S_PRIME1;
+	}
+}
+
+static inline void
+rgph_xxh64s_mix(const uint64_t w[/* static 4 */],
+    uint64_t h[/* static 4 */])
+{
+	size_t i;
+
+	for (i = 0; i < 4; i++) {
+		h[i] += w[i] * RGPH_XXH64S_PRIME2;
+		h[i] = rgph_rotl(h[i], 31) * RGPH_XXH64S_PRIME1;
+	}
+}
+
+static inline void
+rgph_xxh64s_fmix8(uint64_t w, uint64_t h[/* static 1 */])
+{
+
+	w *= RGPH_XXH64S_PRIME2;
+	w = rgph_rotl(w, 31) * RGPH_XXH64S_PRIME1;
+	h[0] ^= w;
+	h[0] = rgph_rotl(h[0], 27) * RGPH_XXH64S_PRIME1 + RGPH_XXH64S_PRIME4;
+}
+
+static inline void
+rgph_xxh64s_fmix4(uint32_t w, uint64_t h[/* static 1 */])
+{
+
+	h[0] ^= w * RGPH_XXH64S_PRIME1;
+	h[0] = rgph_rotl(h[0], 23) * RGPH_XXH64S_PRIME2 + RGPH_XXH64S_PRIME3;
+}
+
+static inline void
+rgph_xxh64s_fmix1(const uint8_t w, uint64_t h[/* static 1 */])
+{
+
+	h[0] ^= w * RGPH_XXH64S_PRIME5;
+	h[0] = rgph_rotl(h[0], 11) * RGPH_XXH64S_PRIME1;
+}
+
+static inline void
+rgph_xxh64s_fold(size_t len, uint64_t h[/* static 4 */])
+{
+	uint64_t h64;
+
+	if (len >= 32) {
+		h64 = rgph_rotl(h[0], 1) +
+		      rgph_rotl(h[1], 7) +
+		      rgph_rotl(h[2], 12) +
+		      rgph_rotl(h[3], 18);
+
+		h[0] *= RGPH_XXH64S_PRIME2;
+		h[0] = rgph_rotl(h[0], 31);
+		h[0] *= RGPH_XXH64S_PRIME1;
+		h64 ^= h[0];
+		h64 = h64 * RGPH_XXH64S_PRIME1 + RGPH_XXH64S_PRIME4;
+
+		h[1] *= RGPH_XXH64S_PRIME2;
+		h[1] = rgph_rotl(h[1], 31);
+		h[1] *= RGPH_XXH64S_PRIME1;
+		h64 ^= h[1];
+		h64 = h64 * RGPH_XXH64S_PRIME1 + RGPH_XXH64S_PRIME4;
+
+		h[2] *= RGPH_XXH64S_PRIME2;
+		h[2] = rgph_rotl(h[2], 31);
+		h[2] *= RGPH_XXH64S_PRIME1;
+		h64 ^= h[2];
+		h64 = h64 * RGPH_XXH64S_PRIME1 + RGPH_XXH64S_PRIME4;
+
+		h[3] *= RGPH_XXH64S_PRIME2;
+		h[3] = rgph_rotl(h[3], 31);
+		h[3] *= RGPH_XXH64S_PRIME1;
+		h64 ^= h[3];
+		h64 = h64 * RGPH_XXH64S_PRIME1 + RGPH_XXH64S_PRIME4;
+
+		h[0] = h64;
+	}
+
+	h[0] += len;
+}
+
+static inline void
+rgph_xxh64s_finalise(uint64_t h[/* static 1 */])
+{
+
+	h[0] ^= h[0] >> 33;
+	h[0] *= RGPH_XXH64S_PRIME2;
+	h[0] ^= h[0] >> 29;
+	h[0] *= RGPH_XXH64S_PRIME3;
+	h[0] ^= h[0] >> 32;
 }
 
 #endif /* FILE_RGPH_HASH_IMPL_H_INCLUDED */

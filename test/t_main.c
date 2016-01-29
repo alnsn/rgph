@@ -9,5 +9,6 @@ int main()
 	rgph_test_murmur32();
 	rgph_test_murmur32s();
 	rgph_test_xxh32s();
+	rgph_test_xxh64s();
 	return exit_status;
 }

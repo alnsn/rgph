@@ -219,6 +219,60 @@ void rgph_u16x2_xxh32s_u64a(const uint64_t *, size_t, uint32_t, uint16_t *);
 void rgph_u16x2_xxh32s_f32a(const float *,  size_t, uint32_t, uint16_t *);
 void rgph_u16x2_xxh32s_f64a(const double *, size_t, uint32_t, uint16_t *);
 
+
+/* 64bit xxHash (short) generic scalar and x2, x4 hashes for any data. */
+uint64_t rgph_u64_xxh64s_data(const void *, size_t, uint32_t);
+void rgph_u16x4_xxh64s_data (const void *, size_t, uint32_t, uint16_t *);
+void rgph_u32x2_xxh64s_data(const void *, size_t, uint32_t, uint32_t *);
+
+/* 64bit xxHash (short) scalar 64bit hashes for fixed width types. */
+uint64_t rgph_u64_xxh64s_u8 (uint8_t,  uint32_t);
+uint64_t rgph_u64_xxh64s_u16(uint16_t, uint32_t);
+uint64_t rgph_u64_xxh64s_u32(uint32_t, uint32_t);
+uint64_t rgph_u64_xxh64s_u64(uint64_t, uint32_t);
+uint64_t rgph_u64_xxh64s_f32(float,  uint32_t);
+uint64_t rgph_u64_xxh64s_f64(double, uint32_t);
+
+/* 64bit xxHash (short) vector 16bit x4 hashes for fixed width types. */
+void rgph_u16x4_xxh64s_u8 (uint8_t,  uint32_t, uint16_t *);
+void rgph_u16x4_xxh64s_u16(uint16_t, uint32_t, uint16_t *);
+void rgph_u16x4_xxh64s_u32(uint32_t, uint32_t, uint16_t *);
+void rgph_u16x4_xxh64s_u64(uint64_t, uint32_t, uint16_t *);
+void rgph_u16x4_xxh64s_f32(float,  uint32_t, uint16_t *);
+void rgph_u16x4_xxh64s_f64(double, uint32_t, uint16_t *);
+
+/* 64bit xxHash (short) vector 32bit x2 hashes for fixed width types. */
+void rgph_u32x2_xxh64s_u8 (uint8_t,  uint32_t, uint32_t *);
+void rgph_u32x2_xxh64s_u16(uint16_t, uint32_t, uint32_t *);
+void rgph_u32x2_xxh64s_u32(uint32_t, uint32_t, uint32_t *);
+void rgph_u32x2_xxh64s_u64(uint64_t, uint32_t, uint32_t *);
+void rgph_u32x2_xxh64s_f32(float,  uint32_t, uint32_t *);
+void rgph_u32x2_xxh64s_f64(double, uint32_t, uint32_t *);
+
+/* 64bit xxHash (short) scalar 64bit hashes for arrays. */
+uint64_t rgph_u64_xxh64s_u8a (const uint8_t *,  size_t, uint32_t);
+uint64_t rgph_u64_xxh64s_u16a(const uint16_t *, size_t, uint32_t);
+uint64_t rgph_u64_xxh64s_u32a(const uint32_t *, size_t, uint32_t);
+uint64_t rgph_u64_xxh64s_u64a(const uint64_t *, size_t, uint32_t);
+uint64_t rgph_u64_xxh64s_f32a(const float *,  size_t, uint32_t);
+uint64_t rgph_u64_xxh64s_f64a(const double *, size_t, uint32_t);
+
+/* 64bit xxHash (short) vector 16bit x4 hashes for arrays. */
+void rgph_u16x4_xxh64s_u8a (const uint8_t *,  size_t, uint32_t, uint16_t *);
+void rgph_u16x4_xxh64s_u16a(const uint16_t *, size_t, uint32_t, uint16_t *);
+void rgph_u16x4_xxh64s_u32a(const uint32_t *, size_t, uint32_t, uint16_t *);
+void rgph_u16x4_xxh64s_u64a(const uint64_t *, size_t, uint32_t, uint16_t *);
+void rgph_u16x4_xxh64s_f32a(const float *,  size_t, uint32_t, uint16_t *);
+void rgph_u16x4_xxh64s_f64a(const double *, size_t, uint32_t, uint16_t *);
+
+/* 64bit xxHash (short) vector 32bit x2 hashes for arrays. */
+void rgph_u32x2_xxh64s_u8a (const uint8_t *,  size_t, uint32_t, uint32_t *);
+void rgph_u32x2_xxh64s_u16a(const uint16_t *, size_t, uint32_t, uint32_t *);
+void rgph_u32x2_xxh64s_u32a(const uint32_t *, size_t, uint32_t, uint32_t *);
+void rgph_u32x2_xxh64s_u64a(const uint64_t *, size_t, uint32_t, uint32_t *);
+void rgph_u32x2_xxh64s_f32a(const float *,  size_t, uint32_t, uint32_t *);
+void rgph_u32x2_xxh64s_f64a(const double *, size_t, uint32_t, uint32_t *);
+
 #ifdef __cplusplus
 }
 #endif
