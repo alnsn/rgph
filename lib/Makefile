@@ -9,7 +9,7 @@ PICLDFLAGS?=	-fPIC
 C99OPTS?=	-std=gnu99 # GNU for WEAK_ALIASES
 CXXOPTS?=	-nostdinc++ -fno-exceptions -fno-rtti
 
-CPPFLAGS+=	-DWEAK_ALIASES
+CPPFLAGS+=	-DNDEBUG -DWEAK_ALIASES
 
 # PACKAGE DEVELOPERS: don't uncomment the lines below, pass those flags
 # to your make instead: make CFLAGS='-O2 -UNDEBUG' CXXFLAGS='-O2 -UNDEBUG'.
@@ -25,8 +25,8 @@ PICOBJ=		writer.pico jenkins2.pico murmur32.pico murmur32s.pico xxh32s.pico xxh6
 LOBJ=		luargph.o
 LPICOBJ=	luargph.pico
 
-XCFLAGS=	-I. -DNDEBUG -DWEAK_ALIASES $(WARNS) $(C99OPTS)
-XCXXFLAGS=	-I. -DNDEBUG -DWEAK_ALIASES $(WARNS) $(CXXOPTS)
+XCFLAGS=	-I. $(CPPFLAGS) $(WARNS) $(C99OPTS)
+XCXXFLAGS=	-I. $(CPPFLAGS) $(WARNS) $(CXXOPTS)
 
 
 .SUFFIXES: .c .cc .o .pico
