@@ -81,6 +81,10 @@ parse_flags(lua_State *L, int arg)
 			flags |= RGPH_HASH_MURMUR32;
 		else if (strcmp(tok, "murmur32s") == 0)
 			flags |= RGPH_HASH_MURMUR32S;
+		else if (strcmp(tok, "xxh32s") == 0)
+			flags |= RGPH_HASH_XXH32S;
+		else if (strcmp(tok, "xxh64s") == 0)
+			flags |= RGPH_HASH_XXH64S;
 		else if (strcmp(tok, "pow2") == 0)
 			flags |= RGPH_ROUND_POW2;
 		else

@@ -542,6 +542,40 @@ build_graph(struct rgph_graph *g,
 			}
 		}
 		break;
+	case RGPH_HASH_XXH32S:
+		if (R == 2) {
+			if (!init_graph(keys_start, keys_end,
+			    make_hash<T,R>(&rgph_u16x2_xxh32s_data, seed),
+			    edges, g->nkeys, oedges, g->nverts,
+			    &g->datalenmin, &g->datalenmax)) {
+				return RGPH_NOKEY;
+			}
+		} else {
+			if (!init_graph(keys_start, keys_end,
+			    make_hash<T,R>(&rgph_u8x4_xxh32s_data, seed),
+			    edges, g->nkeys, oedges, g->nverts,
+			    &g->datalenmin, &g->datalenmax)) {
+				return RGPH_NOKEY;
+			}
+		}
+		break;
+	case RGPH_HASH_XXH64S:
+		if (R == 2) {
+			if (!init_graph(keys_start, keys_end,
+			    make_hash<T,R>(&rgph_u32x2_xxh64s_data, seed),
+			    edges, g->nkeys, oedges, g->nverts,
+			    &g->datalenmin, &g->datalenmax)) {
+				return RGPH_NOKEY;
+			}
+		} else {
+			if (!init_graph(keys_start, keys_end,
+			    make_hash<T,R>(&rgph_u16x4_xxh64s_data, seed),
+			    edges, g->nkeys, oedges, g->nverts,
+			    &g->datalenmin, &g->datalenmax)) {
+				return RGPH_NOKEY;
+			}
+		}
+		break;
 	case RGPH_HASH_DEFAULT:
 	default:
 		assert(0 && "rgph_alloc_graph() should have caught it");
@@ -814,8 +848,15 @@ rgph_alloc_graph(size_t nkeys, int flags)
 	case RGPH_HASH_JENKINS2:
 	case RGPH_HASH_MURMUR32:
 		break;
+	case RGPH_HASH_XXH32S:
 	case RGPH_HASH_MURMUR32S:
-		if ((r == 2 && nverts > 65535) || (r == 3 && nverts > 255)) {
+		if (nverts > r * (r == 3 ? 255u : 65535u)) {
+			errno = ERANGE;
+			return NULL;
+		}
+		break;
+	case RGPH_HASH_XXH64S:
+		if (r == 3 && nverts > r * 65535u) {
 			errno = ERANGE;
 			return NULL;
 		}
