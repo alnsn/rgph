@@ -384,6 +384,20 @@ round_up_pow2(size_t n)
 	return r;
 }
 
+inline size_t
+maxsize(size_t a, size_t b)
+{
+
+	return a > b ? a : b;
+}
+
+inline size_t
+maxsize(size_t a, size_t b, size_t c)
+{
+
+	return a > b ? maxsize(a, c) : maxsize(b, c);
+}
+
 template<class T, int R>
 inline size_t
 duphash_size(size_t nverts)
@@ -410,10 +424,14 @@ template<class T, int R>
 inline size_t
 oedges_size_impl(size_t nkeys, size_t nverts)
 {
+	assert(nkeys <= nverts);
+
 	const size_t osz = sizeof(oedge<T,R>);
 	const size_t tsz = sizeof(T);
+	// static_assert(osz > tsz);
 
-	if (nverts > SIZE_MAX / osz || nkeys > SIZE_MAX / tsz)
+	// Overflow check for nverts * osz and nkeys * tsz:
+	if (nverts > SIZE_MAX / osz)
 		return 0;
 
 	const size_t oedges_sz = nverts * osz;
@@ -425,7 +443,7 @@ oedges_size_impl(size_t nkeys, size_t nverts)
 	if (index_sz > SIZE_MAX - hash_sz)
 		return 0;
 
-	return oedges_sz > hash_sz + index_sz ? oedges_sz : hash_sz + index_sz;
+	return maxsize(oedges_sz, hash_sz + index_sz);
 }
 
 template<int R>
