@@ -477,6 +477,41 @@ graph_rank(unsigned int flags)
 	return (flags & RGPH_RANK_MASK) == RGPH_RANK2 ? 2 : 3;
 }
 
+// The destination array is often called g in computer science literature.
+template<class A, class T, int R>
+inline void
+assign(const edge<T,R> *edges, const T *order, size_t nkeys,
+    A *g, size_t nverts, A unassigned)
+{
+	for (size_t v = 0; v < nverts; v++)
+		g[v] = unassigned;
+
+	for (size_t i = 0; i < nkeys; i++) {
+		const T e = order[i];
+		assert(e < nkeys);
+
+		for (size_t j = 0; j < R; j++) {
+			const T v = edges[e].verts[j];
+			assert(v < nverts);
+
+			if (g[v] != unassigned)
+				continue;
+
+			g[v] = j; // XXX set to e or idx for CHM
+			for (size_t k = 1; k < R; k++) {
+				const T u = edges[e].verts[(j + k) % R];
+				assert(u != v);
+				if (g[v] > g[u])
+					g[v] -= g[u];
+				else
+					g[v] += unassigned - g[u];
+			}
+
+			assert(g[v] < unassigned);
+		}
+	}
+}
+
 } // namespace
 
 struct rgph_graph {
@@ -748,7 +783,6 @@ template<class T, int R>
 static int
 assign_bdz(struct rgph_graph *g)
 {
-	enum { unassigned = R };
 	typedef edge<T,R> edge_t;
 
 	const T *order = (const T *)g->order;
@@ -760,26 +794,7 @@ assign_bdz(struct rgph_graph *g)
 	g->flags |= ASSIGNED;
 	g->flags &= ~INDEXED;
 
-	memset(assigned, unassigned, g->nverts);
-
-	for (size_t i = 0; i < g->nkeys; i++) {
-		const T e = order[i];
-		assert(e < g->nkeys);
-		for (size_t j = 0; j < R; j++) {
-			const T v = edges[e].verts[j];
-			assert(v < g->nverts);
-			if (assigned[v] == unassigned) {
-				assigned[v] = j + R * (R - 1);
-				for (size_t k = 1; k < R; k++) {
-					const T u = edges[e].verts[(j + k) % R];
-					assert(u != v);
-					assigned[v] -= assigned[u];
-				}
-				assigned[v] %= R;
-			}
-		}
-	}
-
+	assign<uint8_t>(edges, order, g->nkeys, assigned, g->nverts, R);
 	return RGPH_SUCCESS;
 }
 
