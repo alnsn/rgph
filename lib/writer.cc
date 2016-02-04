@@ -87,6 +87,26 @@ struct oedge {
 	T edge;
 };
 
+template<class T, int R>
+struct bdz_assigner
+{
+	size_t operator()(T, size_t i) const
+	{
+
+		return i;
+	}
+};
+
+template<class T, int R>
+struct chm_assigner
+{
+	T operator()(T e, size_t) const
+	{
+
+		return e; // XXX index[e]
+	}
+};
+
 /*
  * Hash table of pointers to potentially duplicate keys can be build
  * without any additional hashing because v0 is a good hash for a table
@@ -391,13 +411,6 @@ maxsize(size_t a, size_t b)
 	return a > b ? a : b;
 }
 
-inline size_t
-maxsize(size_t a, size_t b, size_t c)
-{
-
-	return a > b ? maxsize(a, c) : maxsize(b, c);
-}
-
 template<class T, int R>
 inline size_t
 duphash_size(size_t nverts)
@@ -419,12 +432,15 @@ duphash_size(size_t nverts)
  * Memory allocated for oedges is shared with a hash table and a peel
  * index. Typically, oedges takes more space but for small T it can
  * take less space.
+ * It's also shared with the assign functions but they need less
+ * space: chm takes T[nkeys] elements which is always smaller than
+ * oedge<T,R>[nverts], bdz needs only nkeys bytes.
  */
 template<class T, int R>
 inline size_t
 oedges_size_impl(size_t nkeys, size_t nverts)
 {
-	assert(nkeys <= nverts);
+	assert(nverts > nkeys);
 
 	const size_t osz = sizeof(oedge<T,R>);
 	const size_t tsz = sizeof(T);
@@ -478,10 +494,10 @@ graph_rank(unsigned int flags)
 }
 
 // The destination array is often called g in computer science literature.
-template<class A, class T, int R>
+template<class G, class T, int R, class A>
 inline void
 assign(const edge<T,R> *edges, const T *order, size_t nkeys,
-    A *g, size_t nverts, A unassigned)
+    G *g, size_t nverts, G unassigned, A assigner)
 {
 	for (size_t v = 0; v < nverts; v++)
 		g[v] = unassigned;
@@ -497,7 +513,9 @@ assign(const edge<T,R> *edges, const T *order, size_t nkeys,
 			if (g[v] != unassigned)
 				continue;
 
-			g[v] = j; // XXX set to e or idx for CHM
+			g[v] = assigner(e, j);
+			assert(g[v] < unassigned);
+
 			for (size_t k = 1; k < R; k++) {
 				const T u = edges[e].verts[(j + k) % R];
 				assert(u != v);
@@ -788,13 +806,40 @@ assign_bdz(struct rgph_graph *g)
 	const T *order = (const T *)g->order;
 	const edge_t *edges = (const edge_t *)g->edges;
 	uint8_t *assigned = (uint8_t *)g->oedges; // Reuse oedges.
+	const uint8_t unassigned = R;
+	const bdz_assigner<T,R> assigner;
 
 	assert(g->core_size == 0);
 
 	g->flags |= ASSIGNED;
 	g->flags &= ~INDEXED;
 
-	assign<uint8_t>(edges, order, g->nkeys, assigned, g->nverts, R);
+	assign(edges, order, g->nkeys,
+	    assigned, g->nverts, unassigned, assigner);
+
+	return RGPH_SUCCESS;
+}
+
+template<class T, int R>
+static int
+assign_chm(struct rgph_graph *g)
+{
+	typedef edge<T,R> edge_t;
+
+	const T *order = (const T *)g->order;
+	const edge_t *edges = (const edge_t *)g->edges;
+	T *assigned = (T *)g->oedges; // Reuse oedges.
+	const T unassigned = g->nkeys;
+	const chm_assigner<T,R> assigner;
+
+	assert(g->core_size == 0);
+
+	g->flags |= ASSIGNED;
+	g->flags &= ~INDEXED;
+
+	assign(edges, order, g->nkeys,
+	    assigned, g->nverts, unassigned, assigner);
+
 	return RGPH_SUCCESS;
 }
 
@@ -808,7 +853,7 @@ assign(struct rgph_graph *g)
 	case RGPH_ALGO_BDZ:
 		return assign_bdz<T,R>(g);
 	case RGPH_ALGO_CHM:
-		return RGPH_INVAL; // XXX implement
+		return assign_chm<T,R>(g);
 	default:
 		assert(0 && "rgph_alloc_graph() should have caught it");
 		return RGPH_INVAL;
