@@ -41,7 +41,7 @@
 struct build_iter_state {
 	struct rgph_entry ent;
 	lua_State *L;
-	int iter;  /* Index of an iterator function. */
+	int top;  /* Index of an iterator state on the stack. */
 };
 
 static int
@@ -198,17 +198,23 @@ graph_build_iter(void *raw_state)
 {
 	struct build_iter_state *state = (struct build_iter_state *)raw_state;
 	lua_State *L = state->L;
+	const int top = state->top;
 
-	lua_pushvalue(L, state->iter);     /* Push the iterator function. */
-	lua_pushvalue(L, state->iter + 1); /* Push the state. */
-	lua_pushvalue(L, state->iter + 2); /* Push the first var. */
+	lua_settop(L, top); /* GC data and index from the previous iteration. */
 
-	/* Call the iterator function and return 1 var; may throw Lua error. */
-	lua_call(L, 2, 1);
-	lua_replace(L, state->iter + 2); /* Move the first var to its place. */
+	lua_pushvalue(L, top - 2); /* Push the iterator function. */
+	lua_pushvalue(L, top - 1); /* Push the state.             */
+	lua_pushvalue(L, top - 0); /* Push the first var.         */
+
+	/* Call the iterator function and return 3 vars; may throw Lua error. */
+	lua_call(L, 2, 3);
+	lua_remove(L, top); /* Move the first var to its place. */
 
 	/* XXX don't convert to string. */
-	state->ent.key = lua_tolstring(L, state->iter + 2, &state->ent.keylen);
+	state->ent.key  = lua_tolstring(L, top + 0, &state->ent.keylen);
+	state->ent.data = lua_tolstring(L, top + 1, &state->ent.datalen);
+	state->ent.index = lua_isnil(L, top + 2) ?
+	    SIZE_MAX : (size_t)lua_tointeger(L, top + 2);
 	return state->ent.key == NULL ? NULL : &state->ent;
 }
 
@@ -218,6 +224,7 @@ graph_build(lua_State *L)
 	struct build_iter_state state;
 	struct rgph_graph **pg;
 	unsigned long seed;
+	const int nargs = 3;
 	int res;
 
 	pg = (struct rgph_graph **)luaL_checkudata(L, 1, GRAPH_MT);
@@ -225,15 +232,10 @@ graph_build(lua_State *L)
 		return luaL_argerror(L, 1, "dead object");
 
 	seed = luaL_checkinteger(L, 2);
+	luaL_checkany(L, nargs); /* Will check later if it's callable. */
 
-	state.iter = 3;
-	luaL_checkany(L, state.iter); /* Will check later if it's callable. */
-
-	/* Align stack as if state and var were always present. */
-	lua_settop(L, state.iter + 2);
-
-	memset(&state.ent, 0, sizeof(state.ent));
 	state.L = L;
+	state.top = nargs + 2; /* Iterator state and the first var. */
 
 	res = rgph_build_graph(*pg, seed, &graph_build_iter, &state);
 
@@ -260,20 +262,17 @@ graph_find_duplicates(lua_State *L)
 	struct build_iter_state state;
 	struct rgph_graph **pg;
 	size_t dup[2];
+	const int nargs = 2;
 	int res;
 
 	pg = (struct rgph_graph **)luaL_checkudata(L, 1, GRAPH_MT);
 	if (*pg == NULL)
 		return luaL_argerror(L, 1, "dead object");
 
-	state.iter = 2;
-	luaL_checkany(L, state.iter); /* Will check later if it's callable. */
+	luaL_checkany(L, nargs); /* Will check later if it's callable. */
 
-	/* Align stack as if state and var were always present. */
-	lua_settop(L, state.iter + 2);
-
-	memset(&state.ent, 0, sizeof(state.ent));
 	state.L = L;
+	state.top = nargs + 2; /* Iterator state and the first var. */
 
 	res = rgph_find_duplicates(*pg, &graph_build_iter, &state, dup);
 
