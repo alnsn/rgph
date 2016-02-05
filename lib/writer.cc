@@ -668,7 +668,7 @@ build_graph(struct rgph_graph *g,
 }
 
 template<class T, int R>
-static T *
+static const T *
 build_peel_index(struct rgph_graph *g)
 {
 	const size_t hash_sz = duphash_size<T,R>(g->nverts);
@@ -704,7 +704,7 @@ copy_edge(struct rgph_graph *g, size_t e, unsigned long *to, size_t *peel_order)
 		to[r] = edges[e].verts[r];
 
 	if (peel_order != NULL) {
-		T *peel = build_peel_index<T,R>(g);
+		const T *peel = build_peel_index<T,R>(g);
 		*peel_order = peel[e];
 	}
 
@@ -728,7 +728,7 @@ find_duplicates(struct rgph_graph *g,
 		hash[i] = NULL;
 
 	int res = RGPH_NOKEY;
-	T *peel = build_peel_index<T,R>(g);
+	const T *peel = build_peel_index<T,R>(g);
 	const edge_t *edges = (const edge_t *)g->edges;
 	entry_iterator keys(iter, state), keys_end;
 
