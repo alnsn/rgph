@@ -87,6 +87,7 @@ struct oedge {
 	T edge;
 };
 
+// Assign initial value in bdz_assign().
 template<class T, int R>
 struct bdz_assigner
 {
@@ -97,13 +98,16 @@ struct bdz_assigner
 	}
 };
 
+// Assign initial value in chm_assign().
 template<class T, int R>
 struct chm_assigner
 {
+	const T *index;
+
 	T operator()(T e, size_t) const
 	{
 
-		return e; // XXX index[e]
+		return index[e];
 	}
 };
 
@@ -302,7 +306,7 @@ template<class Iter, class Hash, class T, int R>
 bool
 init_graph(Iter keys, Iter keys_end, Hash hash,
     edge<T,R> *edges, size_t nkeys, oedge<T,R> *oedges, size_t nverts,
-    size_t *datalenmin, size_t *datalenmax)
+    size_t *datalenmin, size_t *datalenmax, T *index)
 {
 	// partsz is a partition size of an R-partite R-graph.
 	const T partsz = nverts / R;
@@ -319,6 +323,8 @@ init_graph(Iter keys, Iter keys_end, Hash hash,
 			*datalenmin = ent.datalen;
 		if (ent.datalen > *datalenmax)
 			*datalenmax = ent.datalen;
+		if (index != NULL)
+			index[e] = ent.index < nkeys ? ent.index : e;
 	}
 
 	return e == nkeys;
@@ -538,6 +544,7 @@ struct rgph_graph {
 	void *order;  // Output order of edges.
 	void *edges;
 	void *oedges; // Can be reused for peel order index.
+	void *index;  // Data index for RGPH_ALGO_CHM.
 	size_t core_size; // R-core size.
 	size_t datalenmin;
 	size_t datalenmax;
@@ -549,7 +556,7 @@ enum {
 	PUBLIC_FLAGS = 0x3fff,
 	ZEROED   = 0x40000000, // The order, edges and oedges arrays are zeroed.
 	BUILT    = 0x20000000, // Graph is built.
-	INDEXED  = 0x10000000, // Peel order index is built.
+	PEELED   = 0x10000000, // Peel order index is built.
 	ASSIGNED = 0x08000000  // Assignment step is done.
 };
 
@@ -562,6 +569,7 @@ build_graph(struct rgph_graph *g,
 	typedef oedge<T,R> oedge_t;
 
 	T *order = (T *)g->order;
+	T *index = (T *)g->index; // For RGPH_ALGO_CHM.
 	edge_t *edges = (edge_t *)g->edges;
 	oedge_t *oedges = (oedge_t *)g->oedges;
 
@@ -584,7 +592,7 @@ build_graph(struct rgph_graph *g,
 		if (!init_graph(keys_start, keys_end,
 		    make_hash<T,R>(&rgph_u32x3_jenkins2_data, seed),
 		    edges, g->nkeys, oedges, g->nverts,
-		    &g->datalenmin, &g->datalenmax)) {
+		    &g->datalenmin, &g->datalenmax, index)) {
 			return RGPH_NOKEY;
 		}
 		break;
@@ -592,7 +600,7 @@ build_graph(struct rgph_graph *g,
 		if (!init_graph(keys_start, keys_end,
 		    make_hash<T,R>(&rgph_u32x4_murmur32_data, seed),
 		    edges, g->nkeys, oedges, g->nverts,
-		    &g->datalenmin, &g->datalenmax)) {
+		    &g->datalenmin, &g->datalenmax, index)) {
 			return RGPH_NOKEY;
 		}
 		break;
@@ -601,14 +609,14 @@ build_graph(struct rgph_graph *g,
 			if (!init_graph(keys_start, keys_end,
 			    make_hash<T,R>(&rgph_u16x2_murmur32s_data, seed),
 			    edges, g->nkeys, oedges, g->nverts,
-			    &g->datalenmin, &g->datalenmax)) {
+			    &g->datalenmin, &g->datalenmax, index)) {
 				return RGPH_NOKEY;
 			}
 		} else {
 			if (!init_graph(keys_start, keys_end,
 			    make_hash<T,R>(&rgph_u8x4_murmur32s_data, seed),
 			    edges, g->nkeys, oedges, g->nverts,
-			    &g->datalenmin, &g->datalenmax)) {
+			    &g->datalenmin, &g->datalenmax, index)) {
 				return RGPH_NOKEY;
 			}
 		}
@@ -618,14 +626,14 @@ build_graph(struct rgph_graph *g,
 			if (!init_graph(keys_start, keys_end,
 			    make_hash<T,R>(&rgph_u16x2_xxh32s_data, seed),
 			    edges, g->nkeys, oedges, g->nverts,
-			    &g->datalenmin, &g->datalenmax)) {
+			    &g->datalenmin, &g->datalenmax, index)) {
 				return RGPH_NOKEY;
 			}
 		} else {
 			if (!init_graph(keys_start, keys_end,
 			    make_hash<T,R>(&rgph_u8x4_xxh32s_data, seed),
 			    edges, g->nkeys, oedges, g->nverts,
-			    &g->datalenmin, &g->datalenmax)) {
+			    &g->datalenmin, &g->datalenmax, index)) {
 				return RGPH_NOKEY;
 			}
 		}
@@ -635,14 +643,14 @@ build_graph(struct rgph_graph *g,
 			if (!init_graph(keys_start, keys_end,
 			    make_hash<T,R>(&rgph_u32x2_xxh64s_data, seed),
 			    edges, g->nkeys, oedges, g->nverts,
-			    &g->datalenmin, &g->datalenmax)) {
+			    &g->datalenmin, &g->datalenmax, index)) {
 				return RGPH_NOKEY;
 			}
 		} else {
 			if (!init_graph(keys_start, keys_end,
 			    make_hash<T,R>(&rgph_u16x4_xxh64s_data, seed),
 			    edges, g->nkeys, oedges, g->nverts,
-			    &g->datalenmin, &g->datalenmax)) {
+			    &g->datalenmin, &g->datalenmax, index)) {
 				return RGPH_NOKEY;
 			}
 		}
@@ -664,24 +672,24 @@ static T *
 build_peel_index(struct rgph_graph *g)
 {
 	const size_t hash_sz = duphash_size<T,R>(g->nverts);
-	T *index = (T *)((char *)g->oedges + hash_sz); // Reuse oedges.
+	T *peel = (T *)((char *)g->oedges + hash_sz); // Reuse oedges.
 
 	assert(hash_sz != 0);
 
-	if (!(g->flags & INDEXED)) {
+	if (!(g->flags & PEELED)) {
 		const T *order = (const T *)g->order;
 
-		g->flags |= INDEXED;
+		g->flags |= PEELED;
 		g->flags &= ~ASSIGNED;
-		memset(index, 0, sizeof(T) * g->nkeys);
+		memset(peel, 0, sizeof(T) * g->nkeys);
 
 		for (size_t i = g->nkeys; i > g->core_size; i--) {
-			assert(index[order[i-1]] == 0);
-			index[order[i-1]] = g->nkeys - i + 1;
+			assert(peel[order[i-1]] == 0);
+			peel[order[i-1]] = g->nkeys - i + 1;
 		}
 	}
 
-	return index;
+	return peel;
 }
 
 template<class T, int R>
@@ -696,8 +704,8 @@ copy_edge(struct rgph_graph *g, size_t e, unsigned long *to, size_t *peel_order)
 		to[r] = edges[e].verts[r];
 
 	if (peel_order != NULL) {
-		T *index = build_peel_index<T,R>(g);
-		*peel_order = index[e];
+		T *peel = build_peel_index<T,R>(g);
+		*peel_order = peel[e];
 	}
 
 	return RGPH_SUCCESS;
@@ -720,7 +728,7 @@ find_duplicates(struct rgph_graph *g,
 		hash[i] = NULL;
 
 	int res = RGPH_NOKEY;
-	T *index = build_peel_index<T,R>(g);
+	T *peel = build_peel_index<T,R>(g);
 	const edge_t *edges = (const edge_t *)g->edges;
 	entry_iterator keys(iter, state), keys_end;
 
@@ -731,7 +739,7 @@ find_duplicates(struct rgph_graph *g,
 			goto out;
 		}
 
-		if (index[e] != 0)
+		if (peel[e] != 0)
 			continue;
 
 		if (hashed++ == maxfill) {
@@ -812,7 +820,7 @@ assign_bdz(struct rgph_graph *g)
 	assert(g->core_size == 0);
 
 	g->flags |= ASSIGNED;
-	g->flags &= ~INDEXED;
+	g->flags &= ~PEELED;
 
 	assign(edges, order, g->nkeys,
 	    assigned, g->nverts, unassigned, assigner);
@@ -827,15 +835,17 @@ assign_chm(struct rgph_graph *g)
 	typedef edge<T,R> edge_t;
 
 	const T *order = (const T *)g->order;
+	const T *index = (const T *)g->index;
 	const edge_t *edges = (const edge_t *)g->edges;
 	T *assigned = (T *)g->oedges; // Reuse oedges.
 	const T unassigned = g->nkeys;
-	const chm_assigner<T,R> assigner;
+	const chm_assigner<T,R> assigner = { index };
 
+	assert(index != NULL);
 	assert(g->core_size == 0);
 
 	g->flags |= ASSIGNED;
-	g->flags &= ~INDEXED;
+	g->flags &= ~PEELED;
 
 	assign(edges, order, g->nkeys,
 	    assigned, g->nverts, unassigned, assigner);
@@ -865,6 +875,7 @@ void
 rgph_free_graph(struct rgph_graph *g)
 {
 
+	free(g->index);
 	free(g->oedges);
 	free(g->edges);
 	free(g->order);
@@ -949,13 +960,14 @@ rgph_alloc_graph(size_t nkeys, int flags)
 	if (g == NULL)
 		return NULL;
 
-	g->nkeys = 0;
+	g->nkeys  = 0;
 	g->nverts = 0;
-	g->order = NULL;
-	g->edges = NULL;
+	g->order  = NULL;
+	g->edges  = NULL;
 	g->oedges = NULL;
-	g->seed = 0;
-	g->flags = flags;
+	g->index  = NULL;
+	g->seed   = 0;
+	g->flags  = flags;
 
 	g->order = calloc(width, nkeys);
 	if (g->order == NULL)
@@ -968,6 +980,12 @@ rgph_alloc_graph(size_t nkeys, int flags)
 	g->oedges = calloc(osz, 1);
 	if (g->oedges == NULL)
 		goto err;
+
+	if (flags & RGPH_ALGO_CHM) {
+		g->index = malloc(width * nkeys);
+		if (g->order == NULL)
+			goto err;
+	}
 
 	g->nkeys = nkeys;
 	g->nverts = nverts;
