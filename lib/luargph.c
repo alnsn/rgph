@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2015 Alexander Nasonov.
+ * Copyright (c) 2015-2016 Alexander Nasonov.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -315,12 +315,6 @@ graph_assign(lua_State *L)
 
 	switch (res) {
 	case RGPH_SUCCESS:
-		//nverts = rgph_vertices(*pg);
-		//lua_createtable(L, nverts, 0);
-		//for (i = 0; i < nverts; i++) {
-		//	lua_pushinteger(L, to[i]);
-		//	lua_rawseti(L, -2, i + 1);
-		//}
 		return 0;
 	case RGPH_INVAL:
 		lua_pushboolean(L, 0);
