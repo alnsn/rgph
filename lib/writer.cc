@@ -1043,6 +1043,26 @@ rgph_seed(struct rgph_graph *g)
 
 extern "C"
 int
+rgph_is_built(struct rgph_graph *g)
+{
+	int res = (g->flags & BUILT) != 0;
+
+	assert(res != ((g->flags & ASSIGNED) != 0));
+	return res;
+}
+
+extern "C"
+int
+rgph_is_assigned(struct rgph_graph *g)
+{
+	int res = (g->flags & ASSIGNED) != 0;
+
+	assert(res != ((g->flags & BUILT) != 0));
+	return res;
+}
+
+extern "C"
+int
 rgph_build_graph(struct rgph_graph *g,
     unsigned long seed, rgph_entry_iterator_t keys, void *state)
 {
