@@ -541,9 +541,10 @@ assign(const edge<T,R> *edges, const T *order, size_t nkeys,
 struct rgph_graph {
 	size_t nkeys;
 	size_t nverts;
-	void *order;  // Output order of edges.
-	void *edges;
-	void *oedges; // Can be reused for peel order index.
+	size_t width; // sizeof(T)
+	void *order;  // Output order of edges, points to T[nkeys] array.
+	void *edges;  // Points to edge<T,R>[nkeys] array.
+	void *oedges; // oedge<T,R>[nverts], can be reused for peel order index.
 	void *index;  // Data index for RGPH_ALGO_CHM.
 	size_t core_size; // R-core size.
 	size_t datalenmin;
@@ -579,11 +580,12 @@ build_graph(struct rgph_graph *g,
 		memset(oedges, 0, sizeof(oedge_t) * g->nverts);
 	}
 
-	g->flags &= PUBLIC_FLAGS;
-	g->seed = seed;
+	g->width = sizeof(T);
 	g->core_size = g->nkeys;
 	g->datalenmin = SIZE_MAX;
 	g->datalenmax = 0;
+	g->seed = seed;
+	g->flags &= PUBLIC_FLAGS; // Unset (ZEROED|BUILT|PEELED|ASSIGNED).
 
 	entry_iterator keys_start(keys, state), keys_end;
 
@@ -1045,10 +1047,8 @@ extern "C"
 int
 rgph_is_built(struct rgph_graph *g)
 {
-	int res = (g->flags & BUILT) != 0;
 
-	assert(res != ((g->flags & ASSIGNED) != 0));
-	return res;
+	return (g->flags & BUILT) != 0;
 }
 
 extern "C"
@@ -1057,7 +1057,7 @@ rgph_is_assigned(struct rgph_graph *g)
 {
 	int res = (g->flags & ASSIGNED) != 0;
 
-	assert(res != ((g->flags & BUILT) != 0));
+	assert(res != ((g->flags & PEELED) != 0));
 	return res;
 }
 
@@ -1188,6 +1188,21 @@ rgph_assign(struct rgph_graph *g)
 		return RGPH_INVAL;
 	}
 #undef SELECT
+}
+
+extern "C"
+const void *
+rgph_assign_data(struct rgph_graph *g, size_t *width)
+{
+	const unsigned int flags = g->flags;
+
+	if (width != NULL)
+		*width = (flags & RGPH_ALGO_BDZ) ? 1 : g->width;
+
+	if (flags & ASSIGNED)
+		return g->oedges; // Reused.
+	else
+		return NULL;
 }
 
 extern "C"
