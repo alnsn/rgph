@@ -68,7 +68,7 @@ int rgph_find_duplicates(struct rgph_graph *,
     rgph_entry_iterator_t, void *, size_t *);
 
 int rgph_assign(struct rgph_graph *);
-const void *rgph_assign_data(struct rgph_graph *, size_t *);
+const void *rgph_assignments(struct rgph_graph *, size_t *);
 int rgph_is_assigned(struct rgph_graph *);
 
 #ifdef __cplusplus

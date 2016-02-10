@@ -1192,7 +1192,7 @@ rgph_assign(struct rgph_graph *g)
 
 extern "C"
 const void *
-rgph_assign_data(struct rgph_graph *g, size_t *width)
+rgph_assignments(struct rgph_graph *g, size_t *width)
 {
 	const unsigned int flags = g->flags;
 
