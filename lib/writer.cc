@@ -1195,14 +1195,44 @@ const void *
 rgph_assignments(struct rgph_graph *g, size_t *width)
 {
 	const unsigned int flags = g->flags;
+	const void *assigned = g->oedges; // Reused.
 
 	if (width != NULL)
 		*width = (flags & RGPH_ALGO_BDZ) ? 1 : g->width;
 
 	if (flags & ASSIGNED)
-		return g->oedges; // Reused.
+		return assigned;
 	else
 		return NULL;
+}
+
+extern "C"
+int rgph_copy_assignment(struct rgph_graph *g, size_t n, unsigned int *to)
+{
+	const unsigned int flags = g->flags;
+	const size_t width = (flags & RGPH_ALGO_BDZ) ? 1 : g->width;
+	const void *assigned = g->oedges; // Reused.
+
+	if (!(flags & ASSIGNED))
+		return RGPH_INVAL;
+
+	if (n >= g->nverts)
+		return RGPH_RANGE;
+
+	switch (width) {
+	case 1:
+		*to = ((const uint8_t *)assigned)[n];
+		return RGPH_SUCCESS;
+	case 2:
+		*to = ((const uint16_t *)assigned)[n];
+		return RGPH_SUCCESS;
+	case 4:
+		*to = ((const uint32_t *)assigned)[n];
+		return RGPH_SUCCESS;
+	default:
+		assert(0 && "rgph_alloc_graph() should have caught it");
+		return RGPH_INVAL;
+	}
 }
 
 extern "C"
