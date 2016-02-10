@@ -36,13 +36,25 @@
 
 #include "rgph.h"
 
-#define GRAPH_MT "rgph.graph"
+#define GRAPH_MT  "rgph.graph"
+#define ASSIGN_MT "rgph.assign"
 
 struct build_iter_state {
 	struct rgph_entry ent;
 	lua_State *L;
 	int top;  /* Index of an iterator state on the stack. */
 };
+
+static void
+setuservalue(lua_State *L, int index)
+{
+
+#if LUA_VERSION_NUM <= 501
+	lua_setfenv(L, index);
+#else
+	lua_setuservalue(L, index);
+#endif
+}
 
 static int
 parse_flags(lua_State *L, int arg)
@@ -303,19 +315,19 @@ graph_find_duplicates(lua_State *L)
 static int
 graph_assign(lua_State *L)
 {
-	struct rgph_graph **pg;
-	size_t i, nverts;
+	struct rgph_graph **pg, *g;
 	int res;
 
 	pg = (struct rgph_graph **)luaL_checkudata(L, 1, GRAPH_MT);
 	if (*pg == NULL)
 		return luaL_argerror(L, 1, "dead object");
 
-	res = rgph_assign(*pg);
+	g = *pg;
+	res = rgph_assign(g);
 
 	switch (res) {
 	case RGPH_SUCCESS:
-		return 0;
+		break;
 	case RGPH_INVAL:
 		lua_pushboolean(L, 0);
 		lua_pushstring(L, "invalid value");
@@ -324,6 +336,47 @@ graph_assign(lua_State *L)
 		lua_pushboolean(L, 0);
 		lua_pushfstring(L, "unknown error %d", res);
 		return 2;
+	}
+
+	/* Reuse pg for a different userdata. */
+	pg = (struct rgph_graph **)lua_newuserdata(L, sizeof(pg));
+	*pg = g;
+	luaL_getmetatable(L, ASSIGN_MT);
+	lua_setmetatable(L, -2);
+
+	/* Keep a reference to the parent object. */
+	lua_pushvalue(L, 1);
+	setuservalue(L, -2);
+
+	return 1;
+}
+
+static int
+assign_get(lua_State *L)
+{
+	struct rgph_graph **pg;
+	lua_Integer n;
+	unsigned int val;
+	int res;
+
+	pg = (struct rgph_graph **)luaL_checkudata(L, 1, ASSIGN_MT);
+	if (*pg == NULL)
+		return luaL_argerror(L, 1, "dead object");
+
+	n = luaL_checkinteger(L, 2) - 1;
+
+	res = rgph_copy_assignment(*pg, n, &val);
+
+	switch (res) {
+	case RGPH_SUCCESS:
+		lua_pushinteger(L, val);
+		return 1;
+	case RGPH_INVAL:
+		return luaL_argerror(L, 1, "unassigned");
+	case RGPH_RANGE:
+		return luaL_argerror(L, 2, "out of range");
+	default:
+		return luaL_error(L, "unknown error %d", res);
 	}
 }
 
@@ -486,6 +539,11 @@ static luaL_Reg graph_mt[] = {
 	{ NULL, NULL }
 };
 
+static luaL_Reg assign_index[] = {
+	{ "__index", assign_get },
+	{ NULL, NULL }
+};
+
 static void
 register_udata(lua_State *L, int arg, const char *tname,
     const luaL_Reg *metafunctions, const luaL_Reg *methods)
@@ -540,6 +598,14 @@ luaopen_rgph(lua_State *L)
 #endif
 
 	register_udata(L, -1, GRAPH_MT, graph_mt, graph_fn);
+
+	luaL_newmetatable(L, ASSIGN_MT);
+#if LUA_VERSION_NUM <= 501
+	luaL_register(L, NULL, assign_index);
+#else
+	luaL_setfuncs(L, assign_index, 0);
+#endif
+	lua_pop(L, 1);
 
 	return 1;
 }
