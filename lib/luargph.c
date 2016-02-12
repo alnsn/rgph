@@ -175,7 +175,7 @@ graph_entries(lua_State *L)
 	if (*pg == NULL)
 		return luaL_argerror(L, 1, "dead object");
 
-	lua_pushnumber(L, rgph_entries(*pg));
+	lua_pushinteger(L, rgph_entries(*pg));
 	return 1;
 }
 
@@ -188,7 +188,20 @@ graph_vertices(lua_State *L)
 	if (*pg == NULL)
 		return luaL_argerror(L, 1, "dead object");
 
-	lua_pushnumber(L, rgph_vertices(*pg));
+	lua_pushinteger(L, rgph_vertices(*pg));
+	return 1;
+}
+
+static int
+graph_core_size(lua_State *L)
+{
+	struct rgph_graph **pg;
+
+	pg = (struct rgph_graph **)luaL_checkudata(L, 1, GRAPH_MT);
+	if (*pg == NULL)
+		return luaL_argerror(L, 1, "dead object");
+
+	lua_pushinteger(L, rgph_core_size(*pg));
 	return 1;
 }
 
@@ -201,7 +214,7 @@ graph_seed(lua_State *L)
 	if (*pg == NULL)
 		return luaL_argerror(L, 1, "dead object");
 
-	lua_pushnumber(L, rgph_seed(*pg));
+	lua_pushinteger(L, rgph_seed(*pg));
 	return 1;
 }
 
@@ -332,6 +345,10 @@ graph_assign(lua_State *L)
 		lua_pushboolean(L, 0);
 		lua_pushstring(L, "invalid value");
 		return 2;
+	case RGPH_AGAIN:
+		lua_pushboolean(L, 0);
+		lua_pushstring(L, "try again");
+		return 2;
 	default:
 		lua_pushboolean(L, 0);
 		lua_pushfstring(L, "unknown error %d", res);
@@ -426,7 +443,7 @@ graph_edges_iter(lua_State *L)
 	key = !lua_isnil(L, iter);
 
 	if (peel)
-		lua_pushnumber(L, peel_order);
+		lua_pushinteger(L, peel_order);
 
 	if (key) {
 		state = lua_upvalueindex(5);
@@ -525,6 +542,7 @@ static luaL_Reg graph_fn[] = {
 	{ "rank", graph_rank },
 	{ "entries", graph_entries },
 	{ "vertices", graph_vertices },
+	{ "core_size", graph_core_size },
 	{ "build", graph_build },
 	{ "find_duplicates", graph_find_duplicates },
 	{ "assign", graph_assign },
