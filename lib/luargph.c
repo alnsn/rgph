@@ -244,6 +244,21 @@ graph_build_iter(void *raw_state)
 }
 
 static int
+count_keys_fn(lua_State *L)
+{
+	struct build_iter_state state;
+	const int nargs = 1;
+
+	luaL_checkany(L, nargs); /* Will check later if it's callable. */
+
+	state.L = L;
+	state.top = nargs + 2; /* Iterator state and the first var. */
+
+	lua_pushinteger(L, rgph_count_keys(&graph_build_iter, &state));
+	return 1;
+}
+
+static int
 graph_build(lua_State *L)
 {
 	struct build_iter_state state;
@@ -535,6 +550,7 @@ graph_edge(lua_State *L)
 
 static luaL_Reg rgph_fn[] = {
 	{ "new_graph", new_graph_fn },
+	{ "count_keys", count_keys_fn },
 	{ NULL, NULL }
 };
 
