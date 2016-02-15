@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2015 Alexander Nasonov.
+ * Copyright (c) 2015-2016 Alexander Nasonov.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
