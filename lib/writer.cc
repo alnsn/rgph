@@ -519,13 +519,13 @@ assign(const edge<T,R> *edges, const T *order, size_t nkeys,
 			if (g[v] != unassigned)
 				continue;
 
-			g[v] = assigner(e, j);
+			g[v] = assigner(e, j); // j for bdz and index[e] for chm
 			assert(g[v] < unassigned);
 
 			for (size_t k = 1; k < R; k++) {
 				const T u = edges[e].verts[(j + k) % R];
 				assert(u != v);
-				if (g[v] > g[u])
+				if (g[v] >= g[u])
 					g[v] -= g[u];
 				else
 					g[v] += unassigned - g[u];
@@ -657,7 +657,6 @@ build_graph(struct rgph_graph *g,
 			}
 		}
 		break;
-	case RGPH_HASH_DEFAULT:
 	default:
 		assert(0 && "rgph_alloc_graph() should have caught it");
 		return RGPH_INVAL;
@@ -861,7 +860,6 @@ assign(struct rgph_graph *g)
 {
 
 	switch (g->flags & RGPH_ALGO_MASK) {
-	case RGPH_ALGO_DEFAULT:
 	case RGPH_ALGO_BDZ:
 		return assign_bdz<T,R>(g);
 	case RGPH_ALGO_CHM:
@@ -935,6 +933,13 @@ rgph_alloc_graph(size_t nkeys, int flags)
 		return NULL;
 	}
 
+	if ((flags & RGPH_ALGO_MASK) == RGPH_ALGO_DEFAULT)
+		flags |= RGPH_ALGO_CHM;
+
+	// XXX Decide on default.
+	if ((flags & RGPH_HASH_MASK) == RGPH_HASH_DEFAULT)
+		flags |= RGPH_HASH_JENKINS2;
+
 	switch (flags & RGPH_HASH_MASK) {
 	case RGPH_HASH_JENKINS2:
 	case RGPH_HASH_MURMUR32:
@@ -952,7 +957,6 @@ rgph_alloc_graph(size_t nkeys, int flags)
 			return NULL;
 		}
 		break;
-	case RGPH_HASH_DEFAULT: // XXX Decide on default.
 	default:
 		errno = EINVAL;
 		return NULL;
@@ -1033,6 +1037,14 @@ rgph_vertices(struct rgph_graph *g)
 {
 
 	return g->nverts;
+}
+
+extern "C"
+size_t
+rgph_core_size(struct rgph_graph *g)
+{
+
+	return g->core_size;
 }
 
 extern "C"
