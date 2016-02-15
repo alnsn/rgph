@@ -387,7 +387,6 @@ static int
 assign_get(lua_State *L)
 {
 	struct rgph_graph **pg;
-	lua_Integer n;
 	unsigned int val;
 	int res;
 
@@ -395,9 +394,7 @@ assign_get(lua_State *L)
 	if (*pg == NULL)
 		return luaL_argerror(L, 1, "dead object");
 
-	n = luaL_checkinteger(L, 2) - 1;
-
-	res = rgph_copy_assignment(*pg, n, &val);
+	res = rgph_copy_assignment(*pg, luaL_checkinteger(L, 2), &val);
 
 	switch (res) {
 	case RGPH_SUCCESS:
