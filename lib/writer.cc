@@ -64,8 +64,8 @@ template<bool C> struct bool_selector {};
   * Generated graphs are always R-partite. This means that v0 is less
   * than (nverts / R), v1 starts from (nverts / R) and is less than
   * (2 * nverts / R). If R==3, v2 takes the remaining range.
-  * To simplify code, nverts is always rounded to make sure that R always
-  * divides it exactly.
+  * All partitions in a generated graph have equal number of vertices,
+  * that is, nverts is always a multiple of R.
   */
 template<class T, int R>
 struct edge {
