@@ -436,11 +436,11 @@ duphash_size(size_t nverts)
 
 /*
  * Memory allocated for oedges is shared with a hash table and a peel
- * index. Typically, oedges takes more space but for small T it can
- * take less space.
+ * index. Typically, oedges takes more space but it can take less
+ * space for small T.
  * It's also shared with the assign functions but they need less
- * space: chm takes T[nkeys] elements which is always smaller than
- * oedge<T,R>[nverts], bdz needs only nkeys bytes.
+ * space: chm takes T[nverts] elements which is always smaller than
+ * oedge<T,R>[nverts], bdz needs only nverts bytes.
  */
 template<class T, int R>
 inline size_t
@@ -452,7 +452,7 @@ oedges_size_impl(size_t nkeys, size_t nverts)
 	const size_t tsz = sizeof(T);
 	// static_assert(osz > tsz);
 
-	// Overflow check for nverts * osz and nkeys * tsz:
+	// Overflow check for nverts * osz and nverts * tsz:
 	if (nverts > SIZE_MAX / osz)
 		return 0;
 
@@ -524,11 +524,21 @@ assign(const edge<T,R> *edges, const T *order, size_t nkeys,
 
 			for (size_t k = 1; k < R; k++) {
 				const T u = edges[e].verts[(j + k) % R];
+				// Some compilers aren't smart enough to
+				// use hints inside asserts in NDEBUG build.
+				// Cache g[u] value to avoid reloading it
+				// after writing to g[v]:
+				const T gu = g[u];
 				assert(u != v);
-				if (g[v] >= g[u])
-					g[v] -= g[u];
-				else
-					g[v] += unassigned - g[u];
+
+				// g[v] = (g[v] - g[u]) mod unassigned:
+				if (g[v] < gu)
+					g[v] += unassigned;
+				g[v] -= gu;
+
+				// Assign all traversed vertices:
+				if (gu == unassigned)
+					g[u] = 0;
 			}
 
 			assert(g[v] < unassigned);
