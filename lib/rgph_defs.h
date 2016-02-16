@@ -53,21 +53,22 @@
 #define	RGPH_HASH_XXH32S    6
 #define	RGPH_HASH_XXH64S    7
 
-#define	RGPH_RANK_MASK     0x100
+#define	RGPH_RANK_MASK     0x300
+#define	RGPH_RANK_DEFAULT  0
 #define	RGPH_RANK2         0x100
-#define	RGPH_RANK3         0
+#define	RGPH_RANK3         0x200
 
-#define	RGPH_ALGO_MASK     0x600
+#define	RGPH_ALGO_MASK     0xc00
 #define	RGPH_ALGO_DEFAULT  0
-#define	RGPH_ALGO_CHM      0x200
-#define	RGPH_ALGO_BDZ      0x400
+#define	RGPH_ALGO_CHM      0x400
+#define	RGPH_ALGO_BDZ      0x800
 
-#define RGPH_ROUND_MASK    0x800
+#define RGPH_ROUND_MASK    0x1000
 #define RGPH_ROUND_DEFAULT 0
-#define RGPH_ROUND_POW2    0x800
+#define RGPH_ROUND_POW2    0x1000
 
-#define	RGPH_INDEX_MASK    0x3000
+#define	RGPH_INDEX_MASK    0x6000
 #define	RGPH_INDEX_DEFAULT 0
-#define	RGPH_INDEX_XXX     0x1000
+#define	RGPH_INDEX_XXX     0x2000
 
 #endif /* !RGPH_DEFS_H_INCLUDED */

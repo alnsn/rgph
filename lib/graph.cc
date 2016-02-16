@@ -564,7 +564,7 @@ struct rgph_graph {
 };
 
 enum {
-	PUBLIC_FLAGS = 0x3fff,
+	PUBLIC_FLAGS = 0x7fff,
 	ZEROED   = 0x40000000, // The order, edges and oedges arrays are zeroed.
 	BUILT    = 0x20000000, // Graph is built.
 	PEELED   = 0x10000000, // Peel order index is built.
@@ -906,6 +906,16 @@ rgph_alloc_graph(size_t nkeys, int flags)
 		return NULL;
 	}
 
+	if ((flags & RGPH_RANK_MASK) == RGPH_RANK_DEFAULT)
+		flags |= RGPH_RANK3;
+
+	if ((flags & RGPH_ALGO_MASK) == RGPH_ALGO_DEFAULT)
+		flags |= RGPH_ALGO_CHM;
+
+	// XXX Decide on default.
+	if ((flags & RGPH_HASH_MASK) == RGPH_HASH_DEFAULT)
+		flags |= RGPH_HASH_JENKINS2;
+
 	r = graph_rank(flags);
 	maxkeys = (r == 2) ? 0x78787877u : 0xcccccccau;
 
@@ -942,13 +952,6 @@ rgph_alloc_graph(size_t nkeys, int flags)
 		errno = ENOMEM;
 		return NULL;
 	}
-
-	if ((flags & RGPH_ALGO_MASK) == RGPH_ALGO_DEFAULT)
-		flags |= RGPH_ALGO_CHM;
-
-	// XXX Decide on default.
-	if ((flags & RGPH_HASH_MASK) == RGPH_HASH_DEFAULT)
-		flags |= RGPH_HASH_JENKINS2;
 
 	switch (flags & RGPH_HASH_MASK) {
 	case RGPH_HASH_JENKINS2:
