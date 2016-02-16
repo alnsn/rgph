@@ -20,8 +20,8 @@ CPPFLAGS+=	-DNDEBUG -DWEAK_ALIASES
 #CFLAGS+=	-UWEAK_ALIASES
 
 
-OBJ=		writer.o    jenkins2.o    murmur32.o    murmur32s.o    xxh32s.o    xxh64s.o
-PICOBJ=		writer.pico jenkins2.pico murmur32.pico murmur32s.pico xxh32s.pico xxh64s.pico
+OBJ=		graph.o    jenkins2.o    murmur32.o    murmur32s.o    xxh32s.o    xxh64s.o
+PICOBJ=		graph.pico jenkins2.pico murmur32.pico murmur32s.pico xxh32s.pico xxh64s.pico
 LOBJ=		luargph.o
 LPICOBJ=	luargph.pico
 
