@@ -45,6 +45,42 @@ struct build_iter_state {
 	int top;  /* Index of an iterator state on the stack. */
 };
 
+struct flag_str {
+	int flag;
+	int mask;
+	const char *str;
+};
+
+const struct flag_str flag_strings[] = {
+	{ RGPH_HASH_JENKINS2,  RGPH_HASH_MASK,  "jenkins2"  },
+	/* NIY { RGPH_HASH_JENKINS3,  RGPH_HASH_MASK,  "jenkins3"  }, */
+	/* NIY { RGPH_HASH_JENKINS3S, RGPH_HASH_MASK,  "jenkins3s" }, */
+	{ RGPH_HASH_MURMUR32,  RGPH_HASH_MASK,  "murmur32"  },
+	{ RGPH_HASH_MURMUR32S, RGPH_HASH_MASK,  "murmur32s" },
+	{ RGPH_HASH_XXH32S,    RGPH_HASH_MASK,  "xxh32s"    },
+	{ RGPH_HASH_XXH64S,    RGPH_HASH_MASK,  "xxh64s"    },
+	{ RGPH_RANK2,          RGPH_RANK_MASK,  "rank2"     },
+	{ RGPH_RANK3,          RGPH_RANK_MASK,  "rank3"     },
+	{ RGPH_ALGO_CHM,       RGPH_ALGO_MASK,  "chm"       },
+	{ RGPH_ALGO_BDZ,       RGPH_ALGO_MASK,  "bdz"       },
+	{ RGPH_ROUND_POW2,     RGPH_ROUND_MASK, "pow2"      },
+	// XXX { RGPH_INDEX_XXX }
+};
+
+const int *
+find_flag_by_name(const char *str)
+{
+	const size_t nflags = sizeof(flag_strings) / sizeof(flag_strings[0]);
+	size_t i;
+
+	for (i = 0; i < nflags; i++) {
+		if (strcmp(str, flag_strings[i].str) == 0)
+			return &flag_strings[i].flag;
+	}
+
+	return NULL;
+}
+
 static void
 setuservalue(lua_State *L, int index)
 {
@@ -64,6 +100,7 @@ parse_flags(lua_State *L, int arg)
 	const char *sep = "+|,";
 	const char *opts;
 	size_t optslen = 0;
+	const int *pflag;
 	int flags = 0; /* aka RGPH_DEFAULT */
 
 	opts = luaL_optlstring(L, arg, "", &optslen);
@@ -75,32 +112,10 @@ parse_flags(lua_State *L, int arg)
 
 	for (tok = strtok_r(buf, sep, &last_tok); tok != NULL;
 	    tok = strtok_r(NULL, sep, &last_tok)) {
-		if (strcmp(tok, "rank2") == 0)
-			flags |= RGPH_RANK2;
-		else if (strcmp(tok, "rank3") == 0)
-			flags |= RGPH_RANK3;
-		else if (strcmp(tok, "chm") == 0)
-			flags |= RGPH_ALGO_CHM;
-		else if (strcmp(tok, "bdz") == 0)
-			flags |= RGPH_ALGO_BDZ;
-		else if (strcmp(tok, "jenkins2") == 0)
-			flags |= RGPH_HASH_JENKINS2;
-		else if (strcmp(tok, "jenkins3") == 0)
-			flags |= RGPH_HASH_JENKINS3;
-		else if (strcmp(tok, "jenkins3s") == 0)
-			flags |= RGPH_HASH_JENKINS3S;
-		else if (strcmp(tok, "murmur32") == 0)
-			flags |= RGPH_HASH_MURMUR32;
-		else if (strcmp(tok, "murmur32s") == 0)
-			flags |= RGPH_HASH_MURMUR32S;
-		else if (strcmp(tok, "xxh32s") == 0)
-			flags |= RGPH_HASH_XXH32S;
-		else if (strcmp(tok, "xxh64s") == 0)
-			flags |= RGPH_HASH_XXH64S;
-		else if (strcmp(tok, "pow2") == 0)
-			flags |= RGPH_ROUND_POW2;
-		else
+		pflag = find_flag_by_name(tok);
+		if (pflag == NULL)
 			return luaL_argerror(L, arg, "parse error");
+		flags |= *pflag;
 	}
 
 	return flags;
@@ -202,6 +217,40 @@ graph_core_size(lua_State *L)
 		return luaL_argerror(L, 1, "dead object");
 
 	lua_pushinteger(L, rgph_core_size(*pg));
+	return 1;
+}
+
+static int
+graph_flags(lua_State *L)
+{
+	luaL_Buffer buf;
+	char *dst;
+	struct rgph_graph **pg;
+	const size_t nflags = sizeof(flag_strings) / sizeof(flag_strings[0]);
+	size_t i, flen, dlen = 0; /* Flag length and delimiter length. */
+	int flags;
+
+	pg = (struct rgph_graph **)luaL_checkudata(L, 1, GRAPH_MT);
+	if (*pg == NULL)
+		return luaL_argerror(L, 1, "dead object");
+
+	flags = rgph_flags(*pg);
+
+	luaL_buffinit(L, &buf);
+
+	for (i = 0; i < nflags; i++) {
+		if ((flags & flag_strings[i].mask) == flag_strings[i].flag) {
+			flen = strlen(flag_strings[i].str);
+			dst = luaL_prepbuffer(&buf);
+			if (dlen > 0)
+				dst[0] = ',';
+			memcpy(dst + dlen, flag_strings[i].str, flen);
+			luaL_addsize(&buf, flen + dlen);
+			dlen = 1;
+		}
+	}
+
+	luaL_pushresult(&buf);
 	return 1;
 }
 
@@ -556,6 +605,7 @@ static luaL_Reg graph_fn[] = {
 	{ "entries", graph_entries },
 	{ "vertices", graph_vertices },
 	{ "core_size", graph_core_size },
+	{ "flags", graph_flags },
 	{ "build", graph_build },
 	{ "find_duplicates", graph_find_duplicates },
 	{ "assign", graph_assign },

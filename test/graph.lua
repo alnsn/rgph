@@ -21,7 +21,7 @@ local function test(keys, seed, flags)
 
 	local assign = assert(g:assign())
 
-	flags = flags or "" -- XXX don't depend of RGPH_ALGO_DEFAULT value
+	flags = g:flags()
 	local bdz = flags:find("bdz") ~= nil
 	local rank = g:rank()
 	local unassigned = bdz and rank or nkeys
