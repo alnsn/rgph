@@ -70,7 +70,7 @@ size_t rgph_count_keys(rgph_entry_iterator_t, void *);
 int rgph_find_duplicates(struct rgph_graph *,
     rgph_entry_iterator_t, void *, size_t *);
 
-int rgph_assign(struct rgph_graph *);
+int rgph_assign(struct rgph_graph *, int);
 int rgph_is_assigned(struct rgph_graph *);
 const void *rgph_assignments(struct rgph_graph *, size_t *);
 int rgph_copy_assignment(struct rgph_graph *, size_t, unsigned int *);

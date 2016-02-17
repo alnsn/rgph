@@ -67,6 +67,8 @@ const struct flag_str flag_strings[] = {
 	// XXX { RGPH_INDEX_XXX }
 };
 
+const char *algo_strings[] = { "" /* default goes first */, "chm", "bdz" };
+
 const int *
 find_flag_by_name(const char *str)
 {
@@ -401,14 +403,18 @@ static int
 graph_assign(lua_State *L)
 {
 	struct rgph_graph **pg, *g;
-	int res;
+	int res, algo;
 
 	pg = (struct rgph_graph **)luaL_checkudata(L, 1, GRAPH_MT);
 	if (*pg == NULL)
 		return luaL_argerror(L, 1, "dead object");
 
+	algo = luaL_checkoption(L, 2, "", algo_strings);
+	if (algo != 0) /* not default? */
+		algo = *find_flag_by_name(algo_strings[algo]);
+
 	g = *pg;
-	res = rgph_assign(g);
+	res = rgph_assign(g, algo);
 
 	switch (res) {
 	case RGPH_SUCCESS:
@@ -420,6 +426,10 @@ graph_assign(lua_State *L)
 	case RGPH_AGAIN:
 		lua_pushboolean(L, 0);
 		lua_pushstring(L, "try again");
+		return 2;
+	case RGPH_NOMEM:
+		lua_pushboolean(L, 0);
+		lua_pushstring(L, "not enough memory");
 		return 2;
 	default:
 		lua_pushboolean(L, 0);

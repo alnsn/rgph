@@ -330,6 +330,32 @@ init_graph(Iter keys, Iter keys_end, Hash hash,
 	return e == nkeys;
 }
 
+bool
+init_index(void *index, size_t nkeys, size_t width)
+{
+	uint8_t *index8 = (uint8_t *)index;
+	uint16_t *index16 = (uint16_t *)index;
+	uint32_t *index32 = (uint32_t *)index;
+	size_t i;
+
+	switch (width) {
+		case 1:
+			for (i = 0; i < nkeys; i++)
+				index8[i] = i;
+			return true;
+		case 2:
+			for (i = 0; i < nkeys; i++)
+				index16[i] = i;
+			return true;
+		case 4:
+			for (i = 0; i < nkeys; i++)
+				index32[i] = i;
+			return true;
+		default:
+			return false;
+		}
+}
+
 template<class T, int R>
 size_t
 peel_graph(edge<T,R> *edges, size_t nkeys,
@@ -1200,7 +1226,7 @@ rgph_find_duplicates(struct rgph_graph *g,
 
 extern "C"
 int
-rgph_assign(struct rgph_graph *g)
+rgph_assign(struct rgph_graph *g, int algo)
 {
 	const int r = graph_rank(g->flags);
 	const size_t width = data_width(g->nverts, MIN_WIDTH_BUILD);
@@ -1209,6 +1235,24 @@ rgph_assign(struct rgph_graph *g)
 		return RGPH_INVAL;
 	else if (g->core_size != 0)
 		return RGPH_AGAIN;
+	else if (algo & ~RGPH_ALGO_MASK)
+		return RGPH_INVAL;
+
+	if (algo != 0) {
+		if (algo != RGPH_ALGO_BDZ && algo != RGPH_ALGO_CHM)
+			return RGPH_INVAL;
+
+		if (algo == RGPH_ALGO_CHM && g->index == NULL) {
+			g->index = malloc(g->width * g->nkeys);
+			if (g->index == NULL)
+				return RGPH_NOMEM;
+			if (!init_index(g->index, g->nkeys, g->width))
+				return RGPH_INVAL;
+		}
+
+		g->flags &= ~RGPH_ALGO_MASK;
+		g->flags |= algo;
+	}
 
 #define SELECT(r, w) (8 * (r) + (w))
 	switch (SELECT(r, width)) {
