@@ -226,13 +226,16 @@ graph_flags(lua_State *L)
 	luaL_Buffer buf;
 	char *dst;
 	struct rgph_graph **pg;
+	const char *delim;
 	const size_t nflags = sizeof(flag_strings) / sizeof(flag_strings[0]);
-	size_t i, flen, dlen = 0; /* Flag length and delimiter length. */
+	size_t i, flen, dlen, dcopy = 0;
 	int flags;
 
 	pg = (struct rgph_graph **)luaL_checkudata(L, 1, GRAPH_MT);
 	if (*pg == NULL)
 		return luaL_argerror(L, 1, "dead object");
+
+	delim = luaL_optlstring(L, 2, ",", &dlen);
 
 	flags = rgph_flags(*pg);
 
@@ -242,11 +245,16 @@ graph_flags(lua_State *L)
 		if ((flags & flag_strings[i].mask) == flag_strings[i].flag) {
 			flen = strlen(flag_strings[i].str);
 			dst = luaL_prepbuffer(&buf);
-			if (dlen > 0)
-				dst[0] = ',';
-			memcpy(dst + dlen, flag_strings[i].str, flen);
-			luaL_addsize(&buf, flen + dlen);
-			dlen = 1;
+
+			if (dcopy > 0) {
+				if (dcopy > LUAL_BUFFERSIZE - flen)
+					return luaL_argerror(L, 2, "too long");
+				memcpy(dst, delim, dcopy);
+			}
+
+			memcpy(dst + dcopy, flag_strings[i].str, flen);
+			luaL_addsize(&buf, dcopy + flen);
+			dcopy = dlen;
 		}
 	}
 
