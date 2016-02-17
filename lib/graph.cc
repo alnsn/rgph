@@ -1002,7 +1002,7 @@ rgph_alloc_graph(size_t nkeys, int flags)
 
 	if (flags & RGPH_ALGO_CHM) {
 		g->index = malloc(width * nkeys);
-		if (g->order == NULL)
+		if (g->index == NULL)
 			goto err;
 	}
 
