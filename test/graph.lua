@@ -21,9 +21,8 @@ local function test(keys, seed, flags)
 
 	local assign = assert(g:assign())
 
-	flags = g:flags()
-	local bdz = flags:find("bdz") ~= nil
 	local rank = g:rank()
+	local bdz = g:algo() == "bdz"
 	local unassigned = bdz and rank or nkeys
 	for v = 0, nverts - 1 do
 		assert(assign[v] >= 0 and assign[v] <= unassigned)

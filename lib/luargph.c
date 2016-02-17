@@ -69,7 +69,22 @@ const struct flag_str flag_strings[] = {
 
 const char *algo_strings[] = { "" /* default goes first */, "chm", "bdz" };
 
-const int *
+
+static const struct flag_str *
+find_flag(int flag)
+{
+	const size_t nflags = sizeof(flag_strings) / sizeof(flag_strings[0]);
+	size_t i;
+
+	for (i = 0; i < nflags; i++) {
+		if ((flag & flag_strings[i].mask) == flag_strings[i].flag)
+			return &flag_strings[i];
+	}
+
+	return NULL;
+}
+
+static const int *
 find_flag_by_name(const char *str)
 {
 	const size_t nflags = sizeof(flag_strings) / sizeof(flag_strings[0]);
@@ -180,6 +195,38 @@ graph_rank(lua_State *L)
 		return luaL_argerror(L, 1, "dead object");
 
 	lua_pushinteger(L, rgph_rank(*pg));
+	return 1;
+}
+
+static int
+graph_algo(lua_State *L)
+{
+	struct rgph_graph **pg;
+	int algo;
+
+	pg = (struct rgph_graph **)luaL_checkudata(L, 1, GRAPH_MT);
+	if (*pg == NULL)
+		return luaL_argerror(L, 1, "dead object");
+
+	algo = rgph_flags(*pg) & RGPH_ALGO_MASK;
+
+	lua_pushstring(L, find_flag(algo)->str);
+	return 1;
+}
+
+static int
+graph_hash(lua_State *L)
+{
+	struct rgph_graph **pg;
+	int hash;
+
+	pg = (struct rgph_graph **)luaL_checkudata(L, 1, GRAPH_MT);
+	if (*pg == NULL)
+		return luaL_argerror(L, 1, "dead object");
+
+	hash = rgph_flags(*pg) & RGPH_HASH_MASK;
+
+	lua_pushstring(L, find_flag(hash)->str);
 	return 1;
 }
 
@@ -620,6 +667,8 @@ static luaL_Reg rgph_fn[] = {
 
 static luaL_Reg graph_fn[] = {
 	{ "rank", graph_rank },
+	{ "algo", graph_algo },
+	{ "hash", graph_hash },
 	{ "entries", graph_entries },
 	{ "vertices", graph_vertices },
 	{ "core_size", graph_core_size },

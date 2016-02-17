@@ -52,8 +52,6 @@ void rgph_free_graph(struct rgph_graph *);
 
 int rgph_flags(struct rgph_graph *);
 int rgph_rank(struct rgph_graph *);
-int rgph_is_bdz(struct rgph_graph *);
-int rgph_is_chm(struct rgph_graph *);
 size_t rgph_entries(struct rgph_graph *);
 size_t rgph_vertices(struct rgph_graph *);
 size_t rgph_core_size(struct rgph_graph *);
