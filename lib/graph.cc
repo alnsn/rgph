@@ -1036,6 +1036,22 @@ rgph_rank(struct rgph_graph *g)
 
 	return graph_rank(g->flags);
 }
+
+extern "C"
+int
+rgph_is_bdz(struct rgph_graph *g)
+{
+
+	return (g->flags & RGPH_ALGO_BDZ) != 0;
+}
+
+extern "C"
+int rgph_is_chm(struct rgph_graph *g)
+{
+
+	return (g->flags & RGPH_ALGO_CHM) != 0;
+}
+
 extern "C"
 size_t
 rgph_entries(struct rgph_graph *g)
