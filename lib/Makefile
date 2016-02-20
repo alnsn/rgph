@@ -22,8 +22,8 @@ CPPFLAGS+=	-DNDEBUG -DWEAK_ALIASES
 
 OBJ=		graph.o    jenkins2.o    murmur32.o    murmur32s.o    xxh32s.o    xxh64s.o
 PICOBJ=		graph.pico jenkins2.pico murmur32.pico murmur32s.pico xxh32s.pico xxh64s.pico
-LOBJ=		luargph.o
-LPICOBJ=	luargph.pico
+LRGPHOBJ=	luargph.pico
+LHASHOBJ=	luahash.pico
 
 XCFLAGS=	-I. $(CPPFLAGS) $(WARNS) $(C99OPTS)
 XCXXFLAGS=	-I. $(CPPFLAGS) $(WARNS) $(CXXOPTS)
@@ -51,8 +51,11 @@ luargph.pico: luargph.c
 librgph.$(DSO): $(PICOBJ)
 	$(CC) $(PICLDFLAGS) $(LDFLAGS) -shared $(PICOBJ) -o $@
 
-rgph.$(DSO): $(PICOBJ) $(LPICOBJ)
-	$(CC) `pkg-config --cflags --libs $(LUAPKG)` $(PICLDFLAGS) $(LDFLAGS) -shared $(PICOBJ) $(LPICOBJ) -o $@
+rgph.$(DSO): $(PICOBJ) $(LRGPHOBJ)
+	$(CC) `pkg-config --cflags --libs $(LUAPKG)` $(PICLDFLAGS) $(LDFLAGS) -shared $(PICOBJ) $(LRGPHOBJ) -o $@
+
+hash.$(DSO): $(PICOBJ) $(LHASHOBJ)
+	$(CC) `pkg-config --cflags --libs $(LUAPKG)` $(PICLDFLAGS) $(LDFLAGS) -shared $(PICOBJ) $(LHASHOBJ) -o $@
 
 clean:
-	rm -f $(OBJ) $(PICOBJ) $(LOBJ) $(LPICOBJ) *.so *.dylib *.a
+	rm -f $(OBJ) $(PICOBJ) $(LRGPHOBJ) $(LALGOOBJ) *.so *.dylib *.a
