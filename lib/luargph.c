@@ -659,13 +659,13 @@ graph_edge(lua_State *L)
 	}
 }
 
-static luaL_Reg rgph_fn[] = {
+static const luaL_Reg rgph_fn[] = {
 	{ "new_graph", new_graph_fn },
 	{ "count_keys", count_keys_fn },
 	{ NULL, NULL }
 };
 
-static luaL_Reg graph_fn[] = {
+static const luaL_Reg graph_fn[] = {
 	{ "rank", graph_rank },
 	{ "algo", graph_algo },
 	{ "hash", graph_hash },
@@ -682,12 +682,12 @@ static luaL_Reg graph_fn[] = {
 	{ NULL, NULL }
 };
 
-static luaL_Reg graph_mt[] = {
+static const luaL_Reg graph_mt[] = {
 	{ "__gc", graph_gc },
 	{ NULL, NULL }
 };
 
-static luaL_Reg assign_index[] = {
+static const luaL_Reg assign_index[] = {
 	{ "__index", assign_get },
 	{ NULL, NULL }
 };
