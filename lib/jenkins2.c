@@ -44,6 +44,78 @@ void rgph_u32x3_jenkins2_data32(const void *, size_t, uint32_t, uint32_t *);
 void rgph_u32x3_jenkins2_data64(const void *, size_t, uint32_t, uint32_t *);
 #endif
 
+
+inline void
+rgph_u32x3_jenkins2_data(const void *data,
+    size_t len, uint32_t seed, uint32_t * restrict h)
+{
+	const uint8_t * restrict key = data;
+	const uint8_t *end = key + len;
+	int n = 0;
+#if defined(UNALIGNED_READ)
+	const int down = 0;
+#else
+	uint32_t w[3];
+	const int down = ((uintptr_t)key) & 3;
+	uint32_t carry = len > 0 && down != 0 ? rgph_read32a(key - down) : 0;
+#endif
+
+	h[0] = RGPH_JENKINS2_SEED1;
+	h[1] = RGPH_JENKINS2_SEED2;
+	h[2] = seed;
+
+	if (down == 0) {
+		for (; end - key >= 12; key += 12) {
+			h[0] += rgph_read32a(&key[0]);
+			h[1] += rgph_read32a(&key[4]);
+			h[2] += rgph_read32a(&key[8]);
+			rgph_jenkins2_mix(h);
+		}
+
+		if (end - key >= 4) {
+			h[n++] += rgph_read32a(&key[0]);
+			key += 4;
+		}
+		if (end - key >= 4) {
+			h[n++] += rgph_read32a(&key[0]);
+			key += 4;
+		}
+	} else {
+#if !defined(UNALIGNED_READ)
+		for (; end - key >= 12; key += 12) {
+			rgph_read32u(key, 4 - down, &carry, w, 3);
+			h[0] += w[0];
+			h[1] += w[1];
+			h[2] += w[2];
+			rgph_jenkins2_mix(h);
+		}
+
+		if (end - key >= 4) {
+			rgph_read32u(key, 4 - down, &carry, w, 1);
+			h[n++] += w[0];
+			key += 4;
+		}
+		if (end - key >= 4) {
+			rgph_read32u(key, 4 - down, &carry, w, 1);
+			h[n++] += w[0];
+			key += 4;
+		}
+#endif
+	}
+
+	switch (end - key) {
+	case 3:
+		h[n] += (uint32_t)key[2] << 16; /* FALLTHROUGH */
+	case 2:
+		h[n] += (uint32_t)key[1] << 8;  /* FALLTHROUGH */
+	case 1:
+		h[n] += (uint32_t)key[0];       /* FALLTHROUGH */
+	case 0:
+		h[2] += len;
+		rgph_jenkins2_mix(h);
+	}
+}
+
 inline void
 rgph_u32x3_jenkins2_u8(uint8_t value, uint32_t seed, uint32_t *h)
 {
@@ -240,77 +312,6 @@ rgph_u64_jenkins2_f64(double value, uint32_t seed)
 	res = h[1];
 	res = h[0] | (res << 32);
 	return res;
-}
-
-inline void
-rgph_u32x3_jenkins2_data(const void *data,
-    size_t len, uint32_t seed, uint32_t * restrict h)
-{
-	const uint8_t * restrict key = data;
-	const uint8_t *end = key + len;
-	int n = 0;
-#if defined(UNALIGNED_READ)
-	const int down = 0;
-#else
-	uint32_t w[3];
-	const int down = ((uintptr_t)key) & 3;
-	uint32_t carry = len > 0 && down != 0 ? rgph_read32a(key - down) : 0;
-#endif
-
-	h[0] = RGPH_JENKINS2_SEED1;
-	h[1] = RGPH_JENKINS2_SEED2;
-	h[2] = seed;
-
-	if (down == 0) {
-		for (; end - key >= 12; key += 12) {
-			h[0] += rgph_read32a(&key[0]);
-			h[1] += rgph_read32a(&key[4]);
-			h[2] += rgph_read32a(&key[8]);
-			rgph_jenkins2_mix(h);
-		}
-
-		if (end - key >= 4) {
-			h[n++] += rgph_read32a(&key[0]);
-			key += 4;
-		}
-		if (end - key >= 4) {
-			h[n++] += rgph_read32a(&key[0]);
-			key += 4;
-		}
-	} else {
-#if !defined(UNALIGNED_READ)
-		for (; end - key >= 12; key += 12) {
-			rgph_read32u(key, 4 - down, &carry, w, 3);
-			h[0] += w[0];
-			h[1] += w[1];
-			h[2] += w[2];
-			rgph_jenkins2_mix(h);
-		}
-
-		if (end - key >= 4) {
-			rgph_read32u(key, 4 - down, &carry, w, 1);
-			h[n++] += w[0];
-			key += 4;
-		}
-		if (end - key >= 4) {
-			rgph_read32u(key, 4 - down, &carry, w, 1);
-			h[n++] += w[0];
-			key += 4;
-		}
-#endif
-	}
-
-	switch (end - key) {
-	case 3:
-		h[n] += (uint32_t)key[2] << 16; /* FALLTHROUGH */
-	case 2:
-		h[n] += (uint32_t)key[1] << 8;  /* FALLTHROUGH */
-	case 1:
-		h[n] += (uint32_t)key[0];       /* FALLTHROUGH */
-	case 0:
-		h[2] += len;
-		rgph_jenkins2_mix(h);
-	}
 }
 
 inline void

@@ -47,76 +47,6 @@ void rgph_u32x2_xxh64s_data32(const void *, size_t, uint32_t, uint32_t *);
 void rgph_u32x2_xxh64s_data64(const void *, size_t, uint32_t, uint32_t *);
 #endif
 
-inline uint64_t
-rgph_u64_xxh64s_u8(uint8_t value, uint32_t seed)
-{
-	uint64_t h[4];
-
-	rgph_xxh64s_init(sizeof(value), seed, h);
-	rgph_xxh64s_fold(sizeof(value), h);
-
-	rgph_xxh64s_fmix1(value, h);
-	rgph_xxh64s_finalise(h);
-
-	return h[0];
-}
-
-inline uint64_t
-rgph_u64_xxh64s_u16(uint16_t value, uint32_t seed)
-{
-	uint64_t h[4];
-
-	rgph_xxh64s_init(sizeof(value), seed, h);
-	rgph_xxh64s_fold(sizeof(value), h);
-
-	rgph_xxh64s_fmix1(htole16(value) & 0xff, h);
-	rgph_xxh64s_fmix1(htole16(value) >> 8, h);
-	rgph_xxh64s_finalise(h);
-
-	return h[0];
-}
-
-inline uint64_t
-rgph_u64_xxh64s_u32(uint32_t value, uint32_t seed)
-{
-	uint64_t h[4];
-
-	rgph_xxh64s_init(sizeof(value), seed, h);
-	rgph_xxh64s_fold(sizeof(value), h);
-
-	rgph_xxh64s_fmix4(htole32(value), h);
-	rgph_xxh64s_finalise(h);
-
-	return h[0];
-}
-
-inline uint64_t
-rgph_u64_xxh64s_u64(uint64_t value, uint32_t seed)
-{
-	uint64_t h[4];
-
-	rgph_xxh64s_init(sizeof(value), seed, h);
-	rgph_xxh64s_fold(sizeof(value), h);
-
-	rgph_xxh64s_fmix8(value, h);
-	rgph_xxh64s_finalise(h);
-
-	return h[0];
-}
-
-inline uint64_t
-rgph_u64_xxh64s_f32(float value, uint32_t seed)
-{
-
-	return rgph_u64_xxh64s_u32(rgph_f2u32(value), seed);
-}
-
-inline uint64_t
-rgph_u64_xxh64s_f64(double value, uint32_t seed)
-{
-
-	return rgph_u64_xxh64s_u64(rgph_d2u64(value), seed);
-}
 
 inline uint64_t
 rgph_u64_xxh64s_data(const void *data, size_t len, uint32_t seed)
@@ -191,6 +121,101 @@ rgph_u64_xxh64s_data(const void *data, size_t len, uint32_t seed)
 	rgph_xxh64s_finalise(h);
 
 	return h[0];
+}
+
+inline void
+rgph_u16x4_xxh64s_data(const void *key,
+    size_t len, uint32_t seed, uint16_t *h16)
+{
+	uint64_t h;
+
+	h = rgph_u64_xxh64s_data(key, len, seed);
+	h16[0] = (uint16_t)(h >> 48);
+	h16[1] = (uint16_t)(h >> 32);
+	h16[2] = (uint16_t)(h >> 16);
+	h16[3] = (uint16_t)h;
+}
+
+inline void
+rgph_u32x2_xxh64s_data(const void *data,
+    size_t len, uint32_t seed, uint32_t *h32)
+{
+	uint64_t h;
+
+	h = rgph_u64_xxh64s_data(data, len, seed);
+	h32[0] = (uint32_t)(h >> 32);
+	h32[1] = (uint32_t)h;
+}
+
+inline uint64_t
+rgph_u64_xxh64s_u8(uint8_t value, uint32_t seed)
+{
+	uint64_t h[4];
+
+	rgph_xxh64s_init(sizeof(value), seed, h);
+	rgph_xxh64s_fold(sizeof(value), h);
+
+	rgph_xxh64s_fmix1(value, h);
+	rgph_xxh64s_finalise(h);
+
+	return h[0];
+}
+
+inline uint64_t
+rgph_u64_xxh64s_u16(uint16_t value, uint32_t seed)
+{
+	uint64_t h[4];
+
+	rgph_xxh64s_init(sizeof(value), seed, h);
+	rgph_xxh64s_fold(sizeof(value), h);
+
+	rgph_xxh64s_fmix1(htole16(value) & 0xff, h);
+	rgph_xxh64s_fmix1(htole16(value) >> 8, h);
+	rgph_xxh64s_finalise(h);
+
+	return h[0];
+}
+
+inline uint64_t
+rgph_u64_xxh64s_u32(uint32_t value, uint32_t seed)
+{
+	uint64_t h[4];
+
+	rgph_xxh64s_init(sizeof(value), seed, h);
+	rgph_xxh64s_fold(sizeof(value), h);
+
+	rgph_xxh64s_fmix4(htole32(value), h);
+	rgph_xxh64s_finalise(h);
+
+	return h[0];
+}
+
+inline uint64_t
+rgph_u64_xxh64s_u64(uint64_t value, uint32_t seed)
+{
+	uint64_t h[4];
+
+	rgph_xxh64s_init(sizeof(value), seed, h);
+	rgph_xxh64s_fold(sizeof(value), h);
+
+	rgph_xxh64s_fmix8(value, h);
+	rgph_xxh64s_finalise(h);
+
+	return h[0];
+}
+
+inline uint64_t
+rgph_u64_xxh64s_f32(float value, uint32_t seed)
+{
+
+	return rgph_u64_xxh64s_u32(rgph_f2u32(value), seed);
+}
+
+inline uint64_t
+rgph_u64_xxh64s_f64(double value, uint32_t seed)
+{
+
+	return rgph_u64_xxh64s_u64(rgph_d2u64(value), seed);
 }
 
 inline uint64_t
@@ -383,19 +408,6 @@ rgph_u16x4_xxh64s_f64(double value, uint32_t seed, uint16_t *h16)
 }
 
 inline void
-rgph_u16x4_xxh64s_data(const void *key,
-    size_t len, uint32_t seed, uint16_t *h16)
-{
-	uint64_t h;
-
-	h = rgph_u64_xxh64s_data(key, len, seed);
-	h16[0] = (uint16_t)(h >> 48);
-	h16[1] = (uint16_t)(h >> 32);
-	h16[2] = (uint16_t)(h >> 16);
-	h16[3] = (uint16_t)h;
-}
-
-inline void
 rgph_u16x4_xxh64s_data32(const void *data,
     size_t len, uint32_t seed, uint16_t *h16)
 {
@@ -549,17 +561,6 @@ rgph_u32x2_xxh64s_f64(double value, uint32_t seed, uint32_t *h32)
 {
 
 	rgph_u32x2_xxh64s_u64(rgph_d2u64(value), seed, h32);
-}
-
-inline void
-rgph_u32x2_xxh64s_data(const void *data,
-    size_t len, uint32_t seed, uint32_t *h32)
-{
-	uint64_t h;
-
-	h = rgph_u64_xxh64s_data(data, len, seed);
-	h32[0] = (uint32_t)(h >> 32);
-	h32[1] = (uint32_t)h;
 }
 
 inline void

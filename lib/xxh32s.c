@@ -47,6 +47,87 @@ void rgph_u16x2_xxh32s_data32(const void *, size_t, uint32_t, uint16_t *);
 void rgph_u16x2_xxh32s_data64(const void *, size_t, uint32_t, uint16_t *);
 #endif
 
+
+inline uint32_t
+rgph_u32_xxh32s_data(const void *data, size_t len, uint32_t seed)
+{
+	const uint8_t *key = data;
+	const uint8_t *end = key + len;
+	uint32_t w[4], h[4];
+#if defined(UNALIGNED_READ)
+	const int down = 0;
+#else
+	const int down = ((uintptr_t)key) & 3;
+	uint32_t carry = len > 0 && down != 0 ? rgph_read32a(key - down) : 0;
+#endif
+
+	rgph_xxh32s_init(len, seed, h);
+
+	if (down == 0) {
+		for (; end - key >= 16; key += 16) {
+			w[0] = rgph_read32a(&key[0]);
+			w[1] = rgph_read32a(&key[4]);
+			w[2] = rgph_read32a(&key[8]);
+			w[3] = rgph_read32a(&key[12]);
+			rgph_xxh32s_mix(w, h);
+		}
+	} else {
+#if !defined(UNALIGNED_READ)
+		for (; end - key >= 16; key += 16) {
+			rgph_read32u(key, 4 - down, &carry, w, 4);
+			rgph_xxh32s_mix(w, h);
+		}
+#endif
+	}
+
+	rgph_xxh32s_fold(len, h);
+
+	if (down == 0) {
+		for (; end - key >= 4; key += 4) {
+			w[0] = rgph_read32a(&key[0]);
+			rgph_xxh32s_fmix4(w[0], h);
+		}
+	} else {
+#if !defined(UNALIGNED_READ)
+		for (; end - key >= 4; key += 4) {
+			rgph_read32u(key, 4 - down, &carry, w, 1);
+			rgph_xxh32s_fmix4(w[0], h);
+		}
+#endif
+	}
+
+	for (; end - key >= 1; key += 1)
+		rgph_xxh32s_fmix1(key[0], h);
+
+	rgph_xxh32s_finalise(h);
+
+	return h[0];
+}
+
+inline void
+rgph_u8x4_xxh32s_data(const void *key,
+    size_t len, uint32_t seed, uint8_t *h8)
+{
+	uint32_t h;
+
+	h = rgph_u32_xxh32s_data(key, len, seed);
+	h8[0] = (uint8_t)(h >> 24);
+	h8[1] = (uint8_t)(h >> 16);
+	h8[2] = (uint8_t)(h >> 8);
+	h8[3] = (uint8_t)h;
+}
+
+inline void
+rgph_u16x2_xxh32s_data(const void *data,
+    size_t len, uint32_t seed, uint16_t *h16)
+{
+	uint32_t h;
+
+	h = rgph_u32_xxh32s_data(data, len, seed);
+	h16[0] = (uint16_t)(h >> 16);
+	h16[1] = (uint16_t)h;
+}
+
 inline uint32_t
 rgph_u32_xxh32s_u8(uint8_t value, uint32_t seed)
 {
@@ -117,62 +198,6 @@ rgph_u32_xxh32s_f64(double value, uint32_t seed)
 {
 
 	return rgph_u32_xxh32s_u64(rgph_d2u64(value), seed);
-}
-
-inline uint32_t
-rgph_u32_xxh32s_data(const void *data, size_t len, uint32_t seed)
-{
-	const uint8_t *key = data;
-	const uint8_t *end = key + len;
-	uint32_t w[4], h[4];
-#if defined(UNALIGNED_READ)
-	const int down = 0;
-#else
-	const int down = ((uintptr_t)key) & 3;
-	uint32_t carry = len > 0 && down != 0 ? rgph_read32a(key - down) : 0;
-#endif
-
-	rgph_xxh32s_init(len, seed, h);
-
-	if (down == 0) {
-		for (; end - key >= 16; key += 16) {
-			w[0] = rgph_read32a(&key[0]);
-			w[1] = rgph_read32a(&key[4]);
-			w[2] = rgph_read32a(&key[8]);
-			w[3] = rgph_read32a(&key[12]);
-			rgph_xxh32s_mix(w, h);
-		}
-	} else {
-#if !defined(UNALIGNED_READ)
-		for (; end - key >= 16; key += 16) {
-			rgph_read32u(key, 4 - down, &carry, w, 4);
-			rgph_xxh32s_mix(w, h);
-		}
-#endif
-	}
-
-	rgph_xxh32s_fold(len, h);
-
-	if (down == 0) {
-		for (; end - key >= 4; key += 4) {
-			w[0] = rgph_read32a(&key[0]);
-			rgph_xxh32s_fmix4(w[0], h);
-		}
-	} else {
-#if !defined(UNALIGNED_READ)
-		for (; end - key >= 4; key += 4) {
-			rgph_read32u(key, 4 - down, &carry, w, 1);
-			rgph_xxh32s_fmix4(w[0], h);
-		}
-#endif
-	}
-
-	for (; end - key >= 1; key += 1)
-		rgph_xxh32s_fmix1(key[0], h);
-
-	rgph_xxh32s_finalise(h);
-
-	return h[0];
 }
 
 inline uint32_t
@@ -362,19 +387,6 @@ rgph_u8x4_xxh32s_f64(double value, uint32_t seed, uint8_t *h8)
 }
 
 inline void
-rgph_u8x4_xxh32s_data(const void *key,
-    size_t len, uint32_t seed, uint8_t *h8)
-{
-	uint32_t h;
-
-	h = rgph_u32_xxh32s_data(key, len, seed);
-	h8[0] = (uint8_t)(h >> 24);
-	h8[1] = (uint8_t)(h >> 16);
-	h8[2] = (uint8_t)(h >> 8);
-	h8[3] = (uint8_t)h;
-}
-
-inline void
 rgph_u8x4_xxh32s_data32(const void *data,
     size_t len, uint32_t seed, uint8_t *h8)
 {
@@ -528,17 +540,6 @@ rgph_u16x2_xxh32s_f64(double value, uint32_t seed, uint16_t *h16)
 {
 
 	rgph_u16x2_xxh32s_u64(rgph_d2u64(value), seed, h16);
-}
-
-inline void
-rgph_u16x2_xxh32s_data(const void *data,
-    size_t len, uint32_t seed, uint16_t *h16)
-{
-	uint32_t h;
-
-	h = rgph_u32_xxh32s_data(data, len, seed);
-	h16[0] = (uint16_t)(h >> 16);
-	h16[1] = (uint16_t)h;
 }
 
 inline void
