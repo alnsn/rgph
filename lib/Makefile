@@ -58,4 +58,4 @@ hash.$(DSO): $(PICOBJ) $(LHASHOBJ)
 	$(CC) `pkg-config --cflags --libs $(LUAPKG)` $(PICLDFLAGS) $(LDFLAGS) -shared $(PICOBJ) $(LHASHOBJ) -o $@
 
 clean:
-	rm -f $(OBJ) $(PICOBJ) $(LRGPHOBJ) $(LALGOOBJ) *.so *.dylib *.a
+	rm -f $(OBJ) $(PICOBJ) $(LRGPHOBJ) $(LHASHOBJ) *.so *.dylib *.a
