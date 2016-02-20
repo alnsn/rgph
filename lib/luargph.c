@@ -51,7 +51,7 @@ struct flag_str {
 	const char *str;
 };
 
-const struct flag_str flag_strings[] = {
+static const struct flag_str flag_strings[] = {
 	{ RGPH_HASH_JENKINS2,  RGPH_HASH_MASK,  "jenkins2"  },
 	/* NIY { RGPH_HASH_JENKINS3,  RGPH_HASH_MASK,  "jenkins3"  }, */
 	/* NIY { RGPH_HASH_JENKINS3S, RGPH_HASH_MASK,  "jenkins3s" }, */
@@ -67,7 +67,7 @@ const struct flag_str flag_strings[] = {
 	// XXX { RGPH_INDEX_XXX }
 };
 
-const char *algo_strings[] = { "" /* default goes first */, "chm", "bdz" };
+static const char *algo_strings[] = { "", "chm", "bdz" };
 
 
 static const struct flag_str *
