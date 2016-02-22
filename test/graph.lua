@@ -19,6 +19,10 @@ local function test(keys, seed, flags)
 		seed = seed + 1
 	end
 
+	-- Numbers are converted to strings by Lua
+	assert(g:datalen_min() == 1)
+	assert(g:datalen_max() == 2)
+
 	local assign = assert(g:assign())
 
 	local rank = g:rank()
