@@ -1081,6 +1081,22 @@ rgph_vertices(struct rgph_graph *g)
 
 extern "C"
 size_t
+rgph_datalen_min(struct rgph_graph *g)
+{
+
+	return g->datalenmin;
+}
+
+extern "C"
+size_t
+rgph_datalen_max(struct rgph_graph *g)
+{
+
+	return g->datalenmax;
+}
+
+extern "C"
+size_t
 rgph_core_size(struct rgph_graph *g)
 {
 
