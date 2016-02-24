@@ -39,6 +39,14 @@
 #define GRAPH_MT  "rgph.graph"
 #define ASSIGN_MT "rgph.assign"
 
+/* rgph.edges("peel,key", iter) => EDGES_PEEL + (EDGES_KEY << EDGES_SHIFT). */
+#define EDGES_PEEL  1 /* 001, iter is optional */
+#define EDGES_KEY   2 /* 010, requires iter    */
+#define EDGES_INDEX 4 /* 100, requires iter    */
+#define EDGES_SHIFT 3
+#define EDGES_PEEL_MASK 0x09249249 /* 0000,1001,0010,0100,1001,0010,0100,1001 */
+#define EDGES_ITER_MASK 0x36db6db6 /* 0011,0110,1101,1011,0110,1101,1011,0110 */
+
 struct build_iter_state {
 	struct rgph_entry ent;
 	lua_State *L;
@@ -64,7 +72,7 @@ static const struct flag_str flag_strings[] = {
 	{ RGPH_ALGO_CHM,       RGPH_ALGO_MASK,  "chm"       },
 	{ RGPH_ALGO_BDZ,       RGPH_ALGO_MASK,  "bdz"       },
 	{ RGPH_ROUND_POW2,     RGPH_ROUND_MASK, "pow2"      },
-	// XXX { RGPH_INDEX_XXX }
+	/* XXX { RGPH_INDEX_XXX } */
 };
 
 static const char *algo_strings[] = { "", "chm", "bdz" };
@@ -549,102 +557,162 @@ assign_get(lua_State *L)
 	}
 }
 
+/* "peel,key" => EDGES_PEEL + (EDGES_KEY<<EDGES_SHIFT). */
+static int
+parse_edges_arg(lua_State *L, int n)
+{
+	char buf[64]; /* "index," x 10, rounded up */
+	char *tok, *last_tok;
+	const char *sep = ",";
+	const char *opts;
+	size_t optslen = 0;
+	int shift = 0, res = 0;
+
+	opts = lua_tolstring(L, n, &optslen);
+	if (opts == NULL || optslen > sizeof(buf) - 1) {
+		luaL_argerror(L, n, opts ? "too long" : "string expected");
+		return res; /* UNREACHABLE */
+	}
+
+	memcpy(buf, opts, optslen);
+	buf[optslen] = '\0';
+
+	for (tok = strtok_r(buf, sep, &last_tok); tok != NULL;
+	    tok = strtok_r(NULL, sep, &last_tok), shift += EDGES_SHIFT) {
+		if (shift > 32 - EDGES_SHIFT) {
+			luaL_argerror(L, n, "too many flags");
+			return res; /* UNREACHABLE */
+		} else if (strcmp(tok, "peel") == 0) {
+			res |= EDGES_PEEL << shift;
+		} else if (strcmp(tok, "key") == 0) {
+			res |= EDGES_KEY << shift;
+		} else if (strcmp(tok, "index") == 0) {
+			res |= EDGES_INDEX << shift;
+		} else {
+			luaL_argerror(L, n, tok);
+			return res; /* UNREACHABLE */
+		}
+	}
+
+	return res;
+}
+
 static int
 graph_edges_iter(lua_State *L)
 {
 	unsigned long edge[3];
 	struct rgph_graph **pg;
-	size_t at, peel_order;
-	size_t *peel_arg;
-	int peel, key, rank, res;
+	size_t at, peel = 0;
+	int flags, nflags, res, rank;
+	int key = 0, index = 0; /* Where key and index are on the Lua stack. */
 	int iter, state, var; /* Indices of upvalues. */
 
-	peel = lua_toboolean(L, lua_upvalueindex(2));
-	peel_arg = peel ? &peel_order : NULL;
-
+	flags = lua_tointeger(L, lua_upvalueindex(2));
 	at = lua_tointeger(L, lua_upvalueindex(3));
+
+	pg = (struct rgph_graph **)lua_touserdata(L, lua_upvalueindex(1));
+	if (*pg == NULL)
+		return luaL_error(L, "dead %s object", GRAPH_MT);
+
+	res = rgph_copy_edge(*pg, at, edge,
+	    (flags & EDGES_PEEL_MASK) ? &peel : NULL);
+
+	switch (res) {
+	case RGPH_RANGE: return 0; /* Stop iterations.     */
+	case RGPH_SUCCESS: break;  /* Push the edge later. */
+	default: return luaL_error(L, "invalid value");
+	}
+
+	/* Save the next "at" value for the next iteration. */
 	lua_pushinteger(L, at + 1);
 	lua_replace(L, lua_upvalueindex(3));
 
-	pg = (struct rgph_graph **)lua_touserdata(L, lua_upvalueindex(1));
-	res = rgph_copy_edge(*pg, at, edge, peel_arg);
-
-	switch (res) {
-	case RGPH_RANGE:
-		return 0;
-	case RGPH_SUCCESS:
-		rank = rgph_rank(*pg);
-		switch (rank) {
-		case 3:
-			lua_pushinteger(L, edge[0]);
-			/* FALLTHROUGH */
-		case 2:
-			lua_pushinteger(L, edge[rank - 2]);
-			lua_pushinteger(L, edge[rank - 1]);
-			break;
-		default:
-			return luaL_error(L, "invalid value");
-		}
-		break;
-	case RGPH_INVAL:
-	default:
-		return luaL_error(L, "invalid value");
-	}
-
-	iter = lua_upvalueindex(4);
-	key = !lua_isnil(L, iter);
-
-	if (peel)
-		lua_pushinteger(L, peel_order);
-
-	if (key) {
+	if (flags & EDGES_ITER_MASK) {
+		iter = lua_upvalueindex(4);
 		state = lua_upvalueindex(5);
 		var = lua_upvalueindex(6);
 		lua_pushvalue(L, iter);
 		lua_pushvalue(L, state);
 		lua_pushvalue(L, var);
-		lua_call(L, 2, 1);
-		lua_pushvalue(L, -1);
+		lua_call(L, 2, 3); /* Return key, data and index. */
+		index = lua_gettop(L);
+		key = index - 2;
+		lua_pushvalue(L, -3); /* Save key for the next iteration.*/
 		lua_replace(L, var);
 	}
 
-	return rank + peel + key;
+	/*
+	 * Three elements are already pushed (if iter is required),
+	 * this loop can push up to 10 elements, and 2 or 3 hashes
+	 * will be pushed after the loop. It's less than LUA_MINSTACK.
+	 */
+	for (nflags = 0;
+	    flags && nflags < 32 / EDGES_SHIFT;
+	    flags >>= EDGES_SHIFT, nflags++) {
+		if (flags & EDGES_PEEL)
+			lua_pushinteger(L, peel);
+		else if (flags & EDGES_KEY)
+			lua_pushvalue(L, key);
+		else if (flags & EDGES_INDEX)
+			lua_pushvalue(L, index);
+		else
+			assert(false && "parse_edges_arg() misbehaves");
+	}
+
+	rank = rgph_rank(*pg);
+	switch (rank) {
+	case 3:
+		lua_pushinteger(L, edge[0]);
+		/* FALLTHROUGH */
+	case 2:
+		lua_pushinteger(L, edge[rank - 2]);
+		lua_pushinteger(L, edge[rank - 1]);
+		return nflags + rank;
+	default:
+		return luaL_error(L, "invalid value");
+	}
 }
 
 static int
 graph_edges(lua_State *L)
 {
 	struct rgph_graph **pg;
-	int peel;
+	int flags, flstr;
 	int nup; /* Number of upvalues. */
 
 	pg = (struct rgph_graph **)luaL_checkudata(L, 1, GRAPH_MT);
 	if (*pg == NULL)
 		return luaL_argerror(L, 1, "dead object");
 
-	peel = lua_isstring(L, 2) && strcmp("peel", lua_tostring(L, 2)) == 0;
+	flstr = lua_isstring(L, 2) ? 1 : 0;
+	flags = flstr ? parse_edges_arg(L, 2) : 0;
 
 	nup = 3;
 	lua_pushvalue(L, 1);
-	lua_pushboolean(L, peel);
+	lua_pushinteger(L, flags);
 	lua_pushinteger(L, 0);
 
-	if (lua_isnoneornil(L, 2 + peel)) {
+	if (flags & EDGES_ITER_MASK) {
+		if (lua_isnoneornil(L, 2 + flstr)) {
+			return luaL_argerror(L, 2 + flstr,
+			    "iterator expected");
+		}
+
+		nup += 3;
+		lua_pushvalue(L, 2 + flstr);
+
+		if (lua_isnone(L, 3 + flstr))
+			lua_pushnil(L);
+		else
+			lua_pushvalue(L, 3 + flstr);
+
+		if (lua_isnone(L, 4 + flstr))
+			lua_pushnil(L);
+		else
+			lua_pushvalue(L, 4 + flstr);
+	} else {
 		nup += 1;
 		lua_pushnil(L);
-	} else {
-		nup += 3;
-		lua_pushvalue(L, 2 + peel);
-
-		if (lua_isnone(L, 3 + peel))
-			lua_pushnil(L);
-		else
-			lua_pushvalue(L, 3 + peel);
-
-		if (lua_isnone(L, 4 + peel))
-			lua_pushnil(L);
-		else
-			lua_pushvalue(L, 4 + peel);
 	}
 
 	lua_pushcclosure(L, &graph_edges_iter, nup);
