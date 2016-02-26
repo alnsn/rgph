@@ -590,7 +590,7 @@ struct rgph_graph {
 };
 
 enum {
-	PUBLIC_FLAGS = 0x7fff,
+	PUBLIC_FLAGS = 0x3fff,
 	ZEROED   = 0x40000000, // The order, edges and oedges arrays are zeroed.
 	BUILT    = 0x20000000, // Graph is built.
 	PEELED   = 0x10000000, // Peel order index is built.
@@ -967,7 +967,7 @@ rgph_alloc_graph(size_t nkeys, int flags)
 	if (nverts < 24)
 		nverts = 24;
 
-	if (flags & RGPH_ROUND_POW2) {
+	if (flags & RGPH_FASTDIV_POW2) {
 		nverts = round_up_pow2(nverts / r) * r;
 		if (nverts == 0) {
 			errno = ERANGE;

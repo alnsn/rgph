@@ -64,12 +64,15 @@
 #define	RGPH_ALGO_CHM      0x400
 #define	RGPH_ALGO_BDZ      0x800
 
-#define RGPH_ROUND_MASK    0x1000
-#define RGPH_ROUND_DEFAULT 0
-#define RGPH_ROUND_POW2    0x1000
+#define RGPH_FASTDIV_MASK     0x3000
+#define RGPH_FASTDIV_DEFAULT  0
+#define RGPH_FASTDIV_POW2     0x1000
+#define RGPH_FASTDIV_MAGIC_UP 0x2000
 
-#define	RGPH_INDEX_MASK    0x6000
+/* XXX
+#define	RGPH_INDEX_MASK    0xc000
 #define	RGPH_INDEX_DEFAULT 0
-#define	RGPH_INDEX_XXX     0x2000
+#define	RGPH_INDEX_XXX     0x4000
+*/
 
 #endif /* !RGPH_DEFS_H_INCLUDED */
