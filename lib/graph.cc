@@ -932,13 +932,24 @@ rgph_alloc_graph(size_t nkeys, int flags)
 		return NULL;
 	}
 
+	/* Fail if both RGPH_ALGO_CHM and RGPH_ALGO_BDZ are passed. */
+	if ((flags & RGPH_ALGO_MASK) == RGPH_ALGO_MASK) {
+		errno = EINVAL;
+		return NULL;
+	}
+
+	/* Don't accept bad hash flags. */
+	if ((flags & RGPH_HASH_MASK) > RGPH_HASH_LAST) {
+		errno = EINVAL;
+		return NULL;
+	}
+
 	if ((flags & RGPH_RANK_MASK) == RGPH_RANK_DEFAULT)
 		flags |= RGPH_RANK3;
 
 	if ((flags & RGPH_ALGO_MASK) == RGPH_ALGO_DEFAULT)
 		flags |= RGPH_ALGO_CHM;
 
-	// XXX Decide on default.
 	if ((flags & RGPH_HASH_MASK) == RGPH_HASH_DEFAULT)
 		flags |= RGPH_HASH_JENKINS2;
 

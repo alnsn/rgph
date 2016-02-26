@@ -52,6 +52,7 @@
 #define	RGPH_HASH_MURMUR32S 5
 #define	RGPH_HASH_XXH32S    6
 #define	RGPH_HASH_XXH64S    7
+#define	RGPH_HASH_LAST      7
 
 #define	RGPH_RANK_MASK     0x300
 #define	RGPH_RANK_DEFAULT  0
