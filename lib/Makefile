@@ -43,7 +43,9 @@ XCXXFLAGS=	-I. $(CPPFLAGS) $(WARNS) $(CXXOPTS)
 .c.pico:
 	$(CC) $(XCFLAGS) $(PICFLAGS) $(CXXFLAGS) -c $< -o $@
 
-all: librgph.so
+all-c: librgph.so
+all-lua: rgph.so
+all: all-c all-lua
 
 luargph.pico: luargph.c
 	$(CC) `pkg-config --cflags --cflags $(LUAPKG)` $(XCFLAGS) $(PICFLAGS) $(CFLAGS) -c $< -o $@
