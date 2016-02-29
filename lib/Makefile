@@ -20,8 +20,8 @@ CPPFLAGS+=	-DNDEBUG -DWEAK_ALIASES
 #CFLAGS+=	-UWEAK_ALIASES
 
 
-OBJ=		graph.o    jenkins2.o    murmur32.o    murmur32s.o    xxh32s.o    xxh64s.o
-PICOBJ=		graph.pico jenkins2.pico murmur32.pico murmur32s.pico xxh32s.pico xxh64s.pico
+OBJ=		graph.o    fastdiv.o    jenkins2.o    murmur32.o    murmur32s.o    xxh32s.o    xxh64s.o
+PICOBJ=		graph.pico fastdiv.pico jenkins2.pico murmur32.pico murmur32s.pico xxh32s.pico xxh64s.pico
 LRGPHOBJ=	luargph.pico
 LHASHOBJ=	luahash.pico
 
