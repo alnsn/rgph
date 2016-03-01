@@ -10,5 +10,6 @@ int main()
 	rgph_test_murmur32s();
 	rgph_test_xxh32s();
 	rgph_test_xxh64s();
+	rgph_test_fastdiv();
 	return exit_status;
 }

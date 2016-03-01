@@ -24,5 +24,6 @@ void rgph_test_murmur32(void);
 void rgph_test_murmur32s(void);
 void rgph_test_xxh32s(void);
 void rgph_test_xxh64s(void);
+void rgph_test_fastdiv(void);
 
 #endif /* #ifndef RGPH_TEST_UTIL_H_INCLUDED */
