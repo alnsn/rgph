@@ -92,7 +92,7 @@ struct magicu_info {
 };
 
 static struct magicu_info
-compute_unsigned_magic_info(unsigned int D, unsigned num_bits);
+compute_unsigned_magic_info(unsigned int D, unsigned int num_bits);
 
 static inline int
 fls32(uint32_t n)
@@ -157,11 +157,11 @@ compute_unsigned_magic_info(uint32_t D, unsigned int num_bits)
 	uint32_t remainder = initial_power_of_2 % D;
 
 	/* ceil(log_2 D) */
-	unsigned ceil_log_2_D = fls32(D) - 1;
+	const unsigned int ceil_log_2_D = fls32(D) - 1;
 
 	/* The magic info for the variant "round down" algorithm. */
 	uint32_t down_multiplier = 0;
-	unsigned down_exponent = 0;
+	unsigned int down_exponent = 0;
 	int has_magic_down = 0;
 
 	unsigned int exponent;
@@ -228,7 +228,7 @@ compute_unsigned_magic_info(uint32_t D, unsigned int num_bits)
 		result.increment = 1;
 	} else {
 		/* Even divisor, so use a prefix-shifted dividend. */
-		unsigned pre_shift = 0;
+		unsigned int pre_shift = 0;
 		uint32_t shifted_D = D;
 
 		while ((shifted_D & 1) == 0) {
