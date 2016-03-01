@@ -157,7 +157,7 @@ compute_unsigned_magic_info(uint32_t D, unsigned int num_bits)
 	uint32_t remainder = initial_power_of_2 % D;
 
 	/* ceil(log_2 D) */
-	const unsigned int ceil_log_2_D = fls32(D) - 1;
+	unsigned int ceil_log_2_D = fls32(D);
 
 	/* The magic info for the variant "round down" algorithm. */
 	uint32_t down_multiplier = 0;
