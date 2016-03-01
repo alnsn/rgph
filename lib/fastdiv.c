@@ -248,7 +248,7 @@ compute_unsigned_magic_info(uint32_t D, unsigned int num_bits)
 
 void
 rgph_fastdiv_prepare(uint32_t div, uint32_t *m,
-    uint8_t *s1, uint8_t *s2, int *increment)
+    uint8_t *s1, uint8_t *s2, unsigned int nbits, int *increment)
 {
 	struct magicu_info mi;
 	uint64_t mt;
@@ -256,7 +256,7 @@ rgph_fastdiv_prepare(uint32_t div, uint32_t *m,
 
 	assert(div > 0);
 
-	if (increment == NULL) {
+	if (nbits == 0) {
 		/* fast_divide32(3) from NetBSD. */
 		l = fls32(div - 1);
 		mt = ((UINT64_C(1) << l) - div) << 32;
@@ -264,7 +264,7 @@ rgph_fastdiv_prepare(uint32_t div, uint32_t *m,
 		*s1 = (l > 1) ? 1 : l;
 		*s2 = (l == 0) ? 0 : l - 1;
 	} else {
-		mi = compute_unsigned_magic_info(div, sizeof(div) * CHAR_BIT);
+		mi = compute_unsigned_magic_info(div, nbits);
 		*m = mi.multiplier;
 		*s1 = mi.pre_shift;
 		*s2 = mi.post_shift;

@@ -30,6 +30,7 @@
 #ifndef RGPH_FASTDIV_H_INCLUDED
 #define RGPH_FASTDIV_H_INCLUDED
 
-void rgph_fastdiv_prepare(uint32_t, uint32_t *, uint8_t *, uint8_t *, int *);
+void rgph_fastdiv_prepare(uint32_t, uint32_t *, uint8_t *, uint8_t *,
+    unsigned int, int *);
 
 #endif /* !RGPH_FASTDIV_H_INCLUDED */
