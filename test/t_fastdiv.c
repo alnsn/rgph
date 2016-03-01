@@ -1,6 +1,6 @@
 /*
- * These tests aren't thorough because fastdiv implelementation
- * is based on NetBSD and libdivide code.
+ * Test some divisors to make sure that copypasting of NetBSD
+ * and libdivide code didn't introduce any bugs.
  */
 #include "t_util.h"
 
