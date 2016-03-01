@@ -1,4 +1,5 @@
 /*-
+ * Public Domain 2010 ridiculous_fish.
  * Copyright (c) 2016 Alexander Nasonov.
  * Copyright (c) 2007, 2010 The NetBSD Foundation, Inc.
  * All rights reserved.
@@ -38,16 +39,56 @@
 #include "rgph_fastdiv.h"
 
 /*
- * Public Domain 2010 ridiculous_fish.
- * This is free and unencumbered software. Any copyright is dedicated
- * to the Public Domain.
+ * Computes "magic info" for performing unsigned division by a fixed
+ * positive integer D.  The type 'uint' is assumed to be defined as
+ * an unsigned integer type large enough to hold both the dividend
+ * and the divisor. num_bits can be set appropriately if n is known
+ * to be smaller than the largest uint; if this is not known then
+ * pass (sizeof(uint) * CHAR_BIT) for num_bits.
+ *
+ * Assume we have a hardware register of width UINT_BITS, a known
+ * constant D which is not zero and not a power of 2, and a variable
+ * n of width num_bits (which may be up to UINT_BITS). To emit code
+ * for n/d, use one of the two following sequences (here >>> refers
+ * to a logical bitshift):
+ *
+ *     m = compute_unsigned_magic_info(D, num_bits)
+ *     if m.pre_shift > 0: emit("n >>>= m.pre_shift")
+ *     if m.increment: emit("n = saturated_increment(n)")
+ *     emit("result = (m.multiplier * n) >>> UINT_BITS")
+ *     if m.post_shift > 0: emit("result >>>= m.post_shift")
+ *
+ * or
+ *
+ *     m = compute_unsigned_magic_info(D, num_bits)
+ *     if m.pre_shift > 0: emit("n >>>= m.pre_shift")
+ *     emit("result = m.multiplier * n")
+ *     if m.increment: emit("result = result + m.multiplier")
+ *     emit("result >>>= UINT_BITS")
+ *     if m.post_shift > 0: emit("result >>>= m.post_shift")
+ *
+ * The shifts by UINT_BITS may be "free" if the high half of the full
+ * multiply is put in a separate register.
+ *
+ * saturated_increment(n) means "increment n unless it would wrap to 0," i.e.
+ *    if n == (1 << UINT_BITS)-1: result = n
+ *    else: result = n+1
+ * A common way to implement this is with the carry bit. For example, on x86:
+ *     add 1
+ *     sbb 0
+ *
+ * Some invariants:
+ *   1: At least one of pre_shift and increment is zero
+ *   2: multiplier is never zero
+ *
+ * This code incorporates the "round down" optimization per ridiculous_fish.
  */
 struct magicu_info {
 	uint32_t multiplier; /* the "magic number" multiplier */
 	unsigned int pre_shift; /* shift for the dividend before multiplying */
 	unsigned int post_shift; /* shift for the dividend after multiplying */
 	int increment; /* 0 or 1; if set then increment the numerator,
-	                  using one of the two strategies */
+	                * using one of the two strategies */
 };
 
 static struct magicu_info
@@ -116,7 +157,7 @@ compute_unsigned_magic_info(uint32_t D, unsigned int num_bits)
 	uint32_t remainder = initial_power_of_2 % D;
 
 	/* ceil(log_2 D) */
-	unsigned ceil_log_2_D;
+	unsigned ceil_log_2_D = fls32(D) - 1;
 
 	/* The magic info for the variant "round down" algorithm. */
 	uint32_t down_multiplier = 0;
@@ -130,12 +171,6 @@ compute_unsigned_magic_info(uint32_t D, unsigned int num_bits)
 
 	/* D must be larger than zero and not a power of 2 */
 	assert(D & (D-1));
-
-	/* Compute ceil(log_2 D). */
-	ceil_log_2_D = 0;
-	uint32_t tmp;
-	for (tmp = D; tmp > 0; tmp >>= 1)
-		ceil_log_2_D += 1;
 
 	/*
 	 * Begin a loop that increments the exponent,
@@ -221,17 +256,18 @@ rgph_fastdiv_prepare(uint32_t div, uint32_t *m,
 
 	assert(div > 0);
 
-	if (increment != NULL) {
-		mi = compute_unsigned_magic_info(div, sizeof(div) * CHAR_BIT);
-		*m = mi.multiplier;
-		*s1 = mi.pre_shift;
-		*s2 = mi.post_shift;
-		*increment = mi.increment;
-	} else {
+	if (increment == NULL) {
+		/* fast_divide32(3) from NetBSD. */
 		l = fls32(div - 1);
 		mt = ((UINT64_C(1) << l) - div) << 32;
 		*m = (uint32_t)(mt / div + 1);
 		*s1 = (l > 1) ? 1 : l;
 		*s2 = (l == 0) ? 0 : l - 1;
+	} else {
+		mi = compute_unsigned_magic_info(div, sizeof(div) * CHAR_BIT);
+		*m = mi.multiplier;
+		*s1 = mi.pre_shift;
+		*s2 = mi.post_shift;
+		*increment = mi.increment;
 	}
 }
