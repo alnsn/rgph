@@ -30,7 +30,8 @@
 #define RGPH_H_INCLUDED
 
 #include <rgph_defs.h>
-#include <rgph_hash.h>
+#include <rgph_fastdiv.h>
 #include <rgph_graph.h>
+#include <rgph_hash.h>
 
 #endif /* !RGPH_H_INCLUDED */

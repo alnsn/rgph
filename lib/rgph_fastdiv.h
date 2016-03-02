@@ -30,7 +30,15 @@
 #ifndef RGPH_FASTDIV_H_INCLUDED
 #define RGPH_FASTDIV_H_INCLUDED
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void rgph_fastdiv_prepare(uint32_t, uint32_t *, uint8_t *, uint8_t *,
     unsigned int, int *);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* !RGPH_FASTDIV_H_INCLUDED */

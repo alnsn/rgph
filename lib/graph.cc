@@ -36,8 +36,9 @@
 #include <string.h>
 
 #include "rgph_defs.h"
-#include "rgph_hash.h"
+#include "rgph_fastdiv.h"
 #include "rgph_graph.h"
+#include "rgph_hash.h"
 
 #ifndef SIZE_MAX
 #define SIZE_MAX ((size_t)-1)
@@ -302,6 +303,22 @@ remove_vertex(oedge<T,3> *oedges, T v0, T *order, size_t top)
 	return top;
 }
 
+// fast_divide32(3) from NetBSD.
+inline uint32_t
+fastdiv(uint32_t val, uint64_t mul, uint8_t s1, uint8_t s2)
+{
+	const uint32_t hi = (val * mul) >> 32;
+
+	return (hi + ((val - hi) >> s1)) >> s2;
+}
+
+inline uint32_t
+fastrem(uint32_t val, uint32_t div, uint64_t mul, uint8_t s1, uint8_t s2)
+{
+
+	return val - div * fastdiv(val, mul, s1, s2);
+}
+
 template<class Iter, class Hash, class T, int R>
 bool
 init_graph(Iter keys, Iter keys_end, Hash hash,
@@ -310,14 +327,21 @@ init_graph(Iter keys, Iter keys_end, Hash hash,
 {
 	// partsz is a partition size of an R-partite R-graph.
 	const T partsz = nverts / R;
+	// Fast division by partsz.
+	uint32_t mul;
+	uint8_t s1, s2;
+
 	assert(partsz > 1 && (nverts % R) == 0);
+
+	rgph_fastdiv_prepare(partsz, &mul, &s1, &s2, 0, NULL);
 
 	T e = 0;
 	for (; e < nkeys && keys != keys_end; ++e, ++keys) {
 		const rgph_entry &ent = *keys;
 		const T *verts = hash(ent.key, ent.keylen);
 		for (T r = 0; r < R; ++r)
-			edges[e].verts[r] = (verts[r] % partsz) + r * partsz;
+			edges[e].verts[r] = r * partsz +
+			    fastrem(verts[r], partsz, mul, s1, s2);
 		add_edge(oedges, e, edges[e].verts);
 		if (ent.datalen < *datalenmin)
 			*datalenmin = ent.datalen;
