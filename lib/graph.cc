@@ -956,13 +956,13 @@ rgph_alloc_graph(size_t nkeys, int flags)
 		return NULL;
 	}
 
-	/* Fail if both RGPH_ALGO_CHM and RGPH_ALGO_BDZ are passed. */
+	// Fail if both RGPH_ALGO_CHM and RGPH_ALGO_BDZ are passed.
 	if ((flags & RGPH_ALGO_MASK) == RGPH_ALGO_MASK) {
 		errno = EINVAL;
 		return NULL;
 	}
 
-	/* Don't accept bad hash flags. */
+	// Don't accept bad hash flags.
 	if ((flags & RGPH_HASH_MASK) > RGPH_HASH_LAST) {
 		errno = EINVAL;
 		return NULL;
