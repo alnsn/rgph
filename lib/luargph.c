@@ -656,7 +656,7 @@ graph_edges_iter(lua_State *L)
 		else if (flags & EDGES_INDEX)
 			lua_pushvalue(L, index);
 		else
-			assert(false && "parse_edges_arg() misbehaves");
+			assert(0 && "parse_edges_arg() misbehaves");
 	}
 
 	rank = rgph_rank(*pg);
