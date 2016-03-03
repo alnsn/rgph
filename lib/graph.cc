@@ -549,6 +549,31 @@ graph_rank(unsigned int flags)
 	return (flags & RGPH_RANK_MASK) == RGPH_RANK2 ? 2 : 3;
 }
 
+inline size_t
+graph_nverts(unsigned int flags, size_t nkeys)
+{
+	const int r = graph_rank(flags);
+	const size_t maxkeys = (r == 2) ? 0x78787877u : 0xcccccccau;
+	size_t nverts;
+
+	if (nkeys == 0 || nkeys > maxkeys)
+		return 0;
+
+	nverts = (r == 2) ? 2 * nkeys + (nkeys + 7) / 8
+	                  : 1 * nkeys + (nkeys + 3) / 4;
+	nverts = round_up(nverts, r);
+	if (nverts < 24)
+		nverts = 24;
+
+	if (flags & RGPH_FASTDIV_POW2) {
+		nverts = round_up_pow2(nverts / r) * r;
+		if (nverts == 0)
+			return 0;
+	}
+
+	return nverts;
+}
+
 // The destination array is often called g in computer science literature.
 template<class G, class T, int R, class A>
 inline void
@@ -947,7 +972,7 @@ struct rgph_graph *
 rgph_alloc_graph(size_t nkeys, int flags)
 {
 	struct rgph_graph *g;
-	size_t maxkeys, nverts, width, esz, osz;
+	size_t nverts, width, esz, osz;
 	int save_errno;
 	int r;
 
@@ -978,25 +1003,11 @@ rgph_alloc_graph(size_t nkeys, int flags)
 		flags |= RGPH_HASH_JENKINS2;
 
 	r = graph_rank(flags);
-	maxkeys = (r == 2) ? 0x78787877u : 0xcccccccau;
+	nverts = graph_nverts(flags, nkeys);
 
-	if (nkeys == 0 || nkeys > maxkeys) {
+	if (nverts == 0) {
 		errno = ERANGE;
 		return NULL;
-	}
-
-	nverts = (r == 2) ? 2 * nkeys + (nkeys + 7) / 8
-	                  : 1 * nkeys + (nkeys + 3) / 4;
-	nverts = round_up(nverts, r);
-	if (nverts < 24)
-		nverts = 24;
-
-	if (flags & RGPH_FASTDIV_POW2) {
-		nverts = round_up_pow2(nverts / r) * r;
-		if (nverts == 0) {
-			errno = ERANGE;
-			return NULL;
-		}
 	}
 
 	assert(nverts > nkeys);
