@@ -64,10 +64,10 @@
 #define	RGPH_ALGO_CHM      0x400
 #define	RGPH_ALGO_BDZ      0x800
 
-#define RGPH_FASTDIV_MASK     0x3000
-#define RGPH_FASTDIV_DEFAULT  0
-#define RGPH_FASTDIV_POW2     0x1000
-#define RGPH_FASTDIV_MAGIC_UP 0x2000
+#define RGPH_DIV_MASK    0x7000
+#define RGPH_DIV_DEFAULT 0
+#define RGPH_DIV_POW2    0x1000 /* div = nverts/R is a power of 2.           */
+#define RGPH_DIV_FAST    0x2000 /* n / div = (n * magic) >> 32 >> post_shift */
 
 /* XXX
 #define	RGPH_INDEX_MASK    0xc000

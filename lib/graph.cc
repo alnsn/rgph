@@ -44,6 +44,10 @@
 #define SIZE_MAX ((size_t)-1)
 #endif
 
+#ifndef UINT32_MAX
+#define UINT32_MAX 0xffffffffu
+#endif
+
 // Min. data_width size for building a graph. Setting it to 1 or 2
 // may save you some space for smaller graphs but beware of subtleties
 // of integral promotion rules.
@@ -444,12 +448,19 @@ round_up(size_t n, size_t r)
 	return n > -r ? 0 : (n + (r - 1)) / r * r;
 }
 
+inline bool
+is_pow2(size_t n)
+{
+
+	return (n & (n - 1)) == 0;
+}
+
 inline size_t
 round_up_pow2(size_t n)
 {
 	size_t r = 1;
 
-	if ((n & (n - 1)) == 0)
+	if (is_pow2(n))
 		return n;
 
 	while (n != 0) {
@@ -458,6 +469,13 @@ round_up_pow2(size_t n)
 	}
 
 	return r;
+}
+
+inline size_t
+minsize(size_t a, size_t b)
+{
+
+	return a < b ? a : b;
 }
 
 inline size_t
@@ -565,13 +583,37 @@ graph_nverts(unsigned int flags, size_t nkeys)
 	if (nverts < 24)
 		nverts = 24;
 
-	if (flags & RGPH_FASTDIV_POW2) {
-		nverts = round_up_pow2(nverts / r) * r;
-		if (nverts == 0)
-			return 0;
+	assert((nverts % r) == 0);
+
+	if ((flags & RGPH_DIV_MASK) == RGPH_DIV_DEFAULT)
+		return nverts;
+
+	const size_t pow2_div = round_up_pow2(nverts / r);
+
+	if ((flags & RGPH_DIV_POW2) && !(flags & RGPH_DIV_FAST))
+		return pow2_div > UINT32_MAX / r ? 0 : pow2_div * r;
+
+	const size_t max_div =
+	    (flags & RGPH_DIV_POW2) ? minsize(pow2_div, UINT32_MAX / r) :
+	    (flags & RGPH_DIV_FAST) ? UINT32_MAX / r : nverts / r;
+
+	assert(nverts / r <= max_div);
+
+	for (size_t div = nverts / r; div < max_div; div++) {
+		const size_t nbits = sizeof(uint32_t) * CHAR_BIT;
+		uint32_t mul;
+		uint8_t s1, s2;
+		int inc;
+
+		if (is_pow2(div))
+			continue;
+
+		rgph_fastdiv_prepare(div, &mul, &s1, &s2, nbits, &inc);
+		if (s1 == 0 && inc == 0)
+			return div * r;
 	}
 
-	return nverts;
+	return max_div * r;
 }
 
 // The destination array is often called g in computer science literature.
@@ -639,7 +681,7 @@ struct rgph_graph {
 };
 
 enum {
-	PUBLIC_FLAGS = 0x3fff,
+	PUBLIC_FLAGS = 0x7fff,
 	ZEROED   = 0x40000000, // The order, edges and oedges arrays are zeroed.
 	BUILT    = 0x20000000, // Graph is built.
 	PEELED   = 0x10000000, // Peel order index is built.

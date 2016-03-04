@@ -71,7 +71,8 @@ static const struct flag_str flag_strings[] = {
 	{ RGPH_RANK3,          RGPH_RANK_MASK,    "rank3"     },
 	{ RGPH_ALGO_CHM,       RGPH_ALGO_MASK,    "chm"       },
 	{ RGPH_ALGO_BDZ,       RGPH_ALGO_MASK,    "bdz"       },
-	{ RGPH_FASTDIV_POW2,   RGPH_FASTDIV_MASK, "pow2"      },
+	{ RGPH_DIV_POW2,       RGPH_DIV_MASK,     "pow2"      },
+	{ RGPH_DIV_FAST,       RGPH_DIV_MASK,     "fastdiv"   },
 	/* XXX { RGPH_INDEX_XXX } */
 };
 
@@ -210,15 +211,12 @@ static int
 graph_algo(lua_State *L)
 {
 	struct rgph_graph **pg;
-	int algo;
 
 	pg = (struct rgph_graph **)luaL_checkudata(L, 1, GRAPH_MT);
 	if (*pg == NULL)
 		return luaL_argerror(L, 1, "dead object");
 
-	algo = rgph_flags(*pg) & RGPH_ALGO_MASK;
-
-	lua_pushstring(L, find_flag(algo)->str);
+	lua_pushstring(L, find_flag(rgph_flags(*pg) & RGPH_ALGO_MASK)->str);
 	return 1;
 }
 
@@ -226,15 +224,12 @@ static int
 graph_hash(lua_State *L)
 {
 	struct rgph_graph **pg;
-	int hash;
 
 	pg = (struct rgph_graph **)luaL_checkudata(L, 1, GRAPH_MT);
 	if (*pg == NULL)
 		return luaL_argerror(L, 1, "dead object");
 
-	hash = rgph_flags(*pg) & RGPH_HASH_MASK;
-
-	lua_pushstring(L, find_flag(hash)->str);
+	lua_pushstring(L, find_flag(rgph_flags(*pg) & RGPH_HASH_MASK)->str);
 	return 1;
 }
 
