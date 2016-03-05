@@ -13,7 +13,7 @@ local function test(keys, seed, flags)
 	local rank = g:rank()
 	local nverts = g:vertices()
 
-	-- XXX pow2 checks
+	-- XXX pow2 and fastdiv checks
 
 	while true do
 		local ok, err = g:build(seed, pairs(keys))
