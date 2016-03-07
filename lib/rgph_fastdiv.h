@@ -30,6 +30,8 @@
 #ifndef RGPH_FASTDIV_H_INCLUDED
 #define RGPH_FASTDIV_H_INCLUDED
 
+#include <stdint.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
