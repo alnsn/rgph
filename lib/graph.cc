@@ -455,6 +455,13 @@ is_pow2(size_t n)
 	return (n & (n - 1)) == 0;
 }
 
+inline bool
+is_even(size_t n)
+{
+
+	return (n % 2) == 0;
+}
+
 inline size_t
 round_up_pow2(size_t n)
 {
@@ -568,9 +575,9 @@ graph_rank(unsigned int flags)
 }
 
 inline size_t
-graph_nverts(unsigned int flags, size_t nkeys)
+graph_nverts(int *flags, size_t nkeys)
 {
-	const int r = graph_rank(flags);
+	const int r = graph_rank(*flags);
 	const size_t maxkeys = (r == 2) ? 0x78787877u : 0xcccccccau;
 	size_t nverts;
 
@@ -585,19 +592,19 @@ graph_nverts(unsigned int flags, size_t nkeys)
 
 	assert((nverts % r) == 0);
 
-	if ((flags & RGPH_DIV_MASK) == RGPH_DIV_DEFAULT)
+	if ((*flags & RGPH_DIV_MASK) == RGPH_DIV_DEFAULT)
 		return nverts;
 
 	const size_t pow2_div = round_up_pow2(nverts / r);
 
-	if ((flags & RGPH_DIV_POW2) && !(flags & RGPH_DIV_FAST))
+	if ((*flags & RGPH_DIV_POW2) && !(*flags & RGPH_DIV_FAST))
 		return pow2_div > UINT32_MAX / r ? 0 : pow2_div * r;
 
 	const size_t max_div =
-	    (flags & RGPH_DIV_POW2) ? minsize(pow2_div, UINT32_MAX / r) :
-	    (flags & RGPH_DIV_FAST) ? UINT32_MAX / r : nverts / r;
+	    (*flags & RGPH_DIV_POW2) ? minsize(pow2_div, UINT32_MAX / r) :
+	    (*flags & RGPH_DIV_FAST) ? UINT32_MAX / r : nverts / r;
 
-	assert(nverts / r <= max_div);
+	assert(nverts / r > 1 && nverts / r <= max_div);
 
 	for (size_t div = nverts / r; div < max_div; div++) {
 		const size_t nbits = sizeof(uint32_t) * CHAR_BIT;
@@ -605,13 +612,22 @@ graph_nverts(unsigned int flags, size_t nkeys)
 		uint8_t s1, s2;
 		int inc;
 
-		if (is_pow2(div))
+		// rgph_fastdiv_prepare() doesn't work for powers of 2
+		// and it returns strictly positive s1 for even divisors.
+		if (is_even(div))
 			continue;
 
 		rgph_fastdiv_prepare(div, &mul, &s1, &s2, nbits, &inc);
-		if (s1 == 0 && inc == 0)
+		if (s1 == 0 && inc == 0) {
+			*flags &= ~RGPH_DIV_MASK;
+			*flags |= RGPH_DIV_FAST;
 			return div * r;
+		}
 	}
+
+	*flags &= ~RGPH_DIV_MASK;
+	if (is_pow2(max_div))
+		*flags |=  RGPH_DIV_POW2;
 
 	return max_div * r;
 }
@@ -1045,7 +1061,7 @@ rgph_alloc_graph(size_t nkeys, int flags)
 		flags |= RGPH_HASH_JENKINS2;
 
 	r = graph_rank(flags);
-	nverts = graph_nverts(flags, nkeys);
+	nverts = graph_nverts(&flags, nkeys);
 
 	if (nverts == 0) {
 		errno = ERANGE;
