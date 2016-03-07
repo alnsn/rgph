@@ -1,5 +1,9 @@
 local rgph = require "rgph"
 
+-- Compat stuff
+if not bit32 then bit32 = bit end
+if not bit32 then bit32 = require "bit" end
+
 local args = { ... }
 local seed = tonumber(args[1] or "123456789")
 
@@ -12,8 +16,20 @@ local function test(keys, seed, flags)
 	local g = rgph.new_graph(nkeys, flags)
 	local rank = g:rank()
 	local nverts = g:vertices()
+	local div_hint = g:division_hint()
+	local div = nverts / rank
 
-	-- XXX pow2 and fastdiv checks
+	flags = g:flags()
+
+	assert(#flags > 0 and flags:find(div_hint))
+
+	if div_hint == "pow2" then
+		assert(not flags:find("fastdiv"))
+		assert(bit32.band(div, div - 1) == 0)
+	elseif div_hint == "fastdiv" then
+		assert(not flags:find("pow2"))
+		-- XXX check whether div is fastdiv
+	end
 
 	while true do
 		local ok, err = g:build(seed, pairs(keys))

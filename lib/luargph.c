@@ -35,6 +35,7 @@
 #include <lauxlib.h>
 
 #include "rgph.h"
+#include "rgph_fastdiv.h"
 
 #define GRAPH_MT  "rgph.graph"
 #define ASSIGN_MT "rgph.assign"
@@ -337,6 +338,28 @@ graph_flags(lua_State *L)
 	}
 
 	luaL_pushresult(&buf);
+	return 1;
+}
+
+static int
+graph_div_hint(lua_State *L)
+{
+	struct rgph_graph **pg;
+	int flags;
+
+	pg = (struct rgph_graph **)luaL_checkudata(L, 1, GRAPH_MT);
+	if (*pg == NULL)
+		return luaL_argerror(L, 1, "dead object");
+
+	flags = rgph_flags(*pg);
+
+	if (flags & RGPH_DIV_POW2)
+		lua_pushstring(L, "pow2");
+	else if (flags & RGPH_DIV_FAST)
+		lua_pushstring(L, "fastdiv");
+	else
+		lua_pushstring(L, "");
+
 	return 1;
 }
 
@@ -764,6 +787,7 @@ static const luaL_Reg graph_fn[] = {
 	{ "datalen_max", graph_datalen_max },
 	{ "core_size", graph_core_size },
 	{ "flags", graph_flags },
+	{ "division_hint", graph_div_hint },
 	{ "build", graph_build },
 	{ "find_duplicates", graph_find_duplicates },
 	{ "assign", graph_assign },
