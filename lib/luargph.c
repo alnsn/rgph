@@ -170,7 +170,7 @@ new_graph_fn(lua_State *L)
 	if (*pg == NULL) {
 		switch (errno) {
 		case ERANGE:
-			return luaL_argerror(L, 1, "not in range");
+			return luaL_argerror(L, 1, "out of range");
 		case EINVAL:
 			return luaL_argerror(L, 2, "invalid flags");
 		case ENOMEM:
@@ -752,7 +752,7 @@ graph_edge(lua_State *L)
 
 	switch (res) {
 	case RGPH_RANGE:
-		return luaL_error(L, "edge not in range");
+		return luaL_error(L, "edge is out of range");
 	case RGPH_SUCCESS:
 		rank = rgph_rank(*pg);
 		switch (rank) {
