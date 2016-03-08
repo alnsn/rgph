@@ -53,6 +53,15 @@
 // of integral promotion rules.
 #define MIN_WIDTH_BUILD 4
 
+// Max nkeys values that don't overflow nverts
+// calculations commented out after the defines.
+#define MAX_NKEYS_R2 0x78787877u // round_up(2 * nkeys + (nkeys + 7) / 8, 2)
+#define MAX_NKEYS_R3 0xcccccccau // round_up(1 * nkeys + (nkeys + 3) / 4, 3)
+
+// Max values for fastdiv divisors.
+#define MAX_FASTDIV_R2 0x7fffffffu
+#define MAX_FASTDIV_R3 0x5555240du
+
 namespace {
 
 template<bool C> struct bool_selector {};
@@ -479,13 +488,6 @@ round_up_pow2(size_t n)
 }
 
 inline size_t
-minsize(size_t a, size_t b)
-{
-
-	return a < b ? a : b;
-}
-
-inline size_t
 maxsize(size_t a, size_t b)
 {
 
@@ -577,15 +579,16 @@ graph_rank(unsigned int flags)
 inline size_t
 graph_nverts(int *flags, size_t nkeys)
 {
+	const size_t div_nbits = sizeof(uint32_t) * CHAR_BIT;
 	const int r = graph_rank(*flags);
-	const size_t maxkeys = (r == 2) ? 0x78787877u : 0xcccccccau;
-	size_t nverts;
+	const size_t max_nkeys   = (r == 2) ? MAX_NKEYS_R2   : MAX_NKEYS_R3;
+	const size_t max_fastdiv = (r == 2) ? MAX_FASTDIV_R2 : MAX_FASTDIV_R3;
 
-	if (nkeys == 0 || nkeys > maxkeys)
+	if (nkeys == 0 || nkeys > max_nkeys)
 		return 0;
 
-	nverts = (r == 2) ? 2 * nkeys + (nkeys + 7) / 8
-	                  : 1 * nkeys + (nkeys + 3) / 4;
+	size_t nverts = (r == 2) ? 2 * nkeys + (nkeys + 7) / 8
+	                         : 1 * nkeys + (nkeys + 3) / 4;
 	nverts = round_up(nverts, r);
 	if (nverts < 24)
 		nverts = 24;
@@ -597,17 +600,22 @@ graph_nverts(int *flags, size_t nkeys)
 
 	const size_t pow2_div = round_up_pow2(nverts / r);
 
+	if (pow2_div > UINT32_MAX / r) // true only for pow2_div==0x80000000
+		*flags &= ~RGPH_DIV_POW2;
+	if (nverts / r > max_fastdiv)
+		*flags &= ~RGPH_DIV_FAST;
+
+	if (!(*flags & RGPH_DIV_POW2) && !(*flags & RGPH_DIV_FAST))
+		return 0;
 	if ((*flags & RGPH_DIV_POW2) && !(*flags & RGPH_DIV_FAST))
-		return pow2_div > UINT32_MAX / r ? 0 : pow2_div * r;
+		return pow2_div * r;
 
 	const size_t max_div =
-	    (*flags & RGPH_DIV_POW2) ? minsize(pow2_div, UINT32_MAX / r) :
-	    (*flags & RGPH_DIV_FAST) ? UINT32_MAX / r : nverts / r;
+	    (*flags & RGPH_DIV_POW2) ? pow2_div : max_fastdiv;
 
 	assert(nverts / r > 1 && nverts / r <= max_div);
 
-	for (size_t div = nverts / r; div < max_div; div++) {
-		const size_t nbits = sizeof(uint32_t) * CHAR_BIT;
+	for (size_t div = nverts / r; div <= max_div; div++) {
 		uint32_t mul;
 		uint8_t s1, s2;
 		int inc;
@@ -617,7 +625,7 @@ graph_nverts(int *flags, size_t nkeys)
 		if (is_even(div))
 			continue;
 
-		rgph_fastdiv_prepare(div, &mul, &s1, &s2, nbits, &inc);
+		rgph_fastdiv_prepare(div, &mul, &s1, &s2, div_nbits, &inc);
 		if (s1 == 0 && inc == 0) {
 			*flags &= ~RGPH_DIV_MASK;
 			*flags |= RGPH_DIV_FAST;
@@ -625,10 +633,10 @@ graph_nverts(int *flags, size_t nkeys)
 		}
 	}
 
-	*flags &= ~RGPH_DIV_MASK;
-	if (is_pow2(max_div))
-		*flags |=  RGPH_DIV_POW2;
+	assert(is_pow2(max_div));
 
+	*flags &= ~RGPH_DIV_MASK;
+	*flags |=  RGPH_DIV_POW2;
 	return max_div * r;
 }
 
