@@ -12,10 +12,25 @@ local function test_out_of_range(nkeys, flags)
 	assert(not ok and msg:find("out of range"))
 end
 
+-- This function will calloc gigabytes of memory but it will not touch it.
+local function test_good_range(nkeys, flags)
+	assert(rgph.new_graph(nkeys, flags))
+end
+
+local rank2_max = { default=0x78787877, pow2=0x3c3c3c3c }
+local rank3_max = { default=0xccccccca, pow2=0x99999999 }
+
+test_good_range(rank2_max.default, "rank2")
+test_good_range(rank2_max.pow2, "rank2,pow2")
+test_good_range(rank3_max.default, "rank3")
+test_good_range(rank3_max.pow2, "rank3,pow2")
+
 test_out_of_range(0, "rank2")
 test_out_of_range(0, "rank3")
-test_out_of_range(0x78787878, "rank2")
-test_out_of_range(0xcccccccb, "rank3")
+test_out_of_range(rank2_max.default + 1, "rank2")
+test_out_of_range(rank2_max.pow2 + 1, "rank2,pow2")
+test_out_of_range(rank3_max.default + 1, "rank3")
+test_out_of_range(rank3_max.pow2 + 1, "rank3,pow2")
 
 local keys = { a=1, b=2, c=3, d=4, e=5, f=6, g=7, h=8, i=9, j=10,
                k=11, l=12, m=13, n=14, o=15, p=16, q=17, r=18,
