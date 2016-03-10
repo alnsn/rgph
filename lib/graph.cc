@@ -59,8 +59,8 @@
 #define MAX_NKEYS_R3 0xcccccccau // round_up(1 * nkeys + (nkeys + 3) / 4, 3)
 
 // Max values for fastdiv divisors.
-#define MAX_FASTDIV_R2 0x7fffffffu
-#define MAX_FASTDIV_R3 0x5555240du
+#define MAX_FASTDIV_R2 0x7fff8000u
+#define MAX_FASTDIV_R3 0x55555555u
 
 namespace {
 
@@ -620,9 +620,8 @@ graph_nverts(int *flags, size_t nkeys)
 		uint8_t s1, s2;
 		int inc;
 
-		// rgph_fastdiv_prepare() doesn't work for powers of 2
-		// and it returns strictly positive s1 for even divisors.
-		if (is_even(div))
+		// rgph_fastdiv_prepare() doesn't work for powers of 2.
+		if (is_pow2(div))
 			continue;
 
 		rgph_fastdiv_prepare(div, &mul, &s1, &s2, div_nbits, &inc);
