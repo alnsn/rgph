@@ -13,24 +13,87 @@ local function test_out_of_range(nkeys, flags)
 end
 
 -- This function will calloc gigabytes of memory but it will not touch it.
-local function test_good_range(nkeys, flags)
-	assert(rgph.new_graph(nkeys, flags))
+local function test_good_range(nkeys, flags, division_hint)
+	local g = assert(rgph.new_graph(nkeys, flags))
+	assert(g:division_hint() == division_hint)
 end
 
-local rank2_max = { default=0x78787877, pow2=0x3c3c3c3c }
-local rank3_max = { default=0xccccccca, pow2=0x99999999 }
+local rank2_max = { pow2=0x3c3c3c3c, fastdiv=0x78780000, max=0x78787877 }
+local rank3_max = { pow2=0x99999999, fastdiv=0xccccccca, max=0xccccccca }
 
-test_good_range(rank2_max.default, "rank2")
-test_good_range(rank2_max.pow2, "rank2,pow2")
-test_good_range(rank3_max.default, "rank3")
-test_good_range(rank3_max.pow2, "rank3,pow2")
-
+-- rank2
 test_out_of_range(0, "rank2")
-test_out_of_range(0, "rank3")
-test_out_of_range(rank2_max.default + 1, "rank2")
+test_out_of_range(0, "rank2,pow2")
+test_out_of_range(0, "rank2,fastdiv")
+test_out_of_range(0, "rank2,pow2,fastdiv")
+
+test_good_range(rank2_max.pow2, "rank2", "")
+test_good_range(rank2_max.pow2, "rank2,pow2", "pow2")
+test_good_range(rank2_max.pow2, "rank2,fastdiv,pow2", "pow2")
+test_good_range(rank2_max.pow2, "rank2,fastdiv", "fastdiv")
+
+test_good_range(rank2_max.pow2 + 1, "rank2", "")
+test_good_range(rank2_max.pow2 + 1, "rank2,fastdiv", "fastdiv")
+test_good_range(rank2_max.pow2 + 1, "rank2,fastdiv,pow2", "fastdiv")
 test_out_of_range(rank2_max.pow2 + 1, "rank2,pow2")
-test_out_of_range(rank3_max.default + 1, "rank3")
+
+test_good_range(rank2_max.fastdiv, "rank2", "")
+test_good_range(rank2_max.fastdiv, "rank2,fastdiv", "fastdiv")
+test_good_range(rank2_max.fastdiv, "rank2,pow2,fastdiv", "fastdiv")
+test_out_of_range(rank2_max.fastdiv, "rank2,pow2")
+
+test_good_range(rank2_max.fastdiv + 1, "rank2", "")
+test_out_of_range(rank2_max.fastdiv + 1, "rank2,fastdiv")
+test_out_of_range(rank2_max.fastdiv + 1, "rank2,pow2,fastdiv")
+test_out_of_range(rank2_max.fastdiv + 1, "rank2,pow2")
+
+test_good_range(rank2_max.max, "rank2", "")
+test_out_of_range(rank2_max.max, "rank2,fastdiv")
+test_out_of_range(rank2_max.max, "rank2,pow2,fastdiv")
+test_out_of_range(rank2_max.max, "rank2,pow2")
+
+test_out_of_range(rank2_max.max + 1, "rank2")
+test_out_of_range(rank2_max.max + 1, "rank2,fastdiv")
+test_out_of_range(rank2_max.max + 1, "rank2,pow2,fastdiv")
+test_out_of_range(rank2_max.max + 1, "rank2,pow2")
+
+-- rank3
+test_out_of_range(0, "rank3")
+test_out_of_range(0, "rank3,pow2")
+test_out_of_range(0, "rank3,fastdiv")
+test_out_of_range(0, "rank3,pow2,fastdiv")
+
+test_good_range(rank3_max.pow2, "rank3", "")
+test_good_range(rank3_max.pow2, "rank3,pow2", "pow2")
+test_good_range(rank3_max.pow2, "rank3,fastdiv,pow2", "pow2")
+test_good_range(rank3_max.pow2, "rank3,fastdiv", "fastdiv")
+
+test_good_range(rank3_max.pow2 + 1, "rank3", "")
+test_good_range(rank3_max.pow2 + 1, "rank3,fastdiv", "fastdiv")
+test_good_range(rank3_max.pow2 + 1, "rank3,fastdiv,pow2", "fastdiv")
 test_out_of_range(rank3_max.pow2 + 1, "rank3,pow2")
+
+test_good_range(rank3_max.fastdiv, "rank3", "")
+test_good_range(rank3_max.fastdiv, "rank3,fastdiv", "fastdiv")
+test_good_range(rank3_max.fastdiv, "rank3,pow2,fastdiv", "fastdiv")
+test_out_of_range(rank3_max.fastdiv, "rank3,pow2")
+
+-- Out of range because rank3_max.fastdiv ==  max
+test_out_of_range(rank3_max.fastdiv + 1, "rank3")
+test_out_of_range(rank3_max.fastdiv + 1, "rank3,fastdiv")
+test_out_of_range(rank3_max.fastdiv + 1, "rank3,pow2,fastdiv")
+test_out_of_range(rank3_max.fastdiv + 1, "rank3,pow2")
+
+test_good_range(rank3_max.max, "rank3", "")
+test_good_range(rank3_max.max, "rank3,fastdiv", "fastdiv")
+test_good_range(rank3_max.max, "rank3,pow2,fastdiv", "fastdiv")
+test_out_of_range(rank3_max.max, "rank3,pow2")
+
+test_out_of_range(rank3_max.max + 1, "rank3")
+test_out_of_range(rank3_max.max + 1, "rank3,fastdiv")
+test_out_of_range(rank3_max.max + 1, "rank3,pow2,fastdiv")
+test_out_of_range(rank3_max.max + 1, "rank3,pow2")
+
 
 local keys = { a=1, b=2, c=3, d=4, e=5, f=6, g=7, h=8, i=9, j=10,
                k=11, l=12, m=13, n=14, o=15, p=16, q=17, r=18,
