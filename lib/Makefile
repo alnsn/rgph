@@ -19,14 +19,23 @@ CPPFLAGS+=	-DNDEBUG -DWEAK_ALIASES
 #CXXFLAGS+=	-UNDEBUG
 #CFLAGS+=	-UWEAK_ALIASES
 
-
-OBJ=		graph.o    fastdiv.o    jenkins2.o    murmur32.o    murmur32s.o    xxh32s.o    xxh64s.o
-PICOBJ=		graph.pico fastdiv.pico jenkins2.pico murmur32.pico murmur32s.pico xxh32s.pico xxh64s.pico
-LRGPHOBJ=	luargph.pico
-LHASHOBJ=	luahash.pico
-
 XCFLAGS=	-I. $(CPPFLAGS) $(WARNS) $(C99OPTS)
 XCXXFLAGS=	-I. $(CPPFLAGS) $(WARNS) $(CXXOPTS)
+
+GRAPHO=		graph.o    fastdiv.o
+GRAPHPICO=	graph.pico fastdiv.pico
+
+HASHO=		jenkins2.o    murmur32.o    murmur32s.o    xxh32s.o    xxh64s.o
+HASHPICO=	jenkins2.pico murmur32.pico murmur32s.pico xxh32s.pico xxh64s.pico
+
+HASHEXO=	jenkins2-ex.o    murmur32-ex.o    murmur32s-ex.o    xxh32s-ex.o    xxh64s-ex.o
+HASHEXPICO=	jenkins2-ex.pico murmur32-ex.pico murmur32s-ex.pico xxh32s-ex.pico xxh64s-ex.pico
+
+OBJ=		$(GRAPHO)    $(HASHO)
+PICO=		$(GRAPHPICO) $(HASHPICO)
+
+LUARGPHPICO=	luargph.pico $(HASHPICO)
+LUAHASHPICO=	luahash.pico $(HASHPICO) $(HASHEXPICO)
 
 
 .SUFFIXES: .c .cc .o .pico
@@ -43,21 +52,24 @@ XCXXFLAGS=	-I. $(CPPFLAGS) $(WARNS) $(CXXOPTS)
 .c.pico:
 	$(CC) $(XCFLAGS) $(PICFLAGS) $(CXXFLAGS) -c $< -o $@
 
-all-c: librgph.so
-all-lua: rgph.so
+all-c: librgph.so librgph_hash.so
+all-lua: rgph.so hash.so
 all: all-c all-lua
 
 luargph.pico: luargph.c
 	$(CC) `pkg-config --cflags --cflags $(LUAPKG)` $(XCFLAGS) $(PICFLAGS) $(CFLAGS) -c $< -o $@
 
-librgph.$(DSO): $(PICOBJ)
-	$(CC) $(PICLDFLAGS) $(LDFLAGS) -shared $(PICOBJ) -o $@
+librgph.$(DSO): $(PICO)
+	$(CC) $(PICLDFLAGS) $(LDFLAGS) -shared $(PICO) -o $@
 
-rgph.$(DSO): $(PICOBJ) $(LRGPHOBJ)
-	$(CC) `pkg-config --cflags --libs $(LUAPKG)` $(PICLDFLAGS) $(LDFLAGS) -shared $(PICOBJ) $(LRGPHOBJ) -o $@
+librgph_hash.$(DSO): $(HASHEXPICO)
+	$(CC) $(PICLDFLAGS) $(LDFLAGS) -shared $(HASHEXPICO) -o $@
 
-hash.$(DSO): $(PICOBJ) $(LHASHOBJ)
-	$(CC) `pkg-config --cflags --libs $(LUAPKG)` $(PICLDFLAGS) $(LDFLAGS) -shared $(PICOBJ) $(LHASHOBJ) -o $@
+rgph.$(DSO): $(LUARGPHPICO)
+	$(CC) `pkg-config --cflags --libs $(LUAPKG)` $(PICLDFLAGS) $(LDFLAGS) -shared $(LUARGPHPICO) -o $@
+
+hash.$(DSO): $(LUAHASHPICO)
+	$(CC) `pkg-config --cflags --libs $(LUAPKG)` $(PICLDFLAGS) $(LDFLAGS) -shared $(LUAHASHPICO) -o $@
 
 clean:
-	rm -f $(OBJ) $(PICOBJ) $(LRGPHOBJ) $(LHASHOBJ) *.so *.dylib *.a
+	rm -f $(OBJ) $(PICO) $(LUARGPHPICO) $(LUAHASHPICO) *.so *.dylib *.a

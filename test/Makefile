@@ -6,7 +6,7 @@ WARNS?=		-Wall -Wextra
 C99OPTS?=	-std=c99
 
 XCFLAGS=	$(WARNS) -I. -I../lib $(C99OPTS)
-XLDFLAGS=	-L../lib -lrgph
+XLDFLAGS=	-L../lib -lrgph -lrgph_hash
 
 all: t_rgph
 
