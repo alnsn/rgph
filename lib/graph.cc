@@ -36,6 +36,7 @@
 #include <string.h>
 
 #include "rgph_defs.h"
+#include "rgph_bitops.h"
 #include "rgph_fastdiv.h"
 #include "rgph_graph.h"
 #include "rgph_hash.h"
@@ -448,43 +449,6 @@ edge_size(int rank, size_t width)
 	case 3: return edge_size_impl<3>(width);
 	default: return 0;
 	}
-}
-
-inline size_t
-round_up(size_t n, size_t r)
-{
-
-	return n > -r ? 0 : (n + (r - 1)) / r * r;
-}
-
-inline bool
-is_pow2(size_t n)
-{
-
-	return (n & (n - 1)) == 0;
-}
-
-inline bool
-is_even(size_t n)
-{
-
-	return (n % 2) == 0;
-}
-
-inline size_t
-round_up_pow2(size_t n)
-{
-	size_t r = 1;
-
-	if (is_pow2(n))
-		return n;
-
-	while (n != 0) {
-		n >>= 1;
-		r <<= 1;
-	}
-
-	return r;
 }
 
 inline size_t

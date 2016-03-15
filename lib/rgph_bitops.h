@@ -1,5 +1,4 @@
 /*-
- * Public Domain 2010 ridiculous_fish.
  * Copyright (c) 2016 Alexander Nasonov.
  * Copyright (c) 2007, 2010 The NetBSD Foundation, Inc.
  * All rights reserved.
@@ -34,6 +33,47 @@
 
 #ifndef FILE_RGPH_BITOPS_H_INCLUDED
 #define FILE_RGPH_BITOPS_H_INCLUDED
+
+#include <stddef.h>
+#include <stdint.h>
+
+
+static inline size_t
+round_up(size_t n, size_t r)
+{
+
+	return n > -r ? 0 : (n + (r - 1)) / r * r;
+}
+
+static inline bool
+is_pow2(size_t n)
+{
+
+	return (n & (n - 1)) == 0;
+}
+
+static inline bool
+is_even(size_t n)
+{
+
+	return (n % 2) == 0;
+}
+
+static inline size_t
+round_up_pow2(size_t n)
+{
+	size_t r = 1;
+
+	if (is_pow2(n))
+		return n;
+
+	while (n != 0) {
+		n >>= 1;
+		r <<= 1;
+	}
+
+	return r;
+}
 
 static inline int
 fls32(uint32_t n)
