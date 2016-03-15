@@ -37,6 +37,7 @@
 #include <stdint.h>
 
 #include "rgph_fastdiv.h"
+#include "rgph_fastdiv_impl.h"
 
 /*
  * Computes "magic info" for performing unsigned division by a fixed
@@ -93,38 +94,6 @@ struct magicu_info {
 
 static struct magicu_info
 compute_unsigned_magic_info(unsigned int D, unsigned int num_bits);
-
-static inline int
-fls32(uint32_t n)
-{
-	int v;
-
-	if (!n)
-		return 0;
-
-	v = 32;
-	if ((n & 0xFFFF0000U) == 0) {
-		n <<= 16;
-		v -= 16;
-	}
-	if ((n & 0xFF000000U) == 0) {
-		n <<= 8;
-		v -= 8;
-	}
-	if ((n & 0xF0000000U) == 0) {
-		n <<= 4;
-		v -= 4;
-	}
-	if ((n & 0xC0000000U) == 0) {
-		n <<= 2;
-		v -= 2;
-	}
-	if ((n & 0x80000000U) == 0) {
-		n <<= 1;
-		v -= 1;
-	}
-	return v;
-}
 
 /*
  * Public Domain 2010 ridiculous_fish.
