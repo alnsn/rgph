@@ -37,7 +37,7 @@
 #include <stdint.h>
 
 #include "rgph_fastdiv.h"
-#include "rgph_fastdiv_impl.h"
+#include "rgph_bitops.h"
 
 /*
  * Computes "magic info" for performing unsigned division by a fixed

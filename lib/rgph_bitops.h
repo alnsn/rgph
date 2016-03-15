@@ -32,8 +32,8 @@
  * SUCH DAMAGE.
  */
 
-#ifndef FILE_RGPH_FASTDIV_IMPL_H_INCLUDED
-#define FILE_RGPH_FASTDIV_IMPL_H_INCLUDED
+#ifndef FILE_RGPH_BITOPS_H_INCLUDED
+#define FILE_RGPH_BITOPS_H_INCLUDED
 
 static inline int
 fls32(uint32_t n)
@@ -67,4 +67,4 @@ fls32(uint32_t n)
 	return v;
 }
 
-#endif /* FILE_RGPH_FASTDIV_IMPL_H_INCLUDED */
+#endif /* FILE_RGPH_BITOPS_H_INCLUDED */
