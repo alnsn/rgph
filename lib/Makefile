@@ -34,7 +34,7 @@ HASHEXPICO=	jenkins2-ex.pico murmur32-ex.pico murmur32s-ex.pico xxh32s-ex.pico x
 OBJ=		$(GRAPHO)    $(HASHO)
 PICO=		$(GRAPHPICO) $(HASHPICO)
 
-LUARGPHPICO=	luargph.pico $(HASHPICO)
+LUARGPHPICO=	luargph.pico $(PICO)
 LUAHASHPICO=	luahash.pico $(HASHPICO) $(HASHEXPICO)
 
 

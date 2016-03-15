@@ -34,6 +34,7 @@
 #ifndef FILE_RGPH_BITOPS_H_INCLUDED
 #define FILE_RGPH_BITOPS_H_INCLUDED
 
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
