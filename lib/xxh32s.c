@@ -38,7 +38,7 @@
 #include <stdint.h>
 
 
-inline uint32_t
+uint32_t
 rgph_u32_xxh32s_data(const void *data, size_t len, uint32_t seed)
 {
 	const uint8_t *key = data;
@@ -92,28 +92,4 @@ rgph_u32_xxh32s_data(const void *data, size_t len, uint32_t seed)
 	rgph_xxh32s_finalise(h);
 
 	return h[0];
-}
-
-void
-rgph_u8x4_xxh32s_data(const void *key,
-    size_t len, uint32_t seed, uint8_t *h8)
-{
-	uint32_t h;
-
-	h = rgph_u32_xxh32s_data(key, len, seed);
-	h8[0] = (uint8_t)(h >> 24);
-	h8[1] = (uint8_t)(h >> 16);
-	h8[2] = (uint8_t)(h >> 8);
-	h8[3] = (uint8_t)h;
-}
-
-void
-rgph_u16x2_xxh32s_data(const void *data,
-    size_t len, uint32_t seed, uint16_t *h16)
-{
-	uint32_t h;
-
-	h = rgph_u32_xxh32s_data(data, len, seed);
-	h16[0] = (uint16_t)(h >> 16);
-	h16[1] = (uint16_t)h;
 }

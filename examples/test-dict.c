@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
 	if (state.file == NULL)
 		return EXIT_FAILURE;
 
-	g = rgph_alloc_graph(nkeys, RGPH_HASH_JENKINS2 | rank);
+	g = rgph_alloc_graph(nkeys, RGPH_HASH_JENKINS2V | rank);
 	if (g == NULL) {
 		fclose(state.file);
 		return EXIT_FAILURE;

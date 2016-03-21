@@ -61,19 +61,17 @@ struct flag_str {
 };
 
 static const struct flag_str flag_strings[] = {
-	{ RGPH_HASH_JENKINS2,  RGPH_HASH_MASK,    "jenkins2"  },
-	/* NIY { RGPH_HASH_JENKINS3,  RGPH_HASH_MASK,    "jenkins3"  }, */
-	/* NIY { RGPH_HASH_JENKINS3S, RGPH_HASH_MASK,    "jenkins3s" }, */
-	{ RGPH_HASH_MURMUR32,  RGPH_HASH_MASK,    "murmur32"  },
-	{ RGPH_HASH_MURMUR32S, RGPH_HASH_MASK,    "murmur32s" },
-	{ RGPH_HASH_XXH32S,    RGPH_HASH_MASK,    "xxh32s"    },
-	{ RGPH_HASH_XXH64S,    RGPH_HASH_MASK,    "xxh64s"    },
-	{ RGPH_RANK2,          RGPH_RANK_MASK,    "rank2"     },
-	{ RGPH_RANK3,          RGPH_RANK_MASK,    "rank3"     },
-	{ RGPH_ALGO_CHM,       RGPH_ALGO_MASK,    "chm"       },
-	{ RGPH_ALGO_BDZ,       RGPH_ALGO_MASK,    "bdz"       },
-	{ RGPH_DIV_POW2,       RGPH_DIV_MASK,     "pow2"      },
-	{ RGPH_DIV_FAST,       RGPH_DIV_MASK,     "fastdiv"   },
+	{ RGPH_HASH_JENKINS2V, RGPH_HASH_MASK, "jenkins2v" },
+	{ RGPH_HASH_MURMUR32V, RGPH_HASH_MASK, "murmur32v" },
+	{ RGPH_HASH_MURMUR32S, RGPH_HASH_MASK, "murmur32s" },
+	{ RGPH_HASH_XXH32S,    RGPH_HASH_MASK, "xxh32s"    },
+	{ RGPH_HASH_XXH64S,    RGPH_HASH_MASK, "xxh64s"    },
+	{ RGPH_RANK2,          RGPH_RANK_MASK, "rank2"     },
+	{ RGPH_RANK3,          RGPH_RANK_MASK, "rank3"     },
+	{ RGPH_ALGO_CHM,       RGPH_ALGO_MASK, "chm"       },
+	{ RGPH_ALGO_BDZ,       RGPH_ALGO_MASK, "bdz"       },
+	{ RGPH_DIV_POW2,       RGPH_DIV_MASK,  "pow2"      },
+	{ RGPH_DIV_FAST,       RGPH_DIV_MASK,  "fastdiv"   },
 	/* XXX { RGPH_INDEX_XXX } */
 };
 

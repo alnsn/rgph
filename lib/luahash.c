@@ -35,7 +35,7 @@
 #include "rgph_hash.h"
 
 static int
-jenkins2(lua_State *L)
+jenkins2v(lua_State *L)
 {
 	uint32_t h[3], seed;
 	const char *str;
@@ -58,7 +58,7 @@ jenkins2(lua_State *L)
 }
 
 static int
-murmur32(lua_State *L)
+murmur32v(lua_State *L)
 {
 	uint32_t h[4], seed;
 	const char *str;
@@ -83,10 +83,8 @@ murmur32(lua_State *L)
 }
 
 static const luaL_Reg hash_fn[] = {
-	{ "jenkins2",  jenkins2  },
-	/* NIY { "jenkins3",  jenkins3  }, */
-	/* NIY { "jenkins3s", jenkins3s }, */
-	{ "murmur32",  murmur32  },
+	{ "jenkins2v", jenkins2v },
+	{ "murmur32v", murmur32v },
 	/* NIY { "murmur32s", murmur32s }, */
 	/* NIY { "xxh32s",    xxh32s    }, */
 	/* NIY { "xxh64s",    xxh64s    }, */

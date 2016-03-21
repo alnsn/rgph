@@ -18,81 +18,222 @@ local function test_good_range(nkeys, flags, division_hint)
 	assert(g:division_hint() == division_hint)
 end
 
-local rank2_max = { pow2=0x3c3c3c3c, fastdiv=0x78780000, max=0x78787877 }
-local rank3_max = { pow2=0x99999999, fastdiv=0xccccccca, max=0xccccccca }
+local rank2_max = {
+	vec = {
+		pow2    = 0x3c3c3c3c,
+		fastdiv = 0x78780000,
+		max     = 0x78787877
+	},
+	s64 = {
+		pow2    = 0x3c3c3c3c,
+		fastdiv = 0x78780000,
+		max     = 0x78787877
+	},
+	s32 = {
+		fastdiv = 0x00007877,
+		pow2    = 0x00007878,
+		max     = 0x00007878
+	}
+}
 
--- rank2
-test_out_of_range(0, "rank2")
-test_out_of_range(0, "rank2,pow2")
-test_out_of_range(0, "rank2,fastdiv")
-test_out_of_range(0, "rank2,pow2,fastdiv")
+local rank3_max = {
+	vec = {
+		pow2    = 0x99999999,
+		fastdiv = 0xccccccca,
+		max     = 0xccccccca
+	},
+	s64 = {
+		fastdiv = 0x00266664,
+		pow2    = 0x00266666,
+		max     = 0x00266666
+	},
+	s32 = {
+		fastdiv = 0x000004ca,
+		pow2    = 0x000004cc,
+		max     = 0x000004cc
+	}
+}
 
-test_good_range(rank2_max.pow2, "rank2", "")
-test_good_range(rank2_max.pow2, "rank2,pow2", "pow2")
-test_good_range(rank2_max.pow2, "rank2,fastdiv,pow2", "pow2")
-test_good_range(rank2_max.pow2, "rank2,fastdiv", "fastdiv")
+-- rank2 vector hash
+test_out_of_range(0, "jenkins2v,rank2")
+test_out_of_range(0, "jenkins2v,rank2,pow2")
+test_out_of_range(0, "jenkins2v,rank2,fastdiv")
+test_out_of_range(0, "jenkins2v,rank2,pow2,fastdiv")
 
-test_good_range(rank2_max.pow2 + 1, "rank2", "")
-test_good_range(rank2_max.pow2 + 1, "rank2,fastdiv", "fastdiv")
-test_good_range(rank2_max.pow2 + 1, "rank2,fastdiv,pow2", "fastdiv")
-test_out_of_range(rank2_max.pow2 + 1, "rank2,pow2")
+test_good_range(rank2_max.vec.pow2, "jenkins2v,rank2", "")
+test_good_range(rank2_max.vec.pow2, "jenkins2v,rank2,pow2", "pow2")
+test_good_range(rank2_max.vec.pow2, "jenkins2v,rank2,fastdiv,pow2", "pow2")
+test_good_range(rank2_max.vec.pow2, "jenkins2v,rank2,fastdiv", "fastdiv")
 
-test_good_range(rank2_max.fastdiv, "rank2", "")
-test_good_range(rank2_max.fastdiv, "rank2,fastdiv", "fastdiv")
-test_good_range(rank2_max.fastdiv, "rank2,pow2,fastdiv", "fastdiv")
-test_out_of_range(rank2_max.fastdiv, "rank2,pow2")
+test_good_range(rank2_max.vec.pow2 + 1, "jenkins2v,rank2", "")
+test_good_range(rank2_max.vec.pow2 + 1, "jenkins2v,rank2,fastdiv", "fastdiv")
+test_good_range(rank2_max.vec.pow2 + 1, "jenkins2v,rank2,fastdiv,pow2", "fastdiv")
+test_out_of_range(rank2_max.vec.pow2 + 1, "jenkins2v,rank2,pow2")
 
-test_good_range(rank2_max.fastdiv + 1, "rank2", "")
-test_out_of_range(rank2_max.fastdiv + 1, "rank2,fastdiv")
-test_out_of_range(rank2_max.fastdiv + 1, "rank2,pow2,fastdiv")
-test_out_of_range(rank2_max.fastdiv + 1, "rank2,pow2")
+test_good_range(rank2_max.vec.fastdiv, "jenkins2v,rank2", "")
+test_good_range(rank2_max.vec.fastdiv, "jenkins2v,rank2,fastdiv", "fastdiv")
+test_good_range(rank2_max.vec.fastdiv, "jenkins2v,rank2,pow2,fastdiv", "fastdiv")
+test_out_of_range(rank2_max.vec.fastdiv, "jenkins2v,rank2,pow2")
 
-test_good_range(rank2_max.max, "rank2", "")
-test_out_of_range(rank2_max.max, "rank2,fastdiv")
-test_out_of_range(rank2_max.max, "rank2,pow2,fastdiv")
-test_out_of_range(rank2_max.max, "rank2,pow2")
+test_good_range(rank2_max.vec.fastdiv + 1, "jenkins2v,rank2", "")
+test_out_of_range(rank2_max.vec.fastdiv + 1, "jenkins2v,rank2,fastdiv")
+test_out_of_range(rank2_max.vec.fastdiv + 1, "jenkins2v,rank2,pow2,fastdiv")
+test_out_of_range(rank2_max.vec.fastdiv + 1, "jenkins2v,rank2,pow2")
 
-test_out_of_range(rank2_max.max + 1, "rank2")
-test_out_of_range(rank2_max.max + 1, "rank2,fastdiv")
-test_out_of_range(rank2_max.max + 1, "rank2,pow2,fastdiv")
-test_out_of_range(rank2_max.max + 1, "rank2,pow2")
+test_good_range(rank2_max.vec.max, "jenkins2v,rank2", "")
+test_out_of_range(rank2_max.vec.max, "jenkins2v,rank2,fastdiv")
+test_out_of_range(rank2_max.vec.max, "jenkins2v,rank2,pow2,fastdiv")
+test_out_of_range(rank2_max.vec.max, "jenkins2v,rank2,pow2")
 
--- rank3
-test_out_of_range(0, "rank3")
-test_out_of_range(0, "rank3,pow2")
-test_out_of_range(0, "rank3,fastdiv")
-test_out_of_range(0, "rank3,pow2,fastdiv")
+test_out_of_range(rank2_max.vec.max + 1, "jenkins2v,rank2")
+test_out_of_range(rank2_max.vec.max + 1, "jenkins2v,rank2,fastdiv")
+test_out_of_range(rank2_max.vec.max + 1, "jenkins2v,rank2,pow2,fastdiv")
+test_out_of_range(rank2_max.vec.max + 1, "jenkins2v,rank2,pow2")
 
-test_good_range(rank3_max.pow2, "rank3", "")
-test_good_range(rank3_max.pow2, "rank3,pow2", "pow2")
-test_good_range(rank3_max.pow2, "rank3,fastdiv,pow2", "pow2")
-test_good_range(rank3_max.pow2, "rank3,fastdiv", "fastdiv")
+-- rank2 scalar 64 hash
+test_out_of_range(0, "xxh64s,rank2")
+test_out_of_range(0, "xxh64s,rank2,pow2")
+test_out_of_range(0, "xxh64s,rank2,fastdiv")
+test_out_of_range(0, "xxh64s,rank2,pow2,fastdiv")
 
-test_good_range(rank3_max.pow2 + 1, "rank3", "")
-test_good_range(rank3_max.pow2 + 1, "rank3,fastdiv", "fastdiv")
-test_good_range(rank3_max.pow2 + 1, "rank3,fastdiv,pow2", "fastdiv")
-test_out_of_range(rank3_max.pow2 + 1, "rank3,pow2")
+test_good_range(rank2_max.s64.pow2, "xxh64s,rank2", "")
+test_good_range(rank2_max.s64.pow2, "xxh64s,rank2,pow2", "pow2")
+test_good_range(rank2_max.s64.pow2, "xxh64s,rank2,fastdiv,pow2", "pow2")
+test_good_range(rank2_max.s64.pow2, "xxh64s,rank2,fastdiv", "fastdiv")
 
-test_good_range(rank3_max.fastdiv, "rank3", "")
-test_good_range(rank3_max.fastdiv, "rank3,fastdiv", "fastdiv")
-test_good_range(rank3_max.fastdiv, "rank3,pow2,fastdiv", "fastdiv")
-test_out_of_range(rank3_max.fastdiv, "rank3,pow2")
+test_good_range(rank2_max.s64.pow2 + 1, "xxh64s,rank2", "")
+test_good_range(rank2_max.s64.pow2 + 1, "xxh64s,rank2,fastdiv", "fastdiv")
+test_good_range(rank2_max.s64.pow2 + 1, "xxh64s,rank2,fastdiv,pow2", "fastdiv")
+test_out_of_range(rank2_max.s64.pow2 + 1, "xxh64s,rank2,pow2")
 
--- Out of range because rank3_max.fastdiv ==  max
-test_out_of_range(rank3_max.fastdiv + 1, "rank3")
-test_out_of_range(rank3_max.fastdiv + 1, "rank3,fastdiv")
-test_out_of_range(rank3_max.fastdiv + 1, "rank3,pow2,fastdiv")
-test_out_of_range(rank3_max.fastdiv + 1, "rank3,pow2")
+test_good_range(rank2_max.s64.fastdiv, "xxh64s,rank2", "")
+test_good_range(rank2_max.s64.fastdiv, "xxh64s,rank2,fastdiv", "fastdiv")
+test_good_range(rank2_max.s64.fastdiv, "xxh64s,rank2,pow2,fastdiv", "fastdiv")
+test_out_of_range(rank2_max.s64.fastdiv, "xxh64s,rank2,pow2")
 
-test_good_range(rank3_max.max, "rank3", "")
-test_good_range(rank3_max.max, "rank3,fastdiv", "fastdiv")
-test_good_range(rank3_max.max, "rank3,pow2,fastdiv", "fastdiv")
-test_out_of_range(rank3_max.max, "rank3,pow2")
+test_good_range(rank2_max.s64.fastdiv + 1, "xxh64s,rank2", "")
+test_out_of_range(rank2_max.s64.fastdiv + 1, "xxh64s,rank2,fastdiv")
+test_out_of_range(rank2_max.s64.fastdiv + 1, "xxh64s,rank2,pow2,fastdiv")
+test_out_of_range(rank2_max.s64.fastdiv + 1, "xxh64s,rank2,pow2")
 
-test_out_of_range(rank3_max.max + 1, "rank3")
-test_out_of_range(rank3_max.max + 1, "rank3,fastdiv")
-test_out_of_range(rank3_max.max + 1, "rank3,pow2,fastdiv")
-test_out_of_range(rank3_max.max + 1, "rank3,pow2")
+test_good_range(rank2_max.s64.max, "xxh64s,rank2", "")
+test_out_of_range(rank2_max.s64.max, "xxh64s,rank2,fastdiv")
+test_out_of_range(rank2_max.s64.max, "xxh64s,rank2,pow2,fastdiv")
+test_out_of_range(rank2_max.s64.max, "xxh64s,rank2,pow2")
+
+test_out_of_range(rank2_max.s64.max + 1, "xxh64s,rank2")
+test_out_of_range(rank2_max.s64.max + 1, "xxh64s,rank2,fastdiv")
+test_out_of_range(rank2_max.s64.max + 1, "xxh64s,rank2,pow2,fastdiv")
+test_out_of_range(rank2_max.s64.max + 1, "xxh64s,rank2,pow2")
+
+-- rank2 scalar 32 hash
+test_out_of_range(0, "xxh32s,rank2")
+test_out_of_range(0, "xxh32s,rank2,pow2")
+test_out_of_range(0, "xxh32s,rank2,fastdiv")
+test_out_of_range(0, "xxh32s,rank2,pow2,fastdiv")
+
+test_good_range(rank2_max.s32.fastdiv, "xxh32s,rank2", "")
+test_good_range(rank2_max.s32.fastdiv, "xxh32s,rank2,fastdiv", "fastdiv")
+test_good_range(rank2_max.s32.fastdiv, "xxh32s,rank2,pow2,fastdiv", "fastdiv")
+test_good_range(rank2_max.s32.fastdiv, "xxh32s,rank2,pow2", "pow2")
+
+test_good_range(rank2_max.s32.fastdiv + 1, "xxh32s,rank2", "")
+test_good_range(rank2_max.s32.fastdiv + 1, "xxh32s,rank2,pow2,fastdiv", "pow2")
+test_good_range(rank2_max.s32.fastdiv + 1, "xxh32s,rank2,pow2", "pow2")
+test_out_of_range(rank2_max.s32.fastdiv + 1, "xxh32s,rank2,fastdiv")
+
+test_good_range(rank2_max.s32.max, "xxh32s,rank2", "")
+test_good_range(rank2_max.s32.max, "xxh32s,rank2,pow2", "pow2")
+test_good_range(rank2_max.s32.max, "xxh32s,rank2,fastdiv,pow2", "pow2")
+test_out_of_range(rank2_max.s32.max, "xxh32s,rank2,fastdiv")
+
+test_out_of_range(rank2_max.s32.max + 1, "xxh32s,rank2")
+test_out_of_range(rank2_max.s32.max + 1, "xxh32s,rank2,pow2")
+test_out_of_range(rank2_max.s32.max + 1, "xxh32s,rank2,pow2,fastdiv")
+test_out_of_range(rank2_max.s32.max + 1, "xxh32s,rank2,fastdiv")
+
+-- rank3 vector hash
+test_out_of_range(0, "jenkins2v,rank3")
+test_out_of_range(0, "jenkins2v,rank3,pow2")
+test_out_of_range(0, "jenkins2v,rank3,fastdiv")
+test_out_of_range(0, "jenkins2v,rank3,pow2,fastdiv")
+
+test_good_range(rank3_max.vec.pow2, "jenkins2v,rank3", "")
+test_good_range(rank3_max.vec.pow2, "jenkins2v,rank3,pow2", "pow2")
+test_good_range(rank3_max.vec.pow2, "jenkins2v,rank3,fastdiv,pow2", "pow2")
+test_good_range(rank3_max.vec.pow2, "jenkins2v,rank3,fastdiv", "fastdiv")
+
+test_good_range(rank3_max.vec.pow2 + 1, "jenkins2v,rank3", "")
+test_good_range(rank3_max.vec.pow2 + 1, "jenkins2v,rank3,fastdiv", "fastdiv")
+test_good_range(rank3_max.vec.pow2 + 1, "jenkins2v,rank3,fastdiv,pow2", "fastdiv")
+test_out_of_range(rank3_max.vec.pow2 + 1, "jenkins2v,rank3,pow2")
+
+test_good_range(rank3_max.vec.fastdiv, "jenkins2v,rank3", "")
+test_good_range(rank3_max.vec.fastdiv, "jenkins2v,rank3,fastdiv", "fastdiv")
+test_good_range(rank3_max.vec.fastdiv, "jenkins2v,rank3,pow2,fastdiv", "fastdiv")
+test_out_of_range(rank3_max.vec.fastdiv, "jenkins2v,rank3,pow2")
+
+test_good_range(rank3_max.vec.max, "jenkins2v,rank3", "")
+test_good_range(rank3_max.vec.max, "jenkins2v,rank3,fastdiv", "fastdiv")
+test_good_range(rank3_max.vec.max, "jenkins2v,rank3,pow2,fastdiv", "fastdiv")
+test_out_of_range(rank3_max.vec.max, "jenkins2v,rank3,pow2")
+
+test_out_of_range(rank3_max.vec.max + 1, "jenkins2v,rank3")
+test_out_of_range(rank3_max.vec.max + 1, "jenkins2v,rank3,fastdiv")
+test_out_of_range(rank3_max.vec.max + 1, "jenkins2v,rank3,pow2,fastdiv")
+test_out_of_range(rank3_max.vec.max + 1, "jenkins2v,rank3,pow2")
+
+-- rank3 scalar 64 hash
+test_out_of_range(0, "xxh64s,rank3")
+test_out_of_range(0, "xxh64s,rank3,pow2")
+test_out_of_range(0, "xxh64s,rank3,fastdiv")
+test_out_of_range(0, "xxh64s,rank3,pow2,fastdiv")
+
+test_good_range(rank3_max.s64.fastdiv, "xxh64s,rank3", "")
+test_good_range(rank3_max.s64.fastdiv, "xxh64s,rank3,fastdiv", "fastdiv")
+test_good_range(rank3_max.s64.fastdiv, "xxh64s,rank3,pow2,fastdiv", "fastdiv")
+test_good_range(rank3_max.s64.fastdiv, "xxh64s,rank3,pow2", "pow2")
+
+test_good_range(rank3_max.s64.fastdiv + 1, "xxh64s,rank3", "")
+test_good_range(rank3_max.s64.fastdiv + 1, "xxh64s,rank3,pow2,fastdiv", "pow2")
+test_good_range(rank3_max.s64.fastdiv + 1, "xxh64s,rank3,pow2", "pow2")
+test_out_of_range(rank3_max.s64.fastdiv + 1, "xxh64s,rank3,fastdiv")
+
+test_good_range(rank3_max.s64.max, "xxh64s,rank3", "")
+test_good_range(rank3_max.s64.max, "xxh64s,rank3,pow2", "pow2")
+test_good_range(rank3_max.s64.max, "xxh64s,rank3,fastdiv,pow2", "pow2")
+test_out_of_range(rank3_max.s64.max, "xxh64s,rank3,fastdiv")
+
+test_out_of_range(rank3_max.s64.max + 1, "xxh64s,rank3")
+test_out_of_range(rank3_max.s64.max + 1, "xxh64s,rank3,pow2")
+test_out_of_range(rank3_max.s64.max + 1, "xxh64s,rank3,pow2,fastdiv")
+test_out_of_range(rank3_max.s64.max + 1, "xxh64s,rank3,fastdiv")
+
+-- rank3 scalar 32 hash
+test_out_of_range(0, "xxh32s,rank3")
+test_out_of_range(0, "xxh32s,rank3,pow2")
+test_out_of_range(0, "xxh32s,rank3,fastdiv")
+test_out_of_range(0, "xxh32s,rank3,pow2,fastdiv")
+
+test_good_range(rank3_max.s32.fastdiv, "xxh32s,rank3", "")
+test_good_range(rank3_max.s32.fastdiv, "xxh32s,rank3,fastdiv", "fastdiv")
+test_good_range(rank3_max.s32.fastdiv, "xxh32s,rank3,pow2,fastdiv", "fastdiv")
+test_good_range(rank3_max.s32.fastdiv, "xxh32s,rank3,pow2", "pow2")
+
+test_good_range(rank3_max.s32.fastdiv + 1, "xxh32s,rank3", "")
+test_good_range(rank3_max.s32.fastdiv + 1, "xxh32s,rank3,pow2,fastdiv", "pow2")
+test_good_range(rank3_max.s32.fastdiv + 1, "xxh32s,rank3,pow2", "pow2")
+test_out_of_range(rank3_max.s32.fastdiv + 1, "xxh32s,rank3,fastdiv")
+
+test_good_range(rank3_max.s32.max, "xxh32s,rank3", "")
+test_good_range(rank3_max.s32.max, "xxh32s,rank3,pow2", "pow2")
+test_good_range(rank3_max.s32.max, "xxh32s,rank3,fastdiv,pow2", "pow2")
+test_out_of_range(rank3_max.s32.max, "xxh32s,rank3,fastdiv")
+
+test_out_of_range(rank3_max.s32.max + 1, "xxh32s,rank3")
+test_out_of_range(rank3_max.s32.max + 1, "xxh32s,rank3,pow2")
+test_out_of_range(rank3_max.s32.max + 1, "xxh32s,rank3,pow2,fastdiv")
+test_out_of_range(rank3_max.s32.max + 1, "xxh32s,rank3,fastdiv")
 
 
 local keys = { a=1, b=2, c=3, d=4, e=5, f=6, g=7, h=8, i=9, j=10,
@@ -176,80 +317,80 @@ end
 
 test_abcz(keys, seed)
 
-test_abcz(keys, seed, "jenkins2")
-test_abcz(keys, seed, "jenkins2,chm")
-test_abcz(keys, seed, "jenkins2,bdz")
-test_abcz(keys, seed, "jenkins2,pow2")
-test_abcz(keys, seed, "jenkins2,pow2,chm")
-test_abcz(keys, seed, "jenkins2,pow2,bdz")
-test_abcz(keys, seed, "jenkins2,fastdiv")
-test_abcz(keys, seed, "jenkins2,fastdiv,chm")
-test_abcz(keys, seed, "jenkins2,fastdiv,bdz")
-test_abcz(keys, seed, "jenkins2,pow2,fastdiv")
-test_abcz(keys, seed, "jenkins2,pow2,fastdiv,chm")
-test_abcz(keys, seed, "jenkins2,pow2,fastdiv,bdz")
-test_abcz(keys, seed, "jenkins2,rank2")
-test_abcz(keys, seed, "jenkins2,chm,rank2")
-test_abcz(keys, seed, "jenkins2,bdz,rank2")
-test_abcz(keys, seed, "jenkins2,pow2,rank2")
-test_abcz(keys, seed, "jenkins2,pow2,chm,rank2")
-test_abcz(keys, seed, "jenkins2,pow2,bdz,rank2")
-test_abcz(keys, seed, "jenkins2,fastdiv,rank2")
-test_abcz(keys, seed, "jenkins2,fastdiv,chm,rank2")
-test_abcz(keys, seed, "jenkins2,fastdiv,bdz,rank2")
-test_abcz(keys, seed, "jenkins2,pow2,fastdiv,rank2")
-test_abcz(keys, seed, "jenkins2,pow2,fastdiv,chm,rank2")
-test_abcz(keys, seed, "jenkins2,pow2,fastdiv,bdz,rank2")
-test_abcz(keys, seed, "jenkins2,rank3")
-test_abcz(keys, seed, "jenkins2,chm,rank3")
-test_abcz(keys, seed, "jenkins2,bdz,rank3")
-test_abcz(keys, seed, "jenkins2,pow2,rank3")
-test_abcz(keys, seed, "jenkins2,pow2,chm,rank3")
-test_abcz(keys, seed, "jenkins2,pow2,bdz,rank3")
-test_abcz(keys, seed, "jenkins2,fastdiv,rank3")
-test_abcz(keys, seed, "jenkins2,fastdiv,chm,rank3")
-test_abcz(keys, seed, "jenkins2,fastdiv,bdz,rank3")
-test_abcz(keys, seed, "jenkins2,pow2,fastdiv,rank3")
-test_abcz(keys, seed, "jenkins2,pow2,fastdiv,chm,rank3")
-test_abcz(keys, seed, "jenkins2,pow2,fastdiv,bdz,rank3")
+test_abcz(keys, seed, "jenkins2v")
+test_abcz(keys, seed, "jenkins2v,chm")
+test_abcz(keys, seed, "jenkins2v,bdz")
+test_abcz(keys, seed, "jenkins2v,pow2")
+test_abcz(keys, seed, "jenkins2v,pow2,chm")
+test_abcz(keys, seed, "jenkins2v,pow2,bdz")
+test_abcz(keys, seed, "jenkins2v,fastdiv")
+test_abcz(keys, seed, "jenkins2v,fastdiv,chm")
+test_abcz(keys, seed, "jenkins2v,fastdiv,bdz")
+test_abcz(keys, seed, "jenkins2v,pow2,fastdiv")
+test_abcz(keys, seed, "jenkins2v,pow2,fastdiv,chm")
+test_abcz(keys, seed, "jenkins2v,pow2,fastdiv,bdz")
+test_abcz(keys, seed, "jenkins2v,rank2")
+test_abcz(keys, seed, "jenkins2v,chm,rank2")
+test_abcz(keys, seed, "jenkins2v,bdz,rank2")
+test_abcz(keys, seed, "jenkins2v,pow2,rank2")
+test_abcz(keys, seed, "jenkins2v,pow2,chm,rank2")
+test_abcz(keys, seed, "jenkins2v,pow2,bdz,rank2")
+test_abcz(keys, seed, "jenkins2v,fastdiv,rank2")
+test_abcz(keys, seed, "jenkins2v,fastdiv,chm,rank2")
+test_abcz(keys, seed, "jenkins2v,fastdiv,bdz,rank2")
+test_abcz(keys, seed, "jenkins2v,pow2,fastdiv,rank2")
+test_abcz(keys, seed, "jenkins2v,pow2,fastdiv,chm,rank2")
+test_abcz(keys, seed, "jenkins2v,pow2,fastdiv,bdz,rank2")
+test_abcz(keys, seed, "jenkins2v,rank3")
+test_abcz(keys, seed, "jenkins2v,chm,rank3")
+test_abcz(keys, seed, "jenkins2v,bdz,rank3")
+test_abcz(keys, seed, "jenkins2v,pow2,rank3")
+test_abcz(keys, seed, "jenkins2v,pow2,chm,rank3")
+test_abcz(keys, seed, "jenkins2v,pow2,bdz,rank3")
+test_abcz(keys, seed, "jenkins2v,fastdiv,rank3")
+test_abcz(keys, seed, "jenkins2v,fastdiv,chm,rank3")
+test_abcz(keys, seed, "jenkins2v,fastdiv,bdz,rank3")
+test_abcz(keys, seed, "jenkins2v,pow2,fastdiv,rank3")
+test_abcz(keys, seed, "jenkins2v,pow2,fastdiv,chm,rank3")
+test_abcz(keys, seed, "jenkins2v,pow2,fastdiv,bdz,rank3")
 
--- XXX "murmur32,rank3" tests hang
---test_abcz(keys, seed, "murmur32")
---test_abcz(keys, seed, "murmur32,chm")
---test_abcz(keys, seed, "murmur32,bdz")
-test_abcz(keys, seed, "murmur32,pow2")
-test_abcz(keys, seed, "murmur32,pow2,chm")
-test_abcz(keys, seed, "murmur32,pow2,bdz")
---test_abcz(keys, seed, "murmur32,fastdiv")
---test_abcz(keys, seed, "murmur32,fastdiv,chm")
---test_abcz(keys, seed, "murmur32,fastdiv,bdz")
---test_abcz(keys, seed, "murmur32,pow2,fastdiv")
---test_abcz(keys, seed, "murmur32,pow2,fastdiv,chm")
---test_abcz(keys, seed, "murmur32,pow2,fastdiv,bdz")
-test_abcz(keys, seed, "murmur32,rank2")
-test_abcz(keys, seed, "murmur32,chm,rank2")
-test_abcz(keys, seed, "murmur32,bdz,rank2")
-test_abcz(keys, seed, "murmur32,pow2,rank2")
-test_abcz(keys, seed, "murmur32,pow2,chm,rank2")
-test_abcz(keys, seed, "murmur32,pow2,bdz,rank2")
-test_abcz(keys, seed, "murmur32,fastdiv,rank2")
-test_abcz(keys, seed, "murmur32,fastdiv,chm,rank2")
-test_abcz(keys, seed, "murmur32,fastdiv,bdz,rank2")
-test_abcz(keys, seed, "murmur32,pow2,fastdiv,rank2")
-test_abcz(keys, seed, "murmur32,pow2,fastdiv,chm,rank2")
-test_abcz(keys, seed, "murmur32,pow2,fastdiv,bdz,rank2")
---test_abcz(keys, seed, "murmur32,rank3")
---test_abcz(keys, seed, "murmur32,chm,rank3")
---test_abcz(keys, seed, "murmur32,bdz,rank3")
-test_abcz(keys, seed, "murmur32,pow2,rank3")
-test_abcz(keys, seed, "murmur32,pow2,chm,rank3")
-test_abcz(keys, seed, "murmur32,pow2,bdz,rank3")
---test_abcz(keys, seed, "murmur32,fastdiv,rank3")
---test_abcz(keys, seed, "murmur32,fastdiv,chm,rank3")
---test_abcz(keys, seed, "murmur32,fastdiv,bdz,rank3")
---test_abcz(keys, seed, "murmur32,pow2,fastdiv,rank3")
---test_abcz(keys, seed, "murmur32,pow2,fastdiv,chm,rank3")
---test_abcz(keys, seed, "murmur32,pow2,fastdiv,bdz,rank3")
+-- XXX "murmur32v,rank3" tests hang
+--test_abcz(keys, seed, "murmur32v")
+--test_abcz(keys, seed, "murmur32v,chm")
+--test_abcz(keys, seed, "murmur32v,bdz")
+test_abcz(keys, seed, "murmur32v,pow2")
+test_abcz(keys, seed, "murmur32v,pow2,chm")
+test_abcz(keys, seed, "murmur32v,pow2,bdz")
+--test_abcz(keys, seed, "murmur32v,fastdiv")
+--test_abcz(keys, seed, "murmur32v,fastdiv,chm")
+--test_abcz(keys, seed, "murmur32v,fastdiv,bdz")
+--test_abcz(keys, seed, "murmur32v,pow2,fastdiv")
+--test_abcz(keys, seed, "murmur32v,pow2,fastdiv,chm")
+--test_abcz(keys, seed, "murmur32v,pow2,fastdiv,bdz")
+test_abcz(keys, seed, "murmur32v,rank2")
+test_abcz(keys, seed, "murmur32v,chm,rank2")
+test_abcz(keys, seed, "murmur32v,bdz,rank2")
+test_abcz(keys, seed, "murmur32v,pow2,rank2")
+test_abcz(keys, seed, "murmur32v,pow2,chm,rank2")
+test_abcz(keys, seed, "murmur32v,pow2,bdz,rank2")
+test_abcz(keys, seed, "murmur32v,fastdiv,rank2")
+test_abcz(keys, seed, "murmur32v,fastdiv,chm,rank2")
+test_abcz(keys, seed, "murmur32v,fastdiv,bdz,rank2")
+test_abcz(keys, seed, "murmur32v,pow2,fastdiv,rank2")
+test_abcz(keys, seed, "murmur32v,pow2,fastdiv,chm,rank2")
+test_abcz(keys, seed, "murmur32v,pow2,fastdiv,bdz,rank2")
+--test_abcz(keys, seed, "murmur32v,rank3")
+--test_abcz(keys, seed, "murmur32v,chm,rank3")
+--test_abcz(keys, seed, "murmur32v,bdz,rank3")
+test_abcz(keys, seed, "murmur32v,pow2,rank3")
+test_abcz(keys, seed, "murmur32v,pow2,chm,rank3")
+test_abcz(keys, seed, "murmur32v,pow2,bdz,rank3")
+--test_abcz(keys, seed, "murmur32v,fastdiv,rank3")
+--test_abcz(keys, seed, "murmur32v,fastdiv,chm,rank3")
+--test_abcz(keys, seed, "murmur32v,fastdiv,bdz,rank3")
+--test_abcz(keys, seed, "murmur32v,pow2,fastdiv,rank3")
+--test_abcz(keys, seed, "murmur32v,pow2,fastdiv,chm,rank3")
+--test_abcz(keys, seed, "murmur32v,pow2,fastdiv,bdz,rank3")
 
 test_abcz(keys, seed, "murmur32s")
 test_abcz(keys, seed, "murmur32s,chm")

@@ -20,7 +20,6 @@ rgph_test_jenkins2(void)
 	const uint32_t seed = 123456789;
 
 	uint32_t h[12];
-	uint64_t h64;
 	size_t i;
 
 	rgph_u32x3_jenkins2_data(u8, sizeof(u8[0]), seed, h);
@@ -32,20 +31,12 @@ rgph_test_jenkins2(void)
 	CHECK(h[0] == h[6]);
 	CHECK(h[1] == h[7]);
 	CHECK(h[2] == h[8]);
-	CHECK(rgph_u32_jenkins2_u8(u8[0], seed) == h[0]);
 #ifdef __NetBSD__
 	mi_vector_hash(u8, sizeof(u8[0]), seed, h + 9);
 	CHECK(h[0] == h[9]);
 	CHECK(h[1] == h[10]);
 	CHECK(h[2] == h[11]);
 #endif
-	h64 = rgph_u64_jenkins2_data(u8, sizeof(u8[0]), seed);
-	CHECK((h64 & 0xffffffff) == h[0]);
-	CHECK((h64 >> 32) == h[1]);
-	h64 = rgph_u64_jenkins2_u8(u8[0], seed);
-	CHECK((h64 & 0xffffffff) == h[0]);
-	CHECK((h64 >> 32) == h[1]);
-
 	rgph_u32x3_jenkins2_data(u16, sizeof(u16[0]), seed, h);
 	rgph_u32x3_jenkins2_u16(u16[0], seed, h + 3);
 	CHECK(h[0] == h[3]);
@@ -55,20 +46,12 @@ rgph_test_jenkins2(void)
 	CHECK(h[0] == h[6]);
 	CHECK(h[1] == h[7]);
 	CHECK(h[2] == h[8]);
-	CHECK(rgph_u32_jenkins2_u16(u16[0], seed) == h[0]);
 #ifdef __NetBSD__
 	mi_vector_hash(u16, sizeof(u16[0]), seed, h + 9);
 	CHECK(h[0] == h[9]);
 	CHECK(h[1] == h[10]);
 	CHECK(h[2] == h[11]);
 #endif
-	h64 = rgph_u64_jenkins2_data(u16, sizeof(u16[0]), seed);
-	CHECK((h64 & 0xffffffff) == h[0]);
-	CHECK((h64 >> 32) == h[1]);
-	h64 = rgph_u64_jenkins2_u16(u16[0], seed);
-	CHECK((h64 & 0xffffffff) == h[0]);
-	CHECK((h64 >> 32) == h[1]);
-
 	rgph_u32x3_jenkins2_data(u32, sizeof(u32[0]), seed, h);
 	rgph_u32x3_jenkins2_u32(u32[0], seed, h + 3);
 	CHECK(h[0] == h[3]);
@@ -78,20 +61,12 @@ rgph_test_jenkins2(void)
 	CHECK(h[0] == h[6]);
 	CHECK(h[1] == h[7]);
 	CHECK(h[2] == h[8]);
-	CHECK(rgph_u32_jenkins2_u32(u32[0], seed) == h[0]);
 #ifdef __NetBSD__
 	mi_vector_hash(u32, sizeof(u32[0]), seed, h + 9);
 	CHECK(h[0] == h[9]);
 	CHECK(h[1] == h[10]);
 	CHECK(h[2] == h[11]);
 #endif
-	h64 = rgph_u64_jenkins2_data(u32, sizeof(u32[0]), seed);
-	CHECK((h64 & 0xffffffff) == h[0]);
-	CHECK((h64 >> 32) == h[1]);
-	h64 = rgph_u64_jenkins2_u32(u32[0], seed);
-	CHECK((h64 & 0xffffffff) == h[0]);
-	CHECK((h64 >> 32) == h[1]);
-
 	rgph_u32x3_jenkins2_data(u64, sizeof(u64[0]), seed, h);
 	rgph_u32x3_jenkins2_u64(u64[0], seed, h + 3);
 	CHECK(h[0] == h[3]);
@@ -101,20 +76,12 @@ rgph_test_jenkins2(void)
 	CHECK(h[0] == h[6]);
 	CHECK(h[1] == h[7]);
 	CHECK(h[2] == h[8]);
-	CHECK(rgph_u32_jenkins2_u64(u64[0], seed) == h[0]);
 #ifdef __NetBSD__
 	mi_vector_hash(u64, sizeof(u64[0]), seed, h + 9);
 	CHECK(h[0] == h[9]);
 	CHECK(h[1] == h[10]);
 	CHECK(h[2] == h[11]);
 #endif
-	h64 = rgph_u64_jenkins2_data(u64, sizeof(u64[0]), seed);
-	CHECK((h64 & 0xffffffff) == h[0]);
-	CHECK((h64 >> 32) == h[1]);
-	h64 = rgph_u64_jenkins2_u64(u64[0], seed);
-	CHECK((h64 & 0xffffffff) == h[0]);
-	CHECK((h64 >> 32) == h[1]);
-
 	rgph_u32x3_jenkins2_data(f32, sizeof(f32[0]), seed, h);
 	rgph_u32x3_jenkins2_f32(f32[0], seed, h + 3);
 	CHECK(h[0] == h[3]);
@@ -124,20 +91,12 @@ rgph_test_jenkins2(void)
 	CHECK(h[0] == h[6]);
 	CHECK(h[1] == h[7]);
 	CHECK(h[2] == h[8]);
-	CHECK(rgph_u32_jenkins2_f32(f32[0], seed) == h[0]);
 #ifdef __NetBSD__
 	mi_vector_hash(f32, sizeof(f32[0]), seed, h + 9);
 	CHECK(h[0] == h[9]);
 	CHECK(h[1] == h[10]);
 	CHECK(h[2] == h[11]);
 #endif
-	h64 = rgph_u64_jenkins2_data(f32, sizeof(f32[0]), seed);
-	CHECK((h64 & 0xffffffff) == h[0]);
-	CHECK((h64 >> 32) == h[1]);
-	h64 = rgph_u64_jenkins2_f32(f32[0], seed);
-	CHECK((h64 & 0xffffffff) == h[0]);
-	CHECK((h64 >> 32) == h[1]);
-
 	rgph_u32x3_jenkins2_data(f64, sizeof(f64[0]), seed, h);
 	rgph_u32x3_jenkins2_f64(f64[0], seed, h + 3);
 	CHECK(h[0] == h[3]);
@@ -147,20 +106,12 @@ rgph_test_jenkins2(void)
 	CHECK(h[0] == h[6]);
 	CHECK(h[1] == h[7]);
 	CHECK(h[2] == h[8]);
-	CHECK(rgph_u32_jenkins2_f64(f64[0], seed) == h[0]);
 #ifdef __NetBSD__
 	mi_vector_hash(f64, sizeof(f64[0]), seed, h + 9);
 	CHECK(h[0] == h[9]);
 	CHECK(h[1] == h[10]);
 	CHECK(h[2] == h[11]);
 #endif
-	h64 = rgph_u64_jenkins2_data(f64, sizeof(f64[0]), seed);
-	CHECK((h64 & 0xffffffff) == h[0]);
-	CHECK((h64 >> 32) == h[1]);
-	h64 = rgph_u64_jenkins2_f64(f64[0], seed);
-	CHECK((h64 & 0xffffffff) == h[0]);
-	CHECK((h64 >> 32) == h[1]);
-
 	for (i = 0; i <= 24; i++) {
 		rgph_u32x3_jenkins2_data(u8, i * sizeof(u8[0]), seed, h);
 		rgph_u32x3_jenkins2_u8a(u8, i, seed, h + 4);
@@ -262,10 +213,6 @@ rgph_test_jenkins2(void)
 			CHECK(h[0] == h[3]);
 			CHECK(h[1] == h[4]);
 			CHECK(h[2] == h[5]);
-			CHECK(rgph_u32_jenkins2_data(msg, l, seed) ==
-			      rgph_u32_jenkins2_data(s+i, l, seed));
-			CHECK(rgph_u64_jenkins2_data(msg, l, seed) ==
-			      rgph_u64_jenkins2_data(s+i, l, seed));
 
 			free(s);
 		}

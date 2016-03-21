@@ -43,7 +43,7 @@ void rgph_u32x4_murmur32_data64(const void *, size_t, uint32_t, uint32_t *);
 #endif
 
 
-inline void
+void
 rgph_u32x4_murmur32_u8(uint8_t value, uint32_t seed, uint32_t *h)
 {
 
@@ -53,7 +53,7 @@ rgph_u32x4_murmur32_u8(uint8_t value, uint32_t seed, uint32_t *h)
 	rgph_murmur32_finalise(sizeof(value), h);
 }
 
-inline void
+void
 rgph_u32x4_murmur32_u16(uint16_t value, uint32_t seed, uint32_t *h)
 {
 
@@ -84,149 +84,18 @@ rgph_u32x4_murmur32_u64(uint64_t value, uint32_t seed, uint32_t *h)
 	rgph_murmur32_finalise(sizeof(value), h);
 }
 
-inline void
+void
 rgph_u32x4_murmur32_f32(float value, uint32_t seed, uint32_t *h)
 {
 
 	rgph_u32x4_murmur32_u32(rgph_f2u32(value), seed, h);
 }
 
-inline void
+void
 rgph_u32x4_murmur32_f64(double value, uint32_t seed, uint32_t *h)
 {
 
 	rgph_u32x4_murmur32_u64(rgph_d2u64(value), seed, h);
-}
-
-uint32_t
-rgph_u32_murmur32_u8(uint8_t value, uint32_t seed)
-{
-	uint32_t h[4];
-
-	rgph_u32x4_murmur32_u8(value, seed, h);
-	return h[0];
-}
-
-uint32_t
-rgph_u32_murmur32_u16(uint16_t value, uint32_t seed)
-{
-	uint32_t h[4];
-
-	rgph_u32x4_murmur32_u16(value, seed, h);
-	return h[0];
-}
-
-uint32_t
-rgph_u32_murmur32_u32(uint32_t value, uint32_t seed)
-{
-	uint32_t h[4];
-
-	rgph_u32x4_murmur32_u32(value, seed, h);
-	return h[0];
-}
-
-uint32_t
-rgph_u32_murmur32_u64(uint64_t value, uint32_t seed)
-{
-	uint32_t h[4];
-
-	rgph_u32x4_murmur32_u64(value, seed, h);
-	return h[0];
-}
-
-uint32_t
-rgph_u32_murmur32_f32(float value, uint32_t seed)
-{
-	uint32_t h[4];
-
-	rgph_u32x4_murmur32_f32(value, seed, h);
-	return h[0];
-}
-
-uint32_t
-rgph_u32_murmur32_f64(double value, uint32_t seed)
-{
-	uint32_t h[4];
-
-	rgph_u32x4_murmur32_f64(value, seed, h);
-	return h[0];
-}
-
-uint64_t
-rgph_u64_murmur32_u8(uint8_t value, uint32_t seed)
-{
-	uint64_t res;
-	uint32_t h[4];
-
-	rgph_u32x4_murmur32_u8(value, seed, h);
-
-	res = h[1];
-	res = h[0] | (res << 32);
-	return res;
-}
-
-uint64_t
-rgph_u64_murmur32_u16(uint16_t value, uint32_t seed)
-{
-	uint64_t res;
-	uint32_t h[4];
-
-	rgph_u32x4_murmur32_u16(value, seed, h);
-
-	res = h[1];
-	res = h[0] | (res << 32);
-	return res;
-}
-
-uint64_t
-rgph_u64_murmur32_u32(uint32_t value, uint32_t seed)
-{
-	uint64_t res;
-	uint32_t h[4];
-
-	rgph_u32x4_murmur32_u32(value, seed, h);
-	res = h[1];
-	res = h[0] | (res << 32);
-	return res;
-}
-
-uint64_t
-rgph_u64_murmur32_u64(uint64_t value, uint32_t seed)
-{
-	uint64_t res;
-	uint32_t h[4];
-
-	rgph_u32x4_murmur32_u64(value, seed, h);
-
-	res = h[1];
-	res = h[0] | (res << 32);
-	return res;
-}
-
-uint64_t
-rgph_u64_murmur32_f32(float value, uint32_t seed)
-{
-	uint64_t res;
-	uint32_t h[4];
-
-	rgph_u32x4_murmur32_f32(value, seed, h);
-
-	res = h[1];
-	res = h[0] | (res << 32);
-	return res;
-}
-
-uint64_t
-rgph_u64_murmur32_f64(double value, uint32_t seed)
-{
-	uint64_t res;
-	uint32_t h[4];
-
-	rgph_u32x4_murmur32_f64(value, seed, h);
-
-	res = h[1];
-	res = h[0] | (res << 32);
-	return res;
 }
 
 inline void
@@ -301,28 +170,6 @@ rgph_u32x4_murmur32_u8a(const uint8_t *key,
 {
 
 	rgph_u32x4_murmur32_data(key, len, seed, h);
-}
-
-uint32_t
-rgph_u32_murmur32_data(const void *data, size_t len, uint32_t seed)
-{
-	uint32_t h[4];
-
-	rgph_u32x4_murmur32_data(data, len, seed, h);
-	return h[0];
-}
-
-uint64_t
-rgph_u64_murmur32_data(const void *data, size_t len, uint32_t seed)
-{
-	uint64_t res;
-	uint32_t h[4];
-
-	rgph_u32x4_murmur32_data(data, len, seed, h);
-
-	res = h[1];
-	res = h[0] | (res << 32);
-	return res;
 }
 
 void

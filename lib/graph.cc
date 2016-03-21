@@ -55,14 +55,21 @@
 // Changing it doesn't preserve backward compatibility.
 #define MIN_WIDTH_BUILD 4
 
-// Max nkeys values that don't overflow nverts
-// calculations commented out after the defines.
-#define MAX_NKEYS_R2 0x78787877u // round_up(2 * nkeys + (nkeys + 7) / 8, 2)
-#define MAX_NKEYS_R3 0xcccccccau // round_up(1 * nkeys + (nkeys + 3) / 4, 3)
+// Max nkeys values.
+#define MAX_NKEYS_R2_VEC 0x78787877u // Vector hashes.
+#define MAX_NKEYS_R2_S64 0x78787877u // Scalar 64 hashes.
+#define MAX_NKEYS_R2_S32 0x00007878u // Scalar 32 hashes.
+#define MAX_NKEYS_R3_VEC 0xcccccccau // Vector hashes.
+#define MAX_NKEYS_R3_S64 0x00266666u // Scalar 64 hashes.
+#define MAX_NKEYS_R3_S32 0x000004ccu // Scalar 32 hashes.
 
 // Max values for fastdiv divisors.
-#define MAX_FASTDIV_R2 0x7fff8000u
-#define MAX_FASTDIV_R3 0x55555555u
+#define MAX_FASTDIV_R2_VEC 0x7fff8000u // Vector hashes.
+#define MAX_FASTDIV_R2_S64 0x7fff8000u // Scalar 64 hashes.
+#define MAX_FASTDIV_R2_S32 0x00007fffu // Scalar 32 hashes.
+#define MAX_FASTDIV_R3_VEC 0x55555555u // Vector hashes.
+#define MAX_FASTDIV_R3_S64 0x000fffffu // Scalar 64 hashes.
+#define MAX_FASTDIV_R3_S32 0x000001ffu // Scalar 32 hashes.
 
 namespace {
 
@@ -182,14 +189,45 @@ operator!=(const entry_iterator &a, const entry_iterator &b)
 	return a.cur != b.cur;
 }
 
-template<class T, int R, class S, class H>
-struct hash {
-	typedef void (*func_t)(const void *, size_t, S, H *);
-	func_t func;
-	T hashes[4]; // Some hashes are x4.
-	S seed;
+// Scalar hash returns a scalar value of type H.
+template<class T, int R, class H>
+struct scalar_hash {
+	typedef H (*func_t)(const void *, size_t, uint32_t);
 
-	inline hash(func_t f, S s) : func(f), seed(s) {}
+	const func_t func;
+	const unsigned long seed;
+	T hashes[3];
+
+	inline scalar_hash(func_t f, unsigned long seed)
+		: func(f)
+		, seed(seed)
+	{}
+
+	inline const T *
+	operator()(const void *key, size_t keylen) {
+		const size_t nbits = sizeof(H) * CHAR_BIT / R;
+		const H mask = (H(1) << nbits) - 1;
+
+		H h = func(key, keylen, seed);
+		for (size_t i = 0; i < R; i++)
+			hashes[i] = (h >> i * nbits) & mask;
+		return hashes;
+	}
+};
+
+// Vector hash initialises an array of hash values (x3 or x4).
+template<class T, int R, class H>
+struct vector_hash {
+	typedef void (*func_t)(const void *, size_t, uint32_t, H *);
+
+	const func_t func;
+	const unsigned long seed;
+	T hashes[4]; // Some hashes are x4.
+
+	inline vector_hash(func_t f, unsigned long seed)
+		: func(f)
+		, seed(seed)
+	{}
 
 	inline const T *
 	operator()(const void *key, size_t keylen) {
@@ -212,12 +250,20 @@ struct hash {
 	}
 };
 
-template<class T, int R, class S, class H>
-inline hash<T,R,S,H>
-make_hash(void (*func)(const void *, size_t, S, H *), unsigned long seed)
+template<class T, int R, class H>
+inline scalar_hash<T,R,H>
+make_hash(H (*func)(const void *, size_t, uint32_t), unsigned long seed)
 {
 
-	return hash<T,R,S,H>(func, seed);
+	return scalar_hash<T,R,H>(func, seed);
+}
+
+template<class T, int R, class H>
+inline vector_hash<T,R,H>
+make_hash(void (*func)(const void *, size_t, uint32_t, H *), unsigned long seed)
+{
+
+	return vector_hash<T,R,H>(func, seed);
 }
 
 template<class T>
@@ -535,6 +581,27 @@ oedges_size(int rank, size_t width, size_t nkeys, size_t nverts)
 	}
 }
 
+size_t
+hash_bits(unsigned int flags)
+{
+
+	switch (flags & RGPH_HASH_MASK) {
+	case RGPH_HASH_JENKINS2V:
+		return 96;
+	case RGPH_HASH_MURMUR32V:
+		return 128;
+	case RGPH_HASH_MURMUR32S:
+		return 32;
+	case RGPH_HASH_XXH32S:
+		return 32;
+	case RGPH_HASH_XXH64S:
+		return 64;
+	default:
+		assert(0 && "rgph_alloc_graph() should have caught it");
+		return 0;
+	}
+}
+
 inline int
 graph_rank(unsigned int flags)
 {
@@ -542,13 +609,51 @@ graph_rank(unsigned int flags)
 	return (flags & RGPH_RANK_MASK) == RGPH_RANK2 ? 2 : 3;
 }
 
+// See ../examples/calc-constants.c.
+inline size_t
+graph_max_keys(unsigned int flags)
+{
+	const int rank = graph_rank(flags);
+	const size_t nbits = hash_bits(flags);
+
+	if (nbits >= 96)
+		return (rank == 2) ? MAX_NKEYS_R2_VEC : MAX_NKEYS_R3_VEC;
+	else if (nbits == 64)
+		return (rank == 2) ? MAX_NKEYS_R2_S64 : MAX_NKEYS_R3_S64;
+	else if (nbits == 32)
+		return (rank == 2) ? MAX_NKEYS_R2_S32 : MAX_NKEYS_R3_S32;
+	else {
+		assert(0 && "rgph_alloc_graph() should have caught it");
+		return 0;
+	}
+}
+
+inline size_t
+graph_max_fastdiv(unsigned int flags)
+{
+	const int rank = graph_rank(flags);
+	const size_t nbits = hash_bits(flags);
+
+	if (nbits >= 96)
+		return (rank == 2) ? MAX_FASTDIV_R2_VEC : MAX_FASTDIV_R3_VEC;
+	else if (nbits == 64)
+		return (rank == 2) ? MAX_FASTDIV_R2_S64 : MAX_FASTDIV_R3_S64;
+	else if (nbits == 32)
+		return (rank == 2) ? MAX_FASTDIV_R2_S32 : MAX_FASTDIV_R3_S32;
+	else {
+		assert(0 && "rgph_alloc_graph() should have caught it");
+		return 0;
+	}
+}
+
 inline size_t
 graph_nverts(int *flags, size_t nkeys)
 {
-	const size_t div_nbits = sizeof(uint32_t) * CHAR_BIT;
 	const int r = graph_rank(*flags);
-	const size_t max_nkeys   = (r == 2) ? MAX_NKEYS_R2   : MAX_NKEYS_R3;
-	const size_t max_fastdiv = (r == 2) ? MAX_FASTDIV_R2 : MAX_FASTDIV_R3;
+	const bool full_range = (hash_bits(*flags) >= r * 32u);
+	const size_t div_nbits = sizeof(uint32_t) * CHAR_BIT - !full_range;
+	const size_t max_nkeys = graph_max_keys(*flags);
+	const size_t max_fastdiv = graph_max_fastdiv(*flags);
 
 	if (nkeys == 0 || nkeys > max_nkeys)
 		return 0;
@@ -566,8 +671,10 @@ graph_nverts(int *flags, size_t nkeys)
 
 	const size_t pow2_div = round_up_pow2(nverts / r);
 
-	if (pow2_div > UINT32_MAX / r) // true only for pow2_div==0x80000000
+	// Max divisor of a full range hash isn't a power of two.
+	if (pow2_div > UINT32_MAX / r)
 		*flags &= ~RGPH_DIV_POW2;
+
 	if (nverts / r > max_fastdiv)
 		*flags &= ~RGPH_DIV_FAST;
 
@@ -706,7 +813,7 @@ build_graph(struct rgph_graph *g,
 	entry_iterator keys_start(keys, state), keys_end;
 
 	switch (g->flags & RGPH_HASH_MASK) {
-	case RGPH_HASH_JENKINS2:
+	case RGPH_HASH_JENKINS2V:
 		if (!init_graph(keys_start, keys_end,
 		    make_hash<T,R>(&rgph_u32x3_jenkins2_data, seed),
 		    edges, g->nkeys, oedges, g->nverts,
@@ -714,7 +821,7 @@ build_graph(struct rgph_graph *g,
 			return RGPH_NOKEY;
 		}
 		break;
-	case RGPH_HASH_MURMUR32:
+	case RGPH_HASH_MURMUR32V:
 		if (!init_graph(keys_start, keys_end,
 		    make_hash<T,R>(&rgph_u32x4_murmur32_data, seed),
 		    edges, g->nkeys, oedges, g->nverts,
@@ -723,54 +830,27 @@ build_graph(struct rgph_graph *g,
 		}
 		break;
 	case RGPH_HASH_MURMUR32S:
-		if (R == 2) {
-			if (!init_graph(keys_start, keys_end,
-			    make_hash<T,R>(&rgph_u16x2_murmur32s_data, seed),
-			    edges, g->nkeys, oedges, g->nverts,
-			    &g->datalenmin, &g->datalenmax, index)) {
-				return RGPH_NOKEY;
-			}
-		} else {
-			if (!init_graph(keys_start, keys_end,
-			    make_hash<T,R>(&rgph_u8x4_murmur32s_data, seed),
-			    edges, g->nkeys, oedges, g->nverts,
-			    &g->datalenmin, &g->datalenmax, index)) {
-				return RGPH_NOKEY;
-			}
+		if (!init_graph(keys_start, keys_end,
+		    make_hash<T,R>(&rgph_u32_murmur32s_data, seed),
+		    edges, g->nkeys, oedges, g->nverts,
+		    &g->datalenmin, &g->datalenmax, index)) {
+			return RGPH_NOKEY;
 		}
 		break;
 	case RGPH_HASH_XXH32S:
-		if (R == 2) {
-			if (!init_graph(keys_start, keys_end,
-			    make_hash<T,R>(&rgph_u16x2_xxh32s_data, seed),
-			    edges, g->nkeys, oedges, g->nverts,
-			    &g->datalenmin, &g->datalenmax, index)) {
-				return RGPH_NOKEY;
-			}
-		} else {
-			if (!init_graph(keys_start, keys_end,
-			    make_hash<T,R>(&rgph_u8x4_xxh32s_data, seed),
-			    edges, g->nkeys, oedges, g->nverts,
-			    &g->datalenmin, &g->datalenmax, index)) {
-				return RGPH_NOKEY;
-			}
+		if (!init_graph(keys_start, keys_end,
+		    make_hash<T,R>(&rgph_u32_xxh32s_data, seed),
+		    edges, g->nkeys, oedges, g->nverts,
+		    &g->datalenmin, &g->datalenmax, index)) {
+			return RGPH_NOKEY;
 		}
 		break;
 	case RGPH_HASH_XXH64S:
-		if (R == 2) {
-			if (!init_graph(keys_start, keys_end,
-			    make_hash<T,R>(&rgph_u32x2_xxh64s_data, seed),
-			    edges, g->nkeys, oedges, g->nverts,
-			    &g->datalenmin, &g->datalenmax, index)) {
-				return RGPH_NOKEY;
-			}
-		} else {
-			if (!init_graph(keys_start, keys_end,
-			    make_hash<T,R>(&rgph_u16x4_xxh64s_data, seed),
-			    edges, g->nkeys, oedges, g->nverts,
-			    &g->datalenmin, &g->datalenmax, index)) {
-				return RGPH_NOKEY;
-			}
+		if (!init_graph(keys_start, keys_end,
+		    make_hash<T,R>(&rgph_u64_xxh64s_data, seed),
+		    edges, g->nkeys, oedges, g->nverts,
+		    &g->datalenmin, &g->datalenmax, index)) {
+			return RGPH_NOKEY;
 		}
 		break;
 	default:
@@ -1031,11 +1111,9 @@ rgph_alloc_graph(size_t nkeys, int flags)
 		flags |= RGPH_ALGO_CHM;
 
 	if ((flags & RGPH_HASH_MASK) == RGPH_HASH_DEFAULT)
-		flags |= RGPH_HASH_JENKINS2;
+		flags |= RGPH_HASH_JENKINS2V;
 
-	r = graph_rank(flags);
 	nverts = graph_nverts(&flags, nkeys);
-
 	if (nverts == 0) {
 		errno = ERANGE;
 		return NULL;
@@ -1043,6 +1121,7 @@ rgph_alloc_graph(size_t nkeys, int flags)
 
 	assert(nverts > nkeys);
 
+	r = graph_rank(flags);
 	width = data_width(nverts, MIN_WIDTH_BUILD);
 	esz = edge_size(r, width);
 	if (esz == 0) {
@@ -1053,28 +1132,6 @@ rgph_alloc_graph(size_t nkeys, int flags)
 	osz = oedges_size(r, width, nkeys, nverts);
 	if (osz == 0) {
 		errno = ENOMEM;
-		return NULL;
-	}
-
-	switch (flags & RGPH_HASH_MASK) {
-	case RGPH_HASH_JENKINS2:
-	case RGPH_HASH_MURMUR32:
-		break;
-	case RGPH_HASH_XXH32S:
-	case RGPH_HASH_MURMUR32S:
-		if (nverts > r * (r == 3 ? 255u : 65535u)) {
-			errno = ERANGE;
-			return NULL;
-		}
-		break;
-	case RGPH_HASH_XXH64S:
-		if (r == 3 && nverts > r * 65535u) {
-			errno = ERANGE;
-			return NULL;
-		}
-		break;
-	default:
-		errno = EINVAL;
 		return NULL;
 	}
 
