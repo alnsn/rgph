@@ -52,6 +52,7 @@
 // Min. data_width size for building a graph. Setting it to 1 or 2
 // may save you some space for smaller graphs but beware of subtleties
 // of integral promotion rules.
+// Changing it doesn't preserve backward compatibility.
 #define MIN_WIDTH_BUILD 4
 
 // Max nkeys values that don't overflow nverts
@@ -326,6 +327,7 @@ fastdiv(uint32_t val, uint64_t mul, uint8_t s1, uint8_t s2)
 	return (hi + ((val - hi) >> s1)) >> s2;
 }
 
+// fast_remainder32(3) from NetBSD.
 inline uint32_t
 fastrem(uint32_t val, uint32_t div, uint64_t mul, uint8_t s1, uint8_t s2)
 {
@@ -1214,14 +1216,18 @@ rgph_build_graph(struct rgph_graph *g,
 
 #define SELECT(r, w) (8 * (r) + (w))
 	switch (SELECT(r, width)) {
+#if MIN_WIDTH_BUILD <= 1
 	case SELECT(2, 1):
 		return build_graph<uint8_t,2>(g, keys, state, seed);
 	case SELECT(3, 1):
 		return build_graph<uint8_t,3>(g, keys, state, seed);
+#endif
+#if MIN_WIDTH_BUILD <= 2
 	case SELECT(2, 2):
 		return build_graph<uint16_t,2>(g, keys, state, seed);
 	case SELECT(3, 2):
 		return build_graph<uint16_t,3>(g, keys, state, seed);
+#endif
 	case SELECT(2, 4):
 		return build_graph<uint32_t,2>(g, keys, state, seed);
 	case SELECT(3, 4):
@@ -1249,14 +1255,18 @@ rgph_copy_edge(struct rgph_graph *g, size_t edge,
 
 #define SELECT(r, w) (8 * (r) + (w))
 	switch (SELECT(r, width)) {
+#if MIN_WIDTH_BUILD <= 1
 	case SELECT(2, 1):
 		return copy_edge<uint8_t,2>(g, edge, to, peel_order);
 	case SELECT(3, 1):
 		return copy_edge<uint8_t,3>(g, edge, to, peel_order);
+#endif
+#if MIN_WIDTH_BUILD <= 2
 	case SELECT(2, 2):
 		return copy_edge<uint16_t,2>(g, edge, to, peel_order);
 	case SELECT(3, 2):
 		return copy_edge<uint16_t,3>(g, edge, to, peel_order);
+#endif
 	case SELECT(2, 4):
 		return copy_edge<uint32_t,2>(g, edge, to, peel_order);
 	case SELECT(3, 4):
@@ -1281,14 +1291,18 @@ rgph_find_duplicates(struct rgph_graph *g,
 
 #define SELECT(r, w) (8 * (r) + (w))
 	switch (SELECT(r, width)) {
+#if MIN_WIDTH_BUILD <= 1
 	case SELECT(2, 1):
 		return find_duplicates<uint8_t,2>(g, keys, state, dup);
 	case SELECT(3, 1):
 		return find_duplicates<uint8_t,3>(g, keys, state, dup);
+#endif
+#if MIN_WIDTH_BUILD <= 2
 	case SELECT(2, 2):
 		return find_duplicates<uint16_t,2>(g, keys, state, dup);
 	case SELECT(3, 2):
 		return find_duplicates<uint16_t,3>(g, keys, state, dup);
+#endif
 	case SELECT(2, 4):
 		return find_duplicates<uint32_t,2>(g, keys, state, dup);
 	case SELECT(3, 4):
@@ -1332,14 +1346,18 @@ rgph_assign(struct rgph_graph *g, int algo)
 
 #define SELECT(r, w) (8 * (r) + (w))
 	switch (SELECT(r, width)) {
+#if MIN_WIDTH_BUILD <= 1
 	case SELECT(2, 1):
 		return assign<uint8_t,2>(g);
 	case SELECT(3, 1):
 		return assign<uint8_t,3>(g);
+#endif
+#if MIN_WIDTH_BUILD <= 2
 	case SELECT(2, 2):
 		return assign<uint16_t,2>(g);
 	case SELECT(3, 2):
 		return assign<uint16_t,3>(g);
+#endif
 	case SELECT(2, 4):
 		return assign<uint32_t,2>(g);
 	case SELECT(3, 4):
