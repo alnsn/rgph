@@ -3261,7 +3261,7 @@ rgph_test_murmur32_data(void)
 	j = 0;
 	for (i = 0; i < sizeof(msg); i++) {
 		for (l = 0; l < sizeof(msg) - i; l++) {
-			rgph_u32x4_murmur32_data(&msg[i], l, msg_seed, h);
+			rgph_u32x4_murmur32v_data(&msg[i], l, msg_seed, h);
 			CHECK(h[0] == msg_hashes[j][0]);
 			CHECK(h[1] == msg_hashes[j][1]);
 			CHECK(h[2] == msg_hashes[j][2]);
@@ -3285,81 +3285,81 @@ rgph_test_murmur32_types(void)
 	uint32_t h[12];
 	size_t i;
 
-	rgph_u32x4_murmur32_data(u8, sizeof(u8[0]), seed, h);
-	rgph_u32x4_murmur32_u8(u8[0], seed, h + 4);
+	rgph_u32x4_murmur32v_data(u8, sizeof(u8[0]), seed, h);
+	rgph_u32x4_murmur32v_u8(u8[0], seed, h + 4);
 	CHECK(h[0] == h[4]);
 	CHECK(h[1] == h[5]);
 	CHECK(h[2] == h[6]);
 	CHECK(h[3] == h[7]);
-	rgph_u32x4_murmur32_u8a(u8, 1, seed, h + 8);
+	rgph_u32x4_murmur32v_u8a(u8, 1, seed, h + 8);
 	CHECK(h[0] == h[8]);
 	CHECK(h[1] == h[9]);
 	CHECK(h[2] == h[10]);
 	CHECK(h[3] == h[11]);
 
-	rgph_u32x4_murmur32_data(u16, sizeof(u16[0]), seed, h);
-	rgph_u32x4_murmur32_u16(u16[0], seed, h + 4);
+	rgph_u32x4_murmur32v_data(u16, sizeof(u16[0]), seed, h);
+	rgph_u32x4_murmur32v_u16(u16[0], seed, h + 4);
 	CHECK(h[0] == h[4]);
 	CHECK(h[1] == h[5]);
 	CHECK(h[2] == h[6]);
 	CHECK(h[3] == h[7]);
-	rgph_u32x4_murmur32_u16a(u16, 1, seed, h + 8);
+	rgph_u32x4_murmur32v_u16a(u16, 1, seed, h + 8);
 	CHECK(h[0] == h[8]);
 	CHECK(h[1] == h[9]);
 	CHECK(h[2] == h[10]);
 	CHECK(h[3] == h[11]);
 
-	rgph_u32x4_murmur32_data(u32, sizeof(u32[0]), seed, h);
-	rgph_u32x4_murmur32_u32(u32[0], seed, h + 4);
+	rgph_u32x4_murmur32v_data(u32, sizeof(u32[0]), seed, h);
+	rgph_u32x4_murmur32v_u32(u32[0], seed, h + 4);
 	CHECK(h[0] == h[4]);
 	CHECK(h[1] == h[5]);
 	CHECK(h[2] == h[6]);
 	CHECK(h[3] == h[7]);
-	rgph_u32x4_murmur32_u32a(u32, 1, seed, h + 8);
+	rgph_u32x4_murmur32v_u32a(u32, 1, seed, h + 8);
 	CHECK(h[0] == h[8]);
 	CHECK(h[1] == h[9]);
 	CHECK(h[2] == h[10]);
 	CHECK(h[3] == h[11]);
 
-	rgph_u32x4_murmur32_data(u64, sizeof(u64[0]), seed, h);
-	rgph_u32x4_murmur32_u64(u64[0], seed, h + 4);
+	rgph_u32x4_murmur32v_data(u64, sizeof(u64[0]), seed, h);
+	rgph_u32x4_murmur32v_u64(u64[0], seed, h + 4);
 	CHECK(h[0] == h[4]);
 	CHECK(h[1] == h[5]);
 	CHECK(h[2] == h[6]);
 	CHECK(h[3] == h[7]);
-	rgph_u32x4_murmur32_u64a(u64, 1, seed, h + 8);
+	rgph_u32x4_murmur32v_u64a(u64, 1, seed, h + 8);
 	CHECK(h[0] == h[8]);
 	CHECK(h[1] == h[9]);
 	CHECK(h[2] == h[10]);
 	CHECK(h[3] == h[11]);
 
-	rgph_u32x4_murmur32_data(f32, sizeof(f32[0]), seed, h);
-	rgph_u32x4_murmur32_f32(f32[0], seed, h + 4);
+	rgph_u32x4_murmur32v_data(f32, sizeof(f32[0]), seed, h);
+	rgph_u32x4_murmur32v_f32(f32[0], seed, h + 4);
 	CHECK(h[0] == h[4]);
 	CHECK(h[1] == h[5]);
 	CHECK(h[2] == h[6]);
 	CHECK(h[3] == h[7]);
-	rgph_u32x4_murmur32_f32a(f32, 1, seed, h + 8);
+	rgph_u32x4_murmur32v_f32a(f32, 1, seed, h + 8);
 	CHECK(h[0] == h[8]);
 	CHECK(h[1] == h[9]);
 	CHECK(h[2] == h[10]);
 	CHECK(h[3] == h[11]);
 
-	rgph_u32x4_murmur32_data(f64, sizeof(f64[0]), seed, h);
-	rgph_u32x4_murmur32_f64(f64[0], seed, h + 4);
+	rgph_u32x4_murmur32v_data(f64, sizeof(f64[0]), seed, h);
+	rgph_u32x4_murmur32v_f64(f64[0], seed, h + 4);
 	CHECK(h[0] == h[4]);
 	CHECK(h[1] == h[5]);
 	CHECK(h[2] == h[6]);
 	CHECK(h[3] == h[7]);
-	rgph_u32x4_murmur32_f64a(f64, 1, seed, h + 8);
+	rgph_u32x4_murmur32v_f64a(f64, 1, seed, h + 8);
 	CHECK(h[0] == h[8]);
 	CHECK(h[1] == h[9]);
 	CHECK(h[2] == h[10]);
 	CHECK(h[3] == h[11]);
 
 	for (i = 0; i <= 24; i++) {
-		rgph_u32x4_murmur32_data(u8, i * sizeof(u8[0]), seed, h);
-		rgph_u32x4_murmur32_u8a(u8, i, seed, h + 5);
+		rgph_u32x4_murmur32v_data(u8, i * sizeof(u8[0]), seed, h);
+		rgph_u32x4_murmur32v_u8a(u8, i, seed, h + 5);
 		CHECK(h[0] == h[5]);
 		CHECK(h[1] == h[6]);
 		CHECK(h[2] == h[7]);
@@ -3367,8 +3367,8 @@ rgph_test_murmur32_types(void)
 	}
 
 	for (i = 0; i <= 24; i++) {
-		rgph_u32x4_murmur32_data(u16, i * sizeof(u16[0]), seed, h);
-		rgph_u32x4_murmur32_u16a(u16, i, seed, h + 5);
+		rgph_u32x4_murmur32v_data(u16, i * sizeof(u16[0]), seed, h);
+		rgph_u32x4_murmur32v_u16a(u16, i, seed, h + 5);
 		CHECK(h[0] == h[5]);
 		CHECK(h[1] == h[6]);
 		CHECK(h[2] == h[7]);
@@ -3376,8 +3376,8 @@ rgph_test_murmur32_types(void)
 	}
 
 	for (i = 0; i <= 24; i++) {
-		rgph_u32x4_murmur32_data(u32, i * sizeof(u32[0]), seed, h);
-		rgph_u32x4_murmur32_u32a(u32, i, seed, h + 5);
+		rgph_u32x4_murmur32v_data(u32, i * sizeof(u32[0]), seed, h);
+		rgph_u32x4_murmur32v_u32a(u32, i, seed, h + 5);
 		CHECK(h[0] == h[5]);
 		CHECK(h[1] == h[6]);
 		CHECK(h[2] == h[7]);
@@ -3385,8 +3385,8 @@ rgph_test_murmur32_types(void)
 	}
 
 	for (i = 0; i <= 24; i++) {
-		rgph_u32x4_murmur32_data(u64, i * sizeof(u64[0]), seed, h);
-		rgph_u32x4_murmur32_u64a(u64, i, seed, h + 5);
+		rgph_u32x4_murmur32v_data(u64, i * sizeof(u64[0]), seed, h);
+		rgph_u32x4_murmur32v_u64a(u64, i, seed, h + 5);
 		CHECK(h[0] == h[5]);
 		CHECK(h[1] == h[6]);
 		CHECK(h[2] == h[7]);
@@ -3394,8 +3394,8 @@ rgph_test_murmur32_types(void)
 	}
 
 	for (i = 0; i <= 24; i++) {
-		rgph_u32x4_murmur32_data(f32, i * sizeof(f32[0]), seed, h);
-		rgph_u32x4_murmur32_f32a(f32, i, seed, h + 5);
+		rgph_u32x4_murmur32v_data(f32, i * sizeof(f32[0]), seed, h);
+		rgph_u32x4_murmur32v_f32a(f32, i, seed, h + 5);
 		CHECK(h[0] == h[5]);
 		CHECK(h[1] == h[6]);
 		CHECK(h[2] == h[7]);
@@ -3403,8 +3403,8 @@ rgph_test_murmur32_types(void)
 	}
 
 	for (i = 0; i <= 24; i++) {
-		rgph_u32x4_murmur32_data(f64, i * sizeof(f64[0]), seed, h);
-		rgph_u32x4_murmur32_f64a(f64, i, seed, h + 5);
+		rgph_u32x4_murmur32v_data(f64, i * sizeof(f64[0]), seed, h);
+		rgph_u32x4_murmur32v_f64a(f64, i, seed, h + 5);
 		CHECK(h[0] == h[5]);
 		CHECK(h[1] == h[6]);
 		CHECK(h[2] == h[7]);
@@ -3423,8 +3423,8 @@ rgph_test_murmur32_types(void)
 			REQUIRE(s != NULL);
 			memcpy(s + i, msg, l);
 
-			rgph_u32x4_murmur32_data(msg, l, seed, &h[0]);
-			rgph_u32x4_murmur32_data(s+i, l, seed, &h[4]);
+			rgph_u32x4_murmur32v_data(msg, l, seed, &h[0]);
+			rgph_u32x4_murmur32v_data(s+i, l, seed, &h[4]);
 			CHECK(h[0] == h[4]);
 			CHECK(h[1] == h[5]);
 			CHECK(h[2] == h[6]);

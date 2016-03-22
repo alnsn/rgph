@@ -37,43 +37,43 @@ extern "C" {
 #endif
 
 /* Jenkins 2 generic x3 hash for any data. */
-void rgph_u32x3_jenkins2_data(const void *, size_t, uint32_t, uint32_t *);
+void rgph_u32x3_jenkins2v_data(const void *, size_t, uint32_t, uint32_t *);
 
 /* Jenkins 2 x3 hashes for fixed width types. */
-void rgph_u32x3_jenkins2_u8 (uint8_t,  uint32_t, uint32_t *);
-void rgph_u32x3_jenkins2_u16(uint16_t, uint32_t, uint32_t *);
-void rgph_u32x3_jenkins2_u32(uint32_t, uint32_t, uint32_t *);
-void rgph_u32x3_jenkins2_u64(uint64_t, uint32_t, uint32_t *);
-void rgph_u32x3_jenkins2_f32(float,    uint32_t, uint32_t *);
-void rgph_u32x3_jenkins2_f64(double,   uint32_t, uint32_t *);
+void rgph_u32x3_jenkins2v_u8 (uint8_t,  uint32_t, uint32_t *);
+void rgph_u32x3_jenkins2v_u16(uint16_t, uint32_t, uint32_t *);
+void rgph_u32x3_jenkins2v_u32(uint32_t, uint32_t, uint32_t *);
+void rgph_u32x3_jenkins2v_u64(uint64_t, uint32_t, uint32_t *);
+void rgph_u32x3_jenkins2v_f32(float,    uint32_t, uint32_t *);
+void rgph_u32x3_jenkins2v_f64(double,   uint32_t, uint32_t *);
 
 /* Jenkins 2 x3 hashes for arrays. */
-void rgph_u32x3_jenkins2_u8a(const uint8_t *,   size_t, uint32_t, uint32_t *);
-void rgph_u32x3_jenkins2_u16a(const uint16_t *, size_t, uint32_t, uint32_t *);
-void rgph_u32x3_jenkins2_u32a(const uint32_t *, size_t, uint32_t, uint32_t *);
-void rgph_u32x3_jenkins2_u64a(const uint64_t *, size_t, uint32_t, uint32_t *);
-void rgph_u32x3_jenkins2_f32a(const float *,    size_t, uint32_t, uint32_t *);
-void rgph_u32x3_jenkins2_f64a(const double *,   size_t, uint32_t, uint32_t *);
+void rgph_u32x3_jenkins2v_u8a(const uint8_t *,   size_t, uint32_t, uint32_t *);
+void rgph_u32x3_jenkins2v_u16a(const uint16_t *, size_t, uint32_t, uint32_t *);
+void rgph_u32x3_jenkins2v_u32a(const uint32_t *, size_t, uint32_t, uint32_t *);
+void rgph_u32x3_jenkins2v_u64a(const uint64_t *, size_t, uint32_t, uint32_t *);
+void rgph_u32x3_jenkins2v_f32a(const float *,    size_t, uint32_t, uint32_t *);
+void rgph_u32x3_jenkins2v_f64a(const double *,   size_t, uint32_t, uint32_t *);
 
 
 /* 32bit Murmur 3 generic x4 hash for any data. */
-void rgph_u32x4_murmur32_data(const void *, size_t, uint32_t, uint32_t *);
+void rgph_u32x4_murmur32v_data(const void *, size_t, uint32_t, uint32_t *);
 
 /* 32bit Murmur 3 x4 hashes for fixed width types. */
-void rgph_u32x4_murmur32_u8 (uint8_t,  uint32_t, uint32_t *);
-void rgph_u32x4_murmur32_u16(uint16_t, uint32_t, uint32_t *);
-void rgph_u32x4_murmur32_u32(uint32_t, uint32_t, uint32_t *);
-void rgph_u32x4_murmur32_u64(uint64_t, uint32_t, uint32_t *);
-void rgph_u32x4_murmur32_f32(float,    uint32_t, uint32_t *);
-void rgph_u32x4_murmur32_f64(double,   uint32_t, uint32_t *);
+void rgph_u32x4_murmur32v_u8 (uint8_t,  uint32_t, uint32_t *);
+void rgph_u32x4_murmur32v_u16(uint16_t, uint32_t, uint32_t *);
+void rgph_u32x4_murmur32v_u32(uint32_t, uint32_t, uint32_t *);
+void rgph_u32x4_murmur32v_u64(uint64_t, uint32_t, uint32_t *);
+void rgph_u32x4_murmur32v_f32(float,    uint32_t, uint32_t *);
+void rgph_u32x4_murmur32v_f64(double,   uint32_t, uint32_t *);
 
 /* 32bit Murmur 3 x4 hashes for arrays. */
-void rgph_u32x4_murmur32_u8a(const uint8_t *,   size_t, uint32_t, uint32_t *);
-void rgph_u32x4_murmur32_u16a(const uint16_t *, size_t, uint32_t, uint32_t *);
-void rgph_u32x4_murmur32_u32a(const uint32_t *, size_t, uint32_t, uint32_t *);
-void rgph_u32x4_murmur32_u64a(const uint64_t *, size_t, uint32_t, uint32_t *);
-void rgph_u32x4_murmur32_f32a(const float *,    size_t, uint32_t, uint32_t *);
-void rgph_u32x4_murmur32_f64a(const double *,   size_t, uint32_t, uint32_t *);
+void rgph_u32x4_murmur32v_u8a(const uint8_t *,   size_t, uint32_t, uint32_t *);
+void rgph_u32x4_murmur32v_u16a(const uint16_t *, size_t, uint32_t, uint32_t *);
+void rgph_u32x4_murmur32v_u32a(const uint32_t *, size_t, uint32_t, uint32_t *);
+void rgph_u32x4_murmur32v_u64a(const uint64_t *, size_t, uint32_t, uint32_t *);
+void rgph_u32x4_murmur32v_f32a(const float *,    size_t, uint32_t, uint32_t *);
+void rgph_u32x4_murmur32v_f64a(const double *,   size_t, uint32_t, uint32_t *);
 
 
 /* 32bit Murmur 3 (short) generic scalar hash for any data. */

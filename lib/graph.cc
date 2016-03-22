@@ -815,7 +815,7 @@ build_graph(struct rgph_graph *g,
 	switch (g->flags & RGPH_HASH_MASK) {
 	case RGPH_HASH_JENKINS2V:
 		if (!init_graph(keys_start, keys_end,
-		    make_hash<T,R>(&rgph_u32x3_jenkins2_data, seed),
+		    make_hash<T,R>(&rgph_u32x3_jenkins2v_data, seed),
 		    edges, g->nkeys, oedges, g->nverts,
 		    &g->datalenmin, &g->datalenmax, index)) {
 			return RGPH_NOKEY;
@@ -823,7 +823,7 @@ build_graph(struct rgph_graph *g,
 		break;
 	case RGPH_HASH_MURMUR32V:
 		if (!init_graph(keys_start, keys_end,
-		    make_hash<T,R>(&rgph_u32x4_murmur32_data, seed),
+		    make_hash<T,R>(&rgph_u32x4_murmur32v_data, seed),
 		    edges, g->nkeys, oedges, g->nverts,
 		    &g->datalenmin, &g->datalenmax, index)) {
 			return RGPH_NOKEY;

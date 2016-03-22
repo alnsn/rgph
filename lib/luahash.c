@@ -44,7 +44,7 @@ jenkins2v(lua_State *L)
 	str = luaL_checklstring(L, 1, &len);
 	seed = luaL_checkinteger(L, 2);
 
-	rgph_u32x3_jenkins2_data(str, len, seed, h);
+	rgph_u32x3_jenkins2v_data(str, len, seed, h);
 
 	lua_createtable(L, 3, 0);
 	lua_pushinteger(L, h[0]);
@@ -67,7 +67,7 @@ murmur32v(lua_State *L)
 	str = luaL_checklstring(L, 1, &len);
 	seed = luaL_checkinteger(L, 2);
 
-	rgph_u32x4_murmur32_data(str, len, seed, h);
+	rgph_u32x4_murmur32v_data(str, len, seed, h);
 
 	lua_createtable(L, 4, 0);
 	lua_pushinteger(L, h[0]);

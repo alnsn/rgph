@@ -40,7 +40,7 @@
 
 
 void
-rgph_u32x3_jenkins2_data(const void *data,
+rgph_u32x3_jenkins2v_data(const void *data,
     size_t len, uint32_t seed, uint32_t * restrict h)
 {
 	const uint8_t * restrict key = data;
