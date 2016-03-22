@@ -25,11 +25,11 @@ XCXXFLAGS=	-I. $(CPPFLAGS) $(WARNS) $(CXXOPTS)
 GRAPHO=		graph.o    fastdiv.o
 GRAPHPICO=	graph.pico fastdiv.pico
 
-HASHO=		jenkins2.o    murmur32.o    murmur32s.o    xxh32s.o    xxh64s.o
-HASHPICO=	jenkins2.pico murmur32.pico murmur32s.pico xxh32s.pico xxh64s.pico
+HASHO=		jenkins2v.o    murmur32v.o    murmur32s.o    xxh32s.o    xxh64s.o
+HASHPICO=	jenkins2v.pico murmur32v.pico murmur32s.pico xxh32s.pico xxh64s.pico
 
-HASHEXO=	jenkins2-ex.o    murmur32-ex.o    murmur32s-ex.o    xxh32s-ex.o    xxh64s-ex.o
-HASHEXPICO=	jenkins2-ex.pico murmur32-ex.pico murmur32s-ex.pico xxh32s-ex.pico xxh64s-ex.pico
+HASHEXO=	jenkins2v-ex.o    murmur32v-ex.o    murmur32s-ex.o    xxh32s-ex.o    xxh64s-ex.o
+HASHEXPICO=	jenkins2v-ex.pico murmur32v-ex.pico murmur32s-ex.pico xxh32s-ex.pico xxh64s-ex.pico
 
 OBJ=		$(GRAPHO)    $(HASHO)
 PICO=		$(GRAPHPICO) $(HASHPICO)

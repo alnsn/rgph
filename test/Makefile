@@ -1,6 +1,6 @@
 .POSIX:
 
-OBJ=	t_main.o t_fastdiv.o t_jenkins2.o t_murmur32.o t_murmur32s.o t_xxh32s.o t_xxh64s.o
+OBJ=	t_main.o t_fastdiv.o t_jenkins2v.o t_murmur32v.o t_murmur32s.o t_xxh32s.o t_xxh64s.o
 
 WARNS?=		-Wall -Wextra
 C99OPTS?=	-std=c99
