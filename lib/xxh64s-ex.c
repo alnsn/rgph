@@ -212,7 +212,7 @@ rgph_u64_xxh64s_u64a(const uint64_t *key, size_t len, uint32_t seed)
 #endif
 
 #if defined(WEAK_ALIASES) && !defined(__STRICT_ANSI__)
-uint64_t rgph_u32_xxh64s_f32a(const float *, size_t,
+uint64_t rgph_u64_xxh64s_f32a(const float *, size_t,
     uint32_t) __attribute__((weak,alias("rgph_u64_xxh64s_data32")));
 #else
 uint64_t
