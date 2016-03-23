@@ -427,15 +427,11 @@ jenkins2v_fn(lua_State *L)
 
 	rgph_u32x3_jenkins2v_data(str, len, seed, h);
 
-	lua_createtable(L, 3, 0);
 	lua_pushinteger(L, h[0]);
-	lua_rawseti(L, -2, 1);
 	lua_pushinteger(L, h[1]);
-	lua_rawseti(L, -2, 2);
 	lua_pushinteger(L, h[2]);
-	lua_rawseti(L, -2, 3);
 
-	return 1;
+	return 3;
 }
 
 static int
@@ -450,17 +446,61 @@ murmur32v_fn(lua_State *L)
 
 	rgph_u32x4_murmur32v_data(str, len, seed, h);
 
-	lua_createtable(L, 4, 0);
 	lua_pushinteger(L, h[0]);
-	lua_rawseti(L, -2, 1);
 	lua_pushinteger(L, h[1]);
-	lua_rawseti(L, -2, 2);
 	lua_pushinteger(L, h[2]);
-	lua_rawseti(L, -2, 3);
 	lua_pushinteger(L, h[3]);
-	lua_rawseti(L, -2, 4);
+
+	return 4;
+}
+
+static int
+murmur32s_fn(lua_State *L)
+{
+	uint32_t seed;
+	const char *str;
+	size_t len;
+
+	str = luaL_checklstring(L, 1, &len);
+	seed = luaL_checkinteger(L, 2);
+
+	lua_pushinteger(L, rgph_u32_murmur32s_data(str, len, seed));
 
 	return 1;
+}
+
+static int
+xxh32s_fn(lua_State *L)
+{
+	uint32_t seed;
+	const char *str;
+	size_t len;
+
+	str = luaL_checklstring(L, 1, &len);
+	seed = luaL_checkinteger(L, 2);
+
+	lua_pushinteger(L, rgph_u32_xxh32s_data(str, len, seed));
+
+	return 1;
+}
+
+static int
+xxh64s_fn(lua_State *L)
+{
+	uint64_t h;
+	uint32_t seed;
+	const char *str;
+	size_t len;
+
+	str = luaL_checklstring(L, 1, &len);
+	seed = luaL_checkinteger(L, 2);
+
+	h = rgph_u64_xxh64s_data(str, len, seed);
+
+	lua_pushinteger(L, h & 0xffffffffu);
+	lua_pushinteger(L, h >> 32);
+
+	return 2;
 }
 
 static int
@@ -823,6 +863,9 @@ static const luaL_Reg rgph_fn[] = {
 	{ "count_keys", count_keys_fn },
 	{ "jenkins2v", jenkins2v_fn },
 	{ "murmur32v", murmur32v_fn },
+	{ "murmur32s", murmur32s_fn },
+	{ "xxh32s", xxh32s_fn },
+	{ "xxh64s", xxh64s_fn },
 	{ NULL, NULL }
 };
 
