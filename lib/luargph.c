@@ -36,6 +36,7 @@
 
 #include "rgph.h"
 #include "rgph_fastdiv.h"
+#include "rgph_hash.h"
 
 #define GRAPH_MT  "rgph.graph"
 #define ASSIGN_MT "rgph.assign"
@@ -415,6 +416,54 @@ count_keys_fn(lua_State *L)
 }
 
 static int
+jenkins2v_fn(lua_State *L)
+{
+	uint32_t h[3], seed;
+	const char *str;
+	size_t len;
+
+	str = luaL_checklstring(L, 1, &len);
+	seed = luaL_checkinteger(L, 2);
+
+	rgph_u32x3_jenkins2v_data(str, len, seed, h);
+
+	lua_createtable(L, 3, 0);
+	lua_pushinteger(L, h[0]);
+	lua_rawseti(L, -2, 1);
+	lua_pushinteger(L, h[1]);
+	lua_rawseti(L, -2, 2);
+	lua_pushinteger(L, h[2]);
+	lua_rawseti(L, -2, 3);
+
+	return 1;
+}
+
+static int
+murmur32v_fn(lua_State *L)
+{
+	uint32_t h[4], seed;
+	const char *str;
+	size_t len;
+
+	str = luaL_checklstring(L, 1, &len);
+	seed = luaL_checkinteger(L, 2);
+
+	rgph_u32x4_murmur32v_data(str, len, seed, h);
+
+	lua_createtable(L, 4, 0);
+	lua_pushinteger(L, h[0]);
+	lua_rawseti(L, -2, 1);
+	lua_pushinteger(L, h[1]);
+	lua_rawseti(L, -2, 2);
+	lua_pushinteger(L, h[2]);
+	lua_rawseti(L, -2, 3);
+	lua_pushinteger(L, h[3]);
+	lua_rawseti(L, -2, 4);
+
+	return 1;
+}
+
+static int
 graph_build(lua_State *L)
 {
 	struct build_iter_state state;
@@ -772,6 +821,8 @@ graph_edge(lua_State *L)
 static const luaL_Reg rgph_fn[] = {
 	{ "new_graph", new_graph_fn },
 	{ "count_keys", count_keys_fn },
+	{ "jenkins2v", jenkins2v_fn },
+	{ "murmur32v", murmur32v_fn },
 	{ NULL, NULL }
 };
 

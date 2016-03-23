@@ -53,7 +53,7 @@ LUAHASHPICO=	luahash.pico $(HASHPICO) $(HASHEXPICO)
 	$(CC) $(XCFLAGS) $(PICFLAGS) $(CXXFLAGS) -c $< -o $@
 
 all-c: librgph.so librgph_hash.so
-all-lua: rgph.so hash.so
+all-lua: rgph.so #hash.so
 all: all-c all-lua
 
 luargph.pico: luargph.c

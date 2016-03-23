@@ -34,60 +34,7 @@
 
 #include "rgph_hash.h"
 
-static int
-jenkins2v(lua_State *L)
-{
-	uint32_t h[3], seed;
-	const char *str;
-	size_t len;
-
-	str = luaL_checklstring(L, 1, &len);
-	seed = luaL_checkinteger(L, 2);
-
-	rgph_u32x3_jenkins2v_data(str, len, seed, h);
-
-	lua_createtable(L, 3, 0);
-	lua_pushinteger(L, h[0]);
-	lua_rawseti(L, -2, 1);
-	lua_pushinteger(L, h[1]);
-	lua_rawseti(L, -2, 2);
-	lua_pushinteger(L, h[2]);
-	lua_rawseti(L, -2, 3);
-
-	return 1;
-}
-
-static int
-murmur32v(lua_State *L)
-{
-	uint32_t h[4], seed;
-	const char *str;
-	size_t len;
-
-	str = luaL_checklstring(L, 1, &len);
-	seed = luaL_checkinteger(L, 2);
-
-	rgph_u32x4_murmur32v_data(str, len, seed, h);
-
-	lua_createtable(L, 4, 0);
-	lua_pushinteger(L, h[0]);
-	lua_rawseti(L, -2, 1);
-	lua_pushinteger(L, h[1]);
-	lua_rawseti(L, -2, 2);
-	lua_pushinteger(L, h[2]);
-	lua_rawseti(L, -2, 3);
-	lua_pushinteger(L, h[3]);
-	lua_rawseti(L, -2, 4);
-
-	return 1;
-}
-
 static const luaL_Reg hash_fn[] = {
-	{ "jenkins2v", jenkins2v },
-	{ "murmur32v", murmur32v },
-	/* NIY { "murmur32s", murmur32s }, */
-	/* NIY { "xxh32s",    xxh32s    }, */
-	/* NIY { "xxh64s",    xxh64s    }, */
 	{ NULL, NULL }
 };
 
