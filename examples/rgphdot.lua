@@ -13,8 +13,9 @@ local function dot(file, g, ...)
 			file:write(edge_fmt:format(h2, h3, label, color))
 		end
 	end
-	local label = string.format("%d edges, %d vertices, core %d, seed %d",
-	    g:entries(), g:vertices(), g:core_size(), g:seed())
+	local label_fmt = "%d edges, %d vertices, core %d, seed %d, flags %q"
+	local label = label_fmt:format(g:entries(),
+	    g:vertices(), g:core_size(), g:seed(), g:flags())
 	file:write(string.format("label=%q;}\n", label))
 end
 
