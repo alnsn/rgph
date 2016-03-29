@@ -416,6 +416,31 @@ count_keys_fn(lua_State *L)
 }
 
 static int
+fastdiv_prepare_fn(lua_State *L)
+{
+	uint32_t div, mul;
+	int nbits, inc;
+	uint8_t s1, s2;
+
+	div = luaL_checkinteger(L, 1);
+	nbits = luaL_optinteger(L, 2, 0);
+
+	if (nbits + 0u > sizeof(div) * CHAR_BIT)
+		return luaL_argerror(L, 2, "out of range");
+
+	rgph_fastdiv_prepare(div, &mul, &s1, &s2, nbits, &inc);
+
+	lua_pushinteger(L, mul);
+	lua_pushinteger(L, s1);
+	lua_pushinteger(L, s2);
+
+	if (nbits > 0)
+		lua_pushinteger(L, inc);
+
+	return nbits > 0 ? 4 : 3;
+}
+
+static int
 jenkins2v_fn(lua_State *L)
 {
 	uint32_t h[3], seed;
@@ -861,6 +886,7 @@ graph_edge(lua_State *L)
 static const luaL_Reg rgph_fn[] = {
 	{ "new_graph", new_graph_fn },
 	{ "count_keys", count_keys_fn },
+	{ "fastdiv_prepare", fastdiv_prepare_fn },
 	{ "jenkins2v", jenkins2v_fn },
 	{ "murmur32v", murmur32v_fn },
 	{ "murmur32s", murmur32s_fn },
