@@ -56,19 +56,19 @@
 #include <stdint.h>
 #include <string.h> /* memcpy */
 
-#define RGPH_JENKINS2_SEED1 UINT32_C(0x9e3779b9)
-#define RGPH_JENKINS2_SEED2 UINT32_C(0x9e3779b9)
+#define RGPH_JENKINS2V_SEED1 UINT32_C(0x9e3779b9)
+#define RGPH_JENKINS2V_SEED2 UINT32_C(0x9e3779b9)
 
-#define RGPH_MURMUR32_MUL1 UINT32_C(0x239b961b)
-#define RGPH_MURMUR32_MUL2 UINT32_C(0xab0e9789)
-#define RGPH_MURMUR32_MUL3 UINT32_C(0x38b34ae5)
-#define RGPH_MURMUR32_MUL4 UINT32_C(0xa1e38b93)
-#define RGPH_MURMUR32_ADD1 UINT32_C(0x561ccd1b)
-#define RGPH_MURMUR32_ADD2 UINT32_C(0x0bcaa747)
-#define RGPH_MURMUR32_ADD3 UINT32_C(0x96cd1c35)
-#define RGPH_MURMUR32_ADD4 UINT32_C(0x32ac3b17)
-#define RGPH_MURMUR32_FMIXMUL1 UINT32_C(0x85ebca6b)
-#define RGPH_MURMUR32_FMIXMUL2 UINT32_C(0xc2b2ae35)
+#define RGPH_MURMUR32V_MUL1 UINT32_C(0x239b961b)
+#define RGPH_MURMUR32V_MUL2 UINT32_C(0xab0e9789)
+#define RGPH_MURMUR32V_MUL3 UINT32_C(0x38b34ae5)
+#define RGPH_MURMUR32V_MUL4 UINT32_C(0xa1e38b93)
+#define RGPH_MURMUR32V_ADD1 UINT32_C(0x561ccd1b)
+#define RGPH_MURMUR32V_ADD2 UINT32_C(0x0bcaa747)
+#define RGPH_MURMUR32V_ADD3 UINT32_C(0x96cd1c35)
+#define RGPH_MURMUR32V_ADD4 UINT32_C(0x32ac3b17)
+#define RGPH_MURMUR32V_FMIXMUL1 UINT32_C(0x85ebca6b)
+#define RGPH_MURMUR32V_FMIXMUL2 UINT32_C(0xc2b2ae35)
 
 #define RGPH_MURMUR32S_MUL1 UINT32_C(0xcc9e2d51)
 #define RGPH_MURMUR32S_MUL2 UINT32_C(0x1b873593)
@@ -218,9 +218,9 @@ rgph_murmur32_fmix(uint32_t h)
 {
 
 	h ^= h >> 16;
-	h *= RGPH_MURMUR32_FMIXMUL1;
+	h *= RGPH_MURMUR32V_FMIXMUL1;
 	h ^= h >> 13;
-	h *= RGPH_MURMUR32_FMIXMUL2;
+	h *= RGPH_MURMUR32V_FMIXMUL2;
 	h ^= h >> 16;
 
 	return h;
@@ -249,9 +249,9 @@ static inline void
 rgph_murmur32_mix0(uint32_t k, uint32_t h[/* static 4 */])
 {
 
-	k *= RGPH_MURMUR32_MUL1;
+	k *= RGPH_MURMUR32V_MUL1;
 	k = rgph_rotl(k, 15);
-	k *= RGPH_MURMUR32_MUL2;
+	k *= RGPH_MURMUR32V_MUL2;
 	h[0] ^= k;
 }
 
@@ -259,9 +259,9 @@ static inline void
 rgph_murmur32_mix1(uint32_t k, uint32_t h[/* static 4 */])
 {
 
-	k *= RGPH_MURMUR32_MUL2;
+	k *= RGPH_MURMUR32V_MUL2;
 	k = rgph_rotl(k, 16);
-	k *= RGPH_MURMUR32_MUL3;
+	k *= RGPH_MURMUR32V_MUL3;
 	h[1] ^= k;
 }
 
@@ -269,9 +269,9 @@ static inline void
 rgph_murmur32_mix2(uint32_t k, uint32_t h[/* static 4 */])
 {
 
-	k *= RGPH_MURMUR32_MUL3;
+	k *= RGPH_MURMUR32V_MUL3;
 	k = rgph_rotl(k, 17);
-	k *= RGPH_MURMUR32_MUL4;
+	k *= RGPH_MURMUR32V_MUL4;
 	h[2] ^= k;
 }
 
@@ -279,9 +279,9 @@ static inline void
 rgph_murmur32_mix3(uint32_t k, uint32_t h[/* static 4 */])
 {
 
-	k *= RGPH_MURMUR32_MUL4;
+	k *= RGPH_MURMUR32V_MUL4;
 	k = rgph_rotl(k, 18);
-	k *= RGPH_MURMUR32_MUL1;
+	k *= RGPH_MURMUR32V_MUL1;
 	h[3] ^= k;
 }
 
@@ -290,29 +290,29 @@ rgph_murmur32_mix(const uint32_t w[/*static 4 */], uint32_t h[/* static 4 */])
 {
 	uint32_t k;
 
-	k = w[0] * RGPH_MURMUR32_MUL1;
-	h[0] ^= rgph_rotl(k, 15) * RGPH_MURMUR32_MUL2;
+	k = w[0] * RGPH_MURMUR32V_MUL1;
+	h[0] ^= rgph_rotl(k, 15) * RGPH_MURMUR32V_MUL2;
 	h[0] = rgph_rotl(h[0], 19);
 	h[0] += h[1];
-	h[0] = 5*h[0] + RGPH_MURMUR32_ADD1;
+	h[0] = 5*h[0] + RGPH_MURMUR32V_ADD1;
 
-	k = w[1] * RGPH_MURMUR32_MUL2;
-	h[1] ^= rgph_rotl(k, 16) * RGPH_MURMUR32_MUL3;
+	k = w[1] * RGPH_MURMUR32V_MUL2;
+	h[1] ^= rgph_rotl(k, 16) * RGPH_MURMUR32V_MUL3;
 	h[1] = rgph_rotl(h[1], 17);
 	h[1] += h[2];
-	h[1] = 5*h[1] + RGPH_MURMUR32_ADD2;
+	h[1] = 5*h[1] + RGPH_MURMUR32V_ADD2;
 
-	k = w[2] * RGPH_MURMUR32_MUL3;
-	h[2] ^= rgph_rotl(k, 17) * RGPH_MURMUR32_MUL4;
+	k = w[2] * RGPH_MURMUR32V_MUL3;
+	h[2] ^= rgph_rotl(k, 17) * RGPH_MURMUR32V_MUL4;
 	h[2] = rgph_rotl(h[2], 15);
 	h[2] += h[3];
-	h[2] = 5*h[2] + RGPH_MURMUR32_ADD3;
+	h[2] = 5*h[2] + RGPH_MURMUR32V_ADD3;
 
-	k = w[3] * RGPH_MURMUR32_MUL4;
-	h[3] ^= rgph_rotl(k, 18) * RGPH_MURMUR32_MUL1;
+	k = w[3] * RGPH_MURMUR32V_MUL4;
+	h[3] ^= rgph_rotl(k, 18) * RGPH_MURMUR32V_MUL1;
 	h[3] = rgph_rotl(h[3], 13);
 	h[3] += h[0];
-	h[3] = 5*h[3] + RGPH_MURMUR32_ADD4;
+	h[3] = 5*h[3] + RGPH_MURMUR32V_ADD4;
 }
 
 static inline uint32_t

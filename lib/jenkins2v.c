@@ -54,8 +54,8 @@ rgph_u32x3_jenkins2v_data(const void *data,
 	uint32_t carry = len > 0 && down != 0 ? rgph_read32a(key - down) : 0;
 #endif
 
-	h[0] = RGPH_JENKINS2_SEED1;
-	h[1] = RGPH_JENKINS2_SEED2;
+	h[0] = RGPH_JENKINS2V_SEED1;
+	h[1] = RGPH_JENKINS2V_SEED2;
 	h[2] = seed;
 
 	if (down == 0) {

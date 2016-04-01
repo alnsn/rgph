@@ -50,8 +50,8 @@ void
 rgph_u32x3_jenkins2v_u8(uint8_t value, uint32_t seed, uint32_t *h)
 {
 
-	h[0] = RGPH_JENKINS2_SEED1;
-	h[1] = RGPH_JENKINS2_SEED2;
+	h[0] = RGPH_JENKINS2V_SEED1;
+	h[1] = RGPH_JENKINS2V_SEED2;
 	h[2] = seed;
 
 	h[0] += value;
@@ -63,8 +63,8 @@ void
 rgph_u32x3_jenkins2v_u16(uint16_t value, uint32_t seed, uint32_t *h)
 {
 
-	h[0] = RGPH_JENKINS2_SEED1;
-	h[1] = RGPH_JENKINS2_SEED2;
+	h[0] = RGPH_JENKINS2V_SEED1;
+	h[1] = RGPH_JENKINS2V_SEED2;
 	h[2] = seed;
 
 	h[0] += htole16(value);
@@ -76,8 +76,8 @@ inline void
 rgph_u32x3_jenkins2v_u32(uint32_t value, uint32_t seed, uint32_t *h)
 {
 
-	h[0] = RGPH_JENKINS2_SEED1;
-	h[1] = RGPH_JENKINS2_SEED2;
+	h[0] = RGPH_JENKINS2V_SEED1;
+	h[1] = RGPH_JENKINS2V_SEED2;
 	h[2] = seed;
 
 	h[0] += htole32(value);
@@ -89,8 +89,8 @@ inline void
 rgph_u32x3_jenkins2v_u64(uint64_t value, uint32_t seed, uint32_t *h)
 {
 
-	h[0] = RGPH_JENKINS2_SEED1;
-	h[1] = RGPH_JENKINS2_SEED2;
+	h[0] = RGPH_JENKINS2V_SEED1;
+	h[1] = RGPH_JENKINS2V_SEED2;
 	h[2] = seed;
 
 	h[0] += htole64(value) & UINT32_MAX;
@@ -120,8 +120,8 @@ rgph_u32x3_jenkins2v_data32(const void *data,
 	const uint32_t * restrict key = data;
 	const uint32_t *end = key + len;
 
-	h[0] = RGPH_JENKINS2_SEED1;
-	h[1] = RGPH_JENKINS2_SEED2;
+	h[0] = RGPH_JENKINS2V_SEED1;
+	h[1] = RGPH_JENKINS2V_SEED2;
 	h[2] = seed;
 
 	for (; end - key >= 3; key += 3) {
@@ -150,8 +150,8 @@ rgph_u32x3_jenkins2v_data64(const void *data,
 	const uint64_t *end = key + len;
 	uint64_t a, b, c;
 
-	h[0] = RGPH_JENKINS2_SEED1;
-	h[1] = RGPH_JENKINS2_SEED2;
+	h[0] = RGPH_JENKINS2V_SEED1;
+	h[1] = RGPH_JENKINS2V_SEED2;
 	h[2] = seed;
 
 	for (; end - key >= 3; key += 3) {
