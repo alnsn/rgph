@@ -37,6 +37,7 @@
 #include "rgph.h"
 #include "rgph_fastdiv.h"
 #include "rgph_hash.h"
+#include "rgph_hash_impl.h"
 
 #define GRAPH_MT  "rgph.graph"
 #define ASSIGN_MT "rgph.assign"
@@ -968,6 +969,120 @@ register_udata(lua_State *L, int arg, const char *tname,
 	lua_pop(L, arg != -1 ? 2 : 1);
 }
 
+static void
+push_jenkins2v_constants(lua_State *L)
+{
+
+	lua_newtable(L);
+	lua_pushinteger(L, RGPH_JENKINS2V_SEED1);
+	lua_setfield(L, -2, "seed1");
+	lua_pushinteger(L, RGPH_JENKINS2V_SEED2);
+	lua_setfield(L, -2, "seed2");
+}
+
+static void
+push_murmur32v_constants(lua_State *L)
+{
+
+	lua_newtable(L);
+	lua_pushinteger(L, RGPH_MURMUR32V_MUL1);
+	lua_setfield(L, -2, "mul1");
+	lua_pushinteger(L, RGPH_MURMUR32V_MUL2);
+	lua_setfield(L, -2, "mul2");
+	lua_pushinteger(L, RGPH_MURMUR32V_MUL3);
+	lua_setfield(L, -2, "mul3");
+	lua_pushinteger(L, RGPH_MURMUR32V_MUL4);
+	lua_setfield(L, -2, "mul4");
+	lua_pushinteger(L, RGPH_MURMUR32V_ADD1);
+	lua_setfield(L, -2, "add1");
+	lua_pushinteger(L, RGPH_MURMUR32V_ADD2);
+	lua_setfield(L, -2, "add2");
+	lua_pushinteger(L, RGPH_MURMUR32V_ADD3);
+	lua_setfield(L, -2, "add3");
+	lua_pushinteger(L, RGPH_MURMUR32V_ADD4);
+	lua_setfield(L, -2, "add4");
+	lua_pushinteger(L, RGPH_MURMUR32V_FMIXMUL1);
+	lua_setfield(L, -2, "fmixmul1");
+	lua_pushinteger(L, RGPH_MURMUR32V_FMIXMUL2);
+	lua_setfield(L, -2, "fmixmul2");
+}
+
+static void
+push_murmur32s_constants(lua_State *L)
+{
+
+	lua_newtable(L);
+	lua_pushinteger(L, RGPH_MURMUR32S_MUL1);
+	lua_setfield(L, -2, "mul1");
+	lua_pushinteger(L, RGPH_MURMUR32S_MUL2);
+	lua_setfield(L, -2, "mul2");
+	lua_pushinteger(L, RGPH_MURMUR32S_ADD1);
+	lua_setfield(L, -2, "add1");
+	lua_pushinteger(L, RGPH_MURMUR32S_FMIXMUL1);
+	lua_setfield(L, -2, "fmixmul1");
+	lua_pushinteger(L, RGPH_MURMUR32S_FMIXMUL2);
+	lua_setfield(L, -2, "fmixmul2");
+}
+
+static void
+push_xxh32s_constants(lua_State *L)
+{
+
+	lua_newtable(L);
+	lua_pushinteger(L, RGPH_XXH32S_PRIME1);
+	lua_setfield(L, -2, "prime1");
+	lua_pushinteger(L, RGPH_XXH32S_PRIME2);
+	lua_setfield(L, -2, "prime2");
+	lua_pushinteger(L, RGPH_XXH32S_PRIME3);
+	lua_setfield(L, -2, "prime3");
+	lua_pushinteger(L, RGPH_XXH32S_PRIME4);
+	lua_setfield(L, -2, "prime4");
+	lua_pushinteger(L, RGPH_XXH32S_PRIME5);
+	lua_setfield(L, -2, "prime5");
+}
+
+static void
+push_xxh64s_constants(lua_State *L)
+{
+
+	lua_newtable(L);
+
+	lua_createtable(L, 2, 0);
+	lua_pushinteger(L, RGPH_XXH64S_PRIME1 & 0xffffffffu);
+	lua_rawseti(L, -2, 1);
+	lua_pushinteger(L, RGPH_XXH64S_PRIME1 >> 32);
+	lua_rawseti(L, -2, 2);
+	lua_setfield(L, -2, "prime1");
+
+	lua_createtable(L, 2, 0);
+	lua_pushinteger(L, RGPH_XXH64S_PRIME2 & 0xffffffffu);
+	lua_rawseti(L, -2, 1);
+	lua_pushinteger(L, RGPH_XXH64S_PRIME2 >> 32);
+	lua_rawseti(L, -2, 2);
+	lua_setfield(L, -2, "prime2");
+
+	lua_createtable(L, 2, 0);
+	lua_pushinteger(L, RGPH_XXH64S_PRIME3 & 0xffffffffu);
+	lua_rawseti(L, -2, 1);
+	lua_pushinteger(L, RGPH_XXH64S_PRIME3 >> 32);
+	lua_rawseti(L, -2, 2);
+	lua_setfield(L, -2, "prime3");
+
+	lua_createtable(L, 2, 0);
+	lua_pushinteger(L, RGPH_XXH64S_PRIME4 & 0xffffffffu);
+	lua_rawseti(L, -2, 1);
+	lua_pushinteger(L, RGPH_XXH64S_PRIME4 >> 32);
+	lua_rawseti(L, -2, 2);
+	lua_setfield(L, -2, "prime4");
+
+	lua_createtable(L, 2, 0);
+	lua_pushinteger(L, RGPH_XXH64S_PRIME5 & 0xffffffffu);
+	lua_rawseti(L, -2, 1);
+	lua_pushinteger(L, RGPH_XXH64S_PRIME5 >> 32);
+	lua_rawseti(L, -2, 2);
+	lua_setfield(L, -2, "prime5");
+}
+
 int
 luaopen_rgph(lua_State *L)
 {
@@ -987,6 +1102,20 @@ luaopen_rgph(lua_State *L)
 	luaL_setfuncs(L, assign_index, 0);
 #endif
 	lua_pop(L, 1);
+
+	lua_newtable(L); /* rgph.const */
+	push_jenkins2v_constants(L);
+	lua_setfield(L, -2, "jenkins2v");
+	push_murmur32v_constants(L);
+	lua_setfield(L, -2, "murmur32v");
+	push_murmur32s_constants(L);
+	lua_setfield(L, -2, "murmur32s");
+	push_xxh32s_constants(L);
+	lua_setfield(L, -2, "xxh32s");
+	push_xxh64s_constants(L);
+	lua_setfield(L, -2, "xxh64s");
+
+	lua_setfield(L, -2, "const");
 
 	return 1;
 }
