@@ -1246,6 +1246,14 @@ rgph_seed(struct rgph_graph *g)
 }
 
 extern "C"
+size_t
+rgph_hash_bits(struct rgph_graph *g)
+{
+
+	return hash_bits(g->flags);
+}
+
+extern "C"
 int
 rgph_is_built(struct rgph_graph *g)
 {

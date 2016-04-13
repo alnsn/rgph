@@ -58,6 +58,7 @@ size_t rgph_datalen_min(struct rgph_graph *);
 size_t rgph_datalen_max(struct rgph_graph *);
 size_t rgph_core_size(struct rgph_graph *);
 unsigned long rgph_seed(struct rgph_graph *);
+size_t rgph_hash_bits(struct rgph_graph *);
 
 int rgph_build_graph(struct rgph_graph *,
     unsigned long, rgph_entry_iterator_t, void *);
