@@ -142,10 +142,10 @@ function emit_lookup.bdz(Dst, g)
 	| shr   r9d, 5
 	| mov   r9d, [r10+r9d*4]
 	|
-	| mov   ecx, edi
+	| mov   ecx, eax
 	| shr   r8d, cl -- implicit cl&31
 	|
-	| mov   ecx, eax
+	| mov   ecx, edi
 	| shr   r9d, cl -- implicit cl&31
 	|
 	| xor   r8d, r9d
