@@ -148,7 +148,7 @@ function emit_lookup.bdz(Dst, g)
 	| mov   ecx, edi
 	| shr   r9d, cl -- implicit cl&31
 	|
-	| xor   r8d, r9d
+	| add   r8d, r9d
 	| shr   r8d, 1 -- shift to CF
 	| cmovb eax, edi
 end
