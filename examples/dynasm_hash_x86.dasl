@@ -75,7 +75,7 @@ end
 
 -- Call emit_hash[g:hash()] to emit hash body.
 -- Input value is always in edi. For scalar hashes, output
--- is also in edi. Emitted code can use ecx for temporaries.
+-- is in eax. Emitted code can use ecx for temporaries.
 local emit_hash = {}
 
 -- Emit `fn(key) = rgph_u32_xxh32s_u32(key, g:seed())`.
@@ -86,23 +86,23 @@ function emit_hash.xxh32s(Dst, g, const)
 	| imul edi, edi, const.prime3
 	| add  edi, (const.prime5 + len + g:seed()) % mod
 	| rol  edi, 17
-	| imul eax, edi, const.prime4
-	| mov  edi, eax
-	| shr  edi, 15
-	| xor  edi, eax
-	| imul ecx, edi, const.prime2
-	| mov  edi, ecx
-	| shr  edi, 13
-	| xor  edi, ecx
-	| imul ecx, edi, const.prime3
-	| mov  edi, ecx
-	| shr  edi, 16
-	| xor  edi, ecx
+	| imul edi, edi, const.prime4
+	| mov  eax, edi
+	| shr  eax, 15
+	| xor  eax, edi
+	| imul ecx, eax, const.prime2
+	| mov  eax, ecx
+	| shr  eax, 13
+	| xor  eax, ecx
+	| imul ecx, eax, const.prime3
+	| mov  eax, ecx
+	| shr  eax, 16
+	| xor  eax, ecx
 end
 
 -- Call emit_rem[g:division_hint()] to emit remainders.
--- Input register is edi. Remainders are loaded to edi,
--- eax and edx (when rank is 3).
+-- Input register is eax. Remainders are loaded to eax,
+-- edi and edx (when rank is 3).
 local emit_rem = {}
 
 -- Emit remainders for a scalar hash when `g:vertices() / g:rank()`
@@ -114,18 +114,18 @@ function emit_rem.pow2(Dst, g, hash_bits)
 	local mask  = div - 1
 	local rshift = math.floor(hash_bits / rank)
 
-	| mov eax, edi
-	| shr eax, rshift
+	| mov edi, eax
+	| shr edi, rshift
 
 	if rank == 3 then
-		| mov edx, eax
+		| mov edx, edi
 		| and edx, mask
 		| add edx, 2 * div
 	end
 
-	| and edi, mask
 	| and eax, mask
-	| add eax, div
+	| and edi, mask
+	| add edi, div
 end
 
 -- Call emit_lookup[g:algo()] to emit a lookup.
@@ -133,12 +133,12 @@ local emit_lookup = {}
 
 function emit_lookup.bdz(Dst, g)
 	-- XXX rank 3
-	| mov   r8d, edi
+	| mov   r8d, eax
 	| lea   r10, [->rodata_start]
 	| shr   r8d, 5
 	| mov   r8d, [r10+r8d*4]
 	|
-	| mov   r9d, eax
+	| mov   r9d, edi
 	| shr   r9d, 5
 	| mov   r9d, [r10+r9d*4]
 	|
@@ -149,8 +149,8 @@ function emit_lookup.bdz(Dst, g)
 	| shr   r9d, cl -- implicit cl&31
 	|
 	| xor   r8d, r9d
-	| and   r8d, 1
-	| cmove eax, edi
+	| shr   r8d, 1 -- shift to CF
+	| cmovb eax, edi
 end
 
 function _M.generate(keys, flags, ntries, seed)
