@@ -1,5 +1,5 @@
 local dasm   = require "dasm"
-local dynasm = require "dynasm" -- to load dynasm_hash_x86.dasl file
+local dynasm = require "dynasm" -- to load dynasm_hash.dasl file
 local hash   = require "dynasm_hash"
 local pretty = require "pl.pretty"
 
