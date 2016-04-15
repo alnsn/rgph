@@ -156,17 +156,15 @@ function emit_lookup.bdz(Dst, g)
 	if rank == 2 then
 		| mov ecx, eax
 		| shr r8d, cl -- implicit cl&31
+		|
+		| mov ecx, edi
+		| shr r9d, cl -- implicit cl&31
 	else
 		| mov ecx, eax
 		| shl ecx, 1
 		| shr r8d, cl -- implicit cl&31
 		| and r8d, 3
-	end
-
-	if rank == 2 then
-		| mov ecx, edi
-		| shr r9d, cl -- implicit cl&31
-	else
+		|
 		| mov ecx, edi
 		| shl ecx, 1
 		| shr r9d, cl -- implicit cl&31
