@@ -1,6 +1,6 @@
 local dasm   = require "dasm"
 local dynasm = require "dynasm" -- to load dynasm_hash_x86.dasl file
-local hash   = require "dynasm_hash_x86"
+local hash   = require "dynasm_hash"
 local pretty = require "pl.pretty"
 
 local args = { ... }
