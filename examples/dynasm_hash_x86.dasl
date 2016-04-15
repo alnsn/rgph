@@ -118,39 +118,86 @@ function emit_rem.pow2(Dst, g, hash_bits)
 	| shr edi, rshift
 
 	if rank == 3 then
-		| mov edx, edi
-		| and edx, mask
-		| add edx, 2 * div
+		| mov edx, eax
 	end
 
 	| and eax, mask
 	| and edi, mask
 	| add edi, div
+
+	if rank == 3 then
+		| shr edx, 2 * rshift
+		| and edx, mask
+		| add edx, 2 * div
+	end
 end
 
 -- Call emit_lookup[g:algo()] to emit a lookup.
 local emit_lookup = {}
 
 function emit_lookup.bdz(Dst, g)
-	-- XXX rank 3
-	| mov   r8d, eax
-	| lea   r10, [->rodata_start]
-	| shr   r8d, 5
-	| mov   r8d, [r10+r8d*4]
+	local rank = g:rank()
+
+	| mov r8d, eax
+	| lea r11, [->rodata_start]
+	| shr r8d, 7 - rank
+	| mov r8d, [r11+r8*4]
 	|
-	| mov   r9d, edi
-	| shr   r9d, 5
-	| mov   r9d, [r10+r9d*4]
-	|
-	| mov   ecx, eax
-	| shr   r8d, cl -- implicit cl&31
-	|
-	| mov   ecx, edi
-	| shr   r9d, cl -- implicit cl&31
-	|
-	| add   r8d, r9d
-	| shr   r8d, 1 -- shift to CF
-	| cmovb eax, edi
+	| mov r9d, edi
+	| shr r9d, 7 - rank
+	| mov r9d, [r11+r9*4]
+
+	if rank == 3 then
+		| mov r10d, edx
+		| shr r10d, 7 - rank
+		| mov r10d, [r11+r10*4]
+	end
+
+	if rank == 2 then
+		| mov ecx, eax
+		| shr r8d, cl -- implicit cl&31
+	else
+		| mov ecx, eax
+		| shl ecx, 1
+		| shr r8d, cl -- implicit cl&31
+		| and r8d, 3
+	end
+
+	if rank == 2 then
+		| mov ecx, edi
+		| shr r9d, cl -- implicit cl&31
+	else
+		| mov ecx, edi
+		| shl ecx, 1
+		| shr r9d, cl -- implicit cl&31
+		| and r9d, 3
+	end
+
+	| add r8d, r9d
+
+	if rank == 2 then
+		| shr   r8d, 1 -- shift to CF
+		| cmovb eax, edi
+	else
+		| add r8d, -3
+		| adc r8d, -1
+		| and r8d, 3
+		|
+		| mov ecx, edx
+		| shl ecx, 1
+		| shr r10d, cl -- implicit cl&31
+		|
+		| and r10d, 3
+		| add r8d, r10d
+		|
+		| add r8d, -3
+		| adc r8d, -1
+		| and r8d, 3
+		|
+		| cmovne eax, edi
+		| shr    r8d, 2 -- shift to CF
+		| cmovb  eax, edx
+	end
 end
 
 function _M.generate(keys, flags, ntries, seed)

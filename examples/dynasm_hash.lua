@@ -5,7 +5,7 @@ local pretty = require "pl.pretty"
 
 local args = { ... }
 local ntries = 20
-local seed = tonumber(args[1] or 0xbb8bb8d2) -- 10727
+local seed = tonumber(args[1] or 0xbb8bb8d2)
 local keys = {
 	["\0\0\0\0"] = "zero",
 	["\1\0\0\0"] = "one",
@@ -20,7 +20,7 @@ local keys = {
 }
 
 local code, buf, size = hash.generate(keys,
-    "xxh32s,bdz,rank2,pow2", ntries, seed)
+    "xxh32s,bdz,rank3,pow2", ntries, seed)
 dasm.dump(buf, size)
 
 local hashes = {}
