@@ -1,0 +1,248 @@
+local ffi  = require "ffi"
+local dasm = require "dasm"
+local rgph = require "rgph"
+
+-- Compat stuff
+if not bit32 then bit32 = bit end
+if not bit32 then bit32 = require "bit" end
+
+local _M = {}
+
+|.arch ARCH
+|
+|.if not X64
+| .error invalid arch ARCH
+|.endif
+|
+|.actionlist actions
+|.section code, rodata
+|.externnames externnames
+|.globals globals
+|.globalnames globalnames
+
+local function globalsbynames(globals)
+	local res = {}
+	for i = 0, #globalnames do
+		res[globalnames[i]] = globals[i]
+	end
+	return res
+end
+
+local function build_graph(keys, flags, ntries, seed)
+	flags  = flags or ""
+	ntries = ntries or 100
+	seed   = seed or 0
+
+	local nkeys = rgph.count_keys(pairs(keys))
+	local g = rgph.new_graph(nkeys, flags)
+
+	for i = 1, ntries do
+		local ok, err = g:build(seed, pairs(keys))
+		if ok then break end
+		assert(not err, err) -- pairs(keys) can't fail
+		seed = seed + 1
+	end
+
+	return g
+end
+
+-- Call emit_rodata[g:algo()] to emit rdonly lookup table.
+local emit_rodata = {}
+
+function emit_rodata.bdz(Dst, g, assignments)
+	local nverts = g:vertices()
+	local rank = g:rank()
+	local bits = rank - 1
+	local stop = bit32.rshift(63, bits)
+
+	local w = 0
+	for v = 0, nverts - 1 do
+		local n = bit32.band(v, stop)
+		local a = assignments[v]
+		if a == rank then a = 0 end
+		a = bit32.lshift(a, n * bits)
+		w = bit32.bor(w, a)
+		if n == stop then
+			| .dword w
+			w = 0
+		end
+	end
+
+	if bit32.band(nverts, stop) ~= 0 then
+		| .dword w
+	end
+end
+
+-- Call emit_hash[g:hash()] to emit hash body.
+-- Input value is always in edi. For scalar hashes, output
+-- is in eax. Emitted code can use ecx for temporaries.
+local emit_hash = {}
+
+-- Emit `fn(key) = rgph_u32_xxh32s_u32(key, g:seed())`.
+function emit_hash.xxh32s(Dst, g, const)
+	local mod = 2^32
+	local len = 4
+
+	| imul edi, edi, const.prime3
+	| add  edi, (const.prime5 + len + g:seed()) % mod
+	| rol  edi, 17
+	| imul edi, edi, const.prime4
+	| mov  eax, edi
+	| shr  eax, 15
+	| xor  eax, edi
+	| imul ecx, eax, const.prime2
+	| mov  eax, ecx
+	| shr  eax, 13
+	| xor  eax, ecx
+	| imul ecx, eax, const.prime3
+	| mov  eax, ecx
+	| shr  eax, 16
+	| xor  eax, ecx
+end
+
+-- Call emit_rem[g:division_hint()] to emit remainders.
+-- Input register is eax. Remainders are loaded to eax,
+-- edi and edx (when rank is 3).
+local emit_rem = {}
+
+-- Emit remainders for a scalar hash when `g:vertices() / g:rank()`
+-- is a power of 2.
+function emit_rem.pow2(Dst, g, hash_bits)
+	local nverts = g:vertices()
+	local rank = g:rank()
+	local div = nverts / rank
+	local mask  = div - 1
+	local rshift = math.floor(hash_bits / rank)
+
+	| mov edi, eax
+	| shr edi, rshift
+
+	if rank == 3 then
+		| mov edx, eax
+	end
+
+	| and eax, mask
+	| and edi, mask
+	| add edi, div
+
+	if rank == 3 then
+		| shr edx, 2 * rshift
+		| and edx, mask
+		| add edx, 2 * div
+	end
+end
+
+-- Call emit_lookup[g:algo()] to emit a lookup.
+local emit_lookup = {}
+
+function emit_lookup.bdz(Dst, g)
+	local rank = g:rank()
+
+	| mov r8d, eax
+	| lea r11, [->rodata_start]
+	| shr r8d, 7 - rank
+	| mov r8d, [r11+r8*4]
+	|
+	| mov r9d, edi
+	| shr r9d, 7 - rank
+	| mov r9d, [r11+r9*4]
+
+	if rank == 3 then
+		| mov r10d, edx
+		| shr r10d, 7 - rank
+		| mov r10d, [r11+r10*4]
+	end
+
+	if rank == 2 then
+		| mov ecx, eax
+		| shr r8d, cl -- implicit cl&31
+		|
+		| mov ecx, edi
+		| shr r9d, cl -- implicit cl&31
+	else
+		| mov ecx, eax
+		| shl ecx, 1
+		| shr r8d, cl -- implicit cl&31
+		| and r8d, 3
+		|
+		| mov ecx, edi
+		| shl ecx, 1
+		| shr r9d, cl -- implicit cl&31
+		| and r9d, 3
+	end
+
+	| add r8d, r9d
+
+	if rank == 2 then
+		| shr   r8d, 1 -- shift to CF
+		| cmovb eax, edi
+	else
+		| add r8d, -3
+		| adc r8d, -1
+		| and r8d, 3
+		|
+		| mov ecx, edx
+		| shl ecx, 1
+		| shr r10d, cl -- implicit cl&31
+		|
+		| and r10d, 3
+		| add r8d, r10d
+		|
+		| add r8d, -3
+		| adc r8d, -1
+		| and r8d, 3
+		|
+		| cmovne eax, edi
+		| shr    r8d, 2 -- shift to CF
+		| cmovb  eax, edx
+	end
+end
+
+function _M.generate(keys, flags, ntries, seed)
+	local g = build_graph(keys, flags, ntries, seed)
+
+	local hash_bits = g:hash_bits()
+	assert(hash_bits <= 32, "only 32bit scalar hashes are supported")
+
+	local hint = g:division_hint()
+	hint = hint == "" and "generic" or hint
+	local emit_rem_fn = assert(emit_rem[hint], "unsupported divisor")
+
+	local hash = g:hash()
+	local emit_hash_fn = assert(emit_hash[hash], "unsupported hash")
+
+	local algo = g:algo()
+	local emit_lookup_fn = assert(emit_lookup[algo], "unsupported algo")
+	local emit_rodata_fn = assert(emit_rodata[algo], "unsupported algo")
+
+	local Dst, globals =
+	    dasm.new(actions, externnames, DASM_MAXSECTION, DASM_MAXGLOBAL)
+
+	| .align 32
+	| .code
+	|->hash_fn:
+	emit_hash_fn(Dst, g, rgph.const[hash])
+	emit_rem_fn(Dst, g, hash_bits)
+	emit_lookup_fn(Dst, g)
+	| ret
+	| .align 32
+
+	local assignments = g:assign()
+	| .rodata
+	| .align 4
+	|->rodata_start:
+	emit_rodata_fn(Dst, g, assignments)
+
+	local buf, size = Dst:build()
+	local hash_fn = globalsbynames(globals).hash_fn
+	hash_fn = ffi.cast("uint32_t (*)(uint32_t)", hash_fn)
+
+	local function code(key)
+		local keep_around = buf
+		return hash_fn(key)
+	end
+
+	return code, buf, size
+end
+
+return _M
