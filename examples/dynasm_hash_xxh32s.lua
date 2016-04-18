@@ -21,7 +21,7 @@ local keys = {
 }
 
 local code, buf, size = hash.generate(keys,
-    "xxh32s,bdz,rank3,pow2", ntries, seed)
+    "xxh32s,bdz,rank3,fastdiv", ntries, seed)
 dasm.dump(buf, size)
 
 local function fourCC(str)
