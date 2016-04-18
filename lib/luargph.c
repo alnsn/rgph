@@ -449,7 +449,7 @@ fastdiv_prepare_fn(lua_State *L)
 	lua_pushinteger(L, s2);
 
 	if (nbits > 0)
-		lua_pushinteger(L, inc);
+		lua_pushboolean(L, inc);
 
 	return nbits > 0 ? 4 : 3;
 }
