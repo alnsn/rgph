@@ -209,8 +209,9 @@ struct scalar_hash {
 		const H mask = (H(1) << nbits) - 1;
 
 		H h = func(key, keylen, seed);
-		for (size_t i = 0; i < R; i++)
+		for (size_t i = 0; i < R - 1; i++)
 			hashes[i] = (h >> i * nbits) & mask;
+		hashes[R - 1] = h >> (sizeof(H) * CHAR_BIT - nbits);
 		return hashes;
 	}
 };

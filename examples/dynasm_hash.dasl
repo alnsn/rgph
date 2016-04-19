@@ -170,8 +170,7 @@ function emit_rem.fastdiv(Dst, g, hash_bits)
 	| add  edi, div
 
 	if rank == 3 then
-		| shr  edx, 2 * rshift
-		| and  edx, mask
+		| shr  edx, 2 + 2 * rshift
 		| imul r8, rdx, magic
 		| shr  r8, s2
 		| imul r8d, r8d, div
