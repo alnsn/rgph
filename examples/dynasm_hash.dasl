@@ -75,7 +75,7 @@ end
 
 -- Call emit_hash[g:hash()] to emit hash body.
 -- Input value is always in edi. For scalar hashes, output
--- is in eax. Emitted code can use ecx for temporaries.
+-- is in eax/rax. Emitted code can use rcx for temporaries.
 local emit_hash = {}
 
 -- Emit `fn(key) = rgph_u32_xxh32s_u32(key, g:seed())`.
@@ -114,19 +114,19 @@ function emit_rem.pow2(Dst, g, hash_bits)
 	local mask  = div - 1
 	local rshift = math.floor(hash_bits / rank)
 
-	| mov edi, eax
-	| shr edi, rshift
+	| mov rdi, rax
+	| shr rdi, rshift
 
 	if rank == 3 then
-		| mov edx, eax
+		| mov rdx, rax
 	end
 
-	| and eax, mask
-	| and edi, mask
+	| and rax, mask
+	| and rdi, mask
 	| add edi, div
 
 	if rank == 3 then
-		| shr edx, 2 + 2 * rshift
+		| shr rdx, 2 + 2 * rshift
 		| and edx, mask
 		| add edx, 2 * div
 	end
@@ -146,21 +146,21 @@ function emit_rem.fastdiv(Dst, g, hash_bits)
 
 	s2 = s2 + 32
 
-	| mov edi, eax
-	| shr edi, rshift
+	| mov rdi, rax
+	| shr rdi, rshift
 
 	if rank == 3 then
-		| mov edx, eax
+		| mov rdx, rax
 	end
 
-	| and  eax, mask
+	| and  rax, mask
 	| imul r8, rax, magic
 	| shr  r8, s2
 	| imul r8d, r8d, div
 	| sub  eax, r8d
 
 	if rank == 3 then
-		| and edi, mask
+		| and rdi, mask
 	end
 
 	| imul r9, rdi, magic
@@ -170,7 +170,7 @@ function emit_rem.fastdiv(Dst, g, hash_bits)
 	| add  edi, div
 
 	if rank == 3 then
-		| shr  edx, 2 + 2 * rshift
+		| shr  rdx, 2 + 2 * rshift
 		| imul r8, rdx, magic
 		| shr  r8, s2
 		| imul r8d, r8d, div
