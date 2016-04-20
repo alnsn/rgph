@@ -126,7 +126,7 @@ function emit_rem.pow2(Dst, g, hash_bits)
 	| add edi, div
 
 	if rank == 3 then
-		| shr edx, 2 * rshift
+		| shr edx, 2 + 2 * rshift
 		| and edx, mask
 		| add edx, 2 * div
 	end
