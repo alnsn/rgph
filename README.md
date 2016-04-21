@@ -14,15 +14,15 @@ when building on platforms with fast unaligned reads.
 
 To build a shared library:
 
-    (cd lib && make CFLAGS='-O2 -g' CXXFLAGS='-O2 -g' librgph.so)
+    (cd lib && make CFLAGS='-O2 -g' CXXFLAGS='-O2 -g' all-c)
 
 To build on OSX, you should pass `DSO=dylib`:
 
-    (cd lib && make CFLAGS='-O2 -g' CXXFLAGS='-O2 -g' DSO=dylib librgph.dylib)
+    (cd lib && make CFLAGS='-O2 -g' CXXFLAGS='-O2 -g' DSO=dylib all-c)
 
 To build the Lua module, you need `pkg-config` Lua package. XXX luarocks.
 
-    (cd lib && make CFLAGS='-O2 -g' CXXFLAGS='-O2 -g' rgph.so)
+    (cd lib && make CFLAGS='-O2 -g' CXXFLAGS='-O2 -g' all-lua)
 
 The above command assumes that your Lua package is known to `pkg-config`
 as `lua`. You can specify an alternative name with `LUAPKG=lua-5.3`.
