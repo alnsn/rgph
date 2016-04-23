@@ -126,7 +126,7 @@ function emit_rem.pow2(Dst, g, hash_bits)
 	| add edi, div
 
 	if rank == 3 then
-		| shr rdx, 2 + 2 * rshift
+		| shr rdx, hash_bits - rshift
 		| and edx, mask
 		| add edx, 2 * div
 	end
@@ -139,7 +139,7 @@ function emit_rem.fastdiv(Dst, g, hash_bits)
 	local rank = g:rank()
 	local div = nverts / rank
 	local rshift = math.floor(hash_bits / rank)
-	local mask  = bit32.lshift(1, rshift) - 1
+	local mask  = rshift == 32 and 0xffffffff or bit32.lshift(1, rshift) - 1
 	local fastdiv_bits = hash_bits >= 32 * rank and 32 or 31
 	local magic, s1, s2, inc = rgph.fastdiv_prepare(div, fastdiv_bits)
 	assert(s1 == 0 and not inc) -- fastdiv
@@ -170,7 +170,7 @@ function emit_rem.fastdiv(Dst, g, hash_bits)
 	| add  edi, div
 
 	if rank == 3 then
-		| shr  rdx, 2 + 2 * rshift
+		| shr  rdx, hash_bits - rshift
 		| imul r8, rdx, magic
 		| shr  r8, s2
 		| imul r8d, r8d, div
