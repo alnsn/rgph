@@ -20,6 +20,11 @@ local _M = {}
 |.globals globals
 |.globalnames globalnames
 
+local function const64(c, add)
+	add = add or 0
+	return (c[1] + add) + c[2] * 0x100000000ll
+end
+
 local function globalsbynames(globals)
 	local res = {}
 	for i = 0, #globalnames do
@@ -98,6 +103,37 @@ function emit_hash.xxh32s(Dst, g, const)
 	| mov  ecx, eax
 	| shr  ecx, 16
 	| xor  ecx, eax
+end
+
+-- Emit `fn(key) = rgph_u64_xxh64s_u32(key, g:seed())`.
+function emit_hash.xxh64s(Dst, g, const)
+	local len = 4
+	local c1 = const64(const.prime1)
+	local c2 = const64(const.prime2)
+	local c3 = const64(const.prime3)
+	local c5 = const64(const.prime5, len + g:seed())
+
+	| mov   edi, edi
+	| mov64 rcx, c1
+	| imul  rdi, rcx
+	| mov64 rcx, c5
+	| xor   rdi, rcx
+	| rol   rdi, 23
+	| mov64 rcx, c2
+	| imul  rdi, rcx
+	| mov64 rax, c3
+	| lea   rdx, [rdi+rax]
+	| mov   rsi, rdx
+	| shr   rsi, 33
+	| xor   rdx, rsi
+	| imul  rdx, rcx
+	| mov   rcx, rdx
+	| shr   rcx, 29
+	| xor   rdx, rcx
+	| imul  rdx, rax
+	| mov   rcx, rdx
+	| shr   rcx, 32
+	| xor   rcx, rdx
 end
 
 -- Call emit_rem[g:division_hint()] to emit remainders.
@@ -255,7 +291,7 @@ function _M.generate(keys, flags, ntries, seed)
 	local g = build_graph(keys, flags, ntries, seed)
 
 	local hash_bits = g:hash_bits()
-	assert(hash_bits <= 32, "only 32bit scalar hashes are supported")
+	assert(hash_bits <= 64, "vector hashes aren't supported")
 
 	local hint = g:division_hint()
 	hint = hint == "" and "generic" or hint
