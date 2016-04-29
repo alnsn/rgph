@@ -170,6 +170,7 @@ end
 
 -- Emit remainders for a scalar hash when `g:vertices() / g:rank()`
 -- is a fastdiv value.
+-- XXX gcc 5.3 generates faster code
 function emit_rem.fastdiv(Dst, g, hash_bits)
 	local nverts = g:vertices()
 	local rank = g:rank()
@@ -223,6 +224,7 @@ end
 -- Call emit_lookup[g:algo()] to emit a lookup.
 local emit_lookup = {}
 
+-- XXX gcc 5.3 generates faster code
 function emit_lookup.bdz(Dst, g)
 	local rank = g:rank()
 
