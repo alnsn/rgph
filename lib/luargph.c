@@ -300,6 +300,32 @@ graph_datalen_max(lua_State *L)
 }
 
 static int
+graph_index_min(lua_State *L)
+{
+	struct rgph_graph **pg;
+
+	pg = (struct rgph_graph **)luaL_checkudata(L, 1, GRAPH_MT);
+	if (*pg == NULL)
+		return luaL_argerror(L, 1, "dead object");
+
+	lua_pushinteger(L, rgph_index_min(*pg));
+	return 1;
+}
+
+static int
+graph_index_max(lua_State *L)
+{
+	struct rgph_graph **pg;
+
+	pg = (struct rgph_graph **)luaL_checkudata(L, 1, GRAPH_MT);
+	if (*pg == NULL)
+		return luaL_argerror(L, 1, "dead object");
+
+	lua_pushinteger(L, rgph_index_max(*pg));
+	return 1;
+}
+
+static int
 graph_core_size(lua_State *L)
 {
 	struct rgph_graph **pg;
@@ -918,6 +944,8 @@ static const luaL_Reg graph_fn[] = {
 	{ "vertices", graph_vertices },
 	{ "datalen_min", graph_datalen_min },
 	{ "datalen_max", graph_datalen_max },
+	{ "index_min", graph_index_min },
+	{ "index_max", graph_index_max },
 	{ "core_size", graph_core_size },
 	{ "flags", graph_flags },
 	{ "division_hint", graph_div_hint },

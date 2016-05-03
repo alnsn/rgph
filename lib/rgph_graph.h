@@ -56,6 +56,8 @@ size_t rgph_entries(struct rgph_graph *);
 size_t rgph_vertices(struct rgph_graph *);
 size_t rgph_datalen_min(struct rgph_graph *);
 size_t rgph_datalen_max(struct rgph_graph *);
+size_t rgph_index_min(struct rgph_graph *);
+size_t rgph_index_max(struct rgph_graph *);
 size_t rgph_core_size(struct rgph_graph *);
 unsigned long rgph_seed(struct rgph_graph *);
 size_t rgph_hash_bits(struct rgph_graph *);

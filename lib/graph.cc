@@ -386,7 +386,8 @@ template<class Iter, class Hash, class T, int R>
 bool
 init_graph(Iter keys, Iter keys_end, Hash hash,
     edge<T,R> *edges, size_t nkeys, oedge<T,R> *oedges, size_t nverts,
-    size_t *datalenmin, size_t *datalenmax, T *index)
+    size_t *datalenmin, size_t *datalenmax,
+    T *index, size_t *indexmin, size_t *indexmax)
 {
 	// partsz is a partition size of an R-partite R-graph.
 	const T partsz = nverts / R;
@@ -395,6 +396,12 @@ init_graph(Iter keys, Iter keys_end, Hash hash,
 	uint8_t s1, s2;
 
 	assert(partsz > 1 && (nverts % R) == 0);
+
+	if (index == NULL) {
+		// bdz
+		*indexmin = 0;
+		*indexmax = R - 1;
+	}
 
 	rgph_fastdiv_prepare(partsz, &mul, &s1, &s2, 0, NULL);
 
@@ -410,8 +417,15 @@ init_graph(Iter keys, Iter keys_end, Hash hash,
 			*datalenmin = ent.datalen;
 		if (ent.datalen > *datalenmax)
 			*datalenmax = ent.datalen;
-		if (index != NULL)
-			index[e] = ent.index < nkeys ? ent.index : e;
+		if (index != NULL) {
+			// chm
+			const size_t i = ent.index < nkeys ? ent.index : e;
+			index[e] = i;
+			if (i < *indexmin)
+				*indexmin = i;
+			if (i > *indexmax)
+				*indexmax = i;
+		}
 	}
 
 	return e == nkeys;
@@ -773,6 +787,8 @@ struct rgph_graph {
 	size_t core_size; // R-core size.
 	size_t datalenmin;
 	size_t datalenmax;
+	size_t indexmin;
+	size_t indexmax;
 	unsigned long seed;
 	unsigned int flags;
 };
@@ -808,6 +824,8 @@ build_graph(struct rgph_graph *g,
 	g->core_size = g->nkeys;
 	g->datalenmin = SIZE_MAX;
 	g->datalenmax = 0;
+	g->indexmin = SIZE_MAX;
+	g->indexmax = 0;
 	g->seed = seed;
 	g->flags &= PUBLIC_FLAGS; // Unset (ZEROED|BUILT|PEELED|ASSIGNED).
 
@@ -818,7 +836,8 @@ build_graph(struct rgph_graph *g,
 		if (!init_graph(keys_start, keys_end,
 		    make_hash<T,R>(&rgph_u32x3_jenkins2v_data, seed),
 		    edges, g->nkeys, oedges, g->nverts,
-		    &g->datalenmin, &g->datalenmax, index)) {
+		    &g->datalenmin, &g->datalenmax,
+		    index, &g->indexmin, &g->indexmax)) {
 			return RGPH_NOKEY;
 		}
 		break;
@@ -826,7 +845,8 @@ build_graph(struct rgph_graph *g,
 		if (!init_graph(keys_start, keys_end,
 		    make_hash<T,R>(&rgph_u32x4_murmur32v_data, seed),
 		    edges, g->nkeys, oedges, g->nverts,
-		    &g->datalenmin, &g->datalenmax, index)) {
+		    &g->datalenmin, &g->datalenmax,
+		    index, &g->indexmin, &g->indexmax)) {
 			return RGPH_NOKEY;
 		}
 		break;
@@ -834,7 +854,8 @@ build_graph(struct rgph_graph *g,
 		if (!init_graph(keys_start, keys_end,
 		    make_hash<T,R>(&rgph_u32_murmur32s_data, seed),
 		    edges, g->nkeys, oedges, g->nverts,
-		    &g->datalenmin, &g->datalenmax, index)) {
+		    &g->datalenmin, &g->datalenmax,
+		    index, &g->indexmin, &g->indexmax)) {
 			return RGPH_NOKEY;
 		}
 		break;
@@ -842,7 +863,8 @@ build_graph(struct rgph_graph *g,
 		if (!init_graph(keys_start, keys_end,
 		    make_hash<T,R>(&rgph_u32_xxh32s_data, seed),
 		    edges, g->nkeys, oedges, g->nverts,
-		    &g->datalenmin, &g->datalenmax, index)) {
+		    &g->datalenmin, &g->datalenmax,
+		    index, &g->indexmin, &g->indexmax)) {
 			return RGPH_NOKEY;
 		}
 		break;
@@ -850,7 +872,8 @@ build_graph(struct rgph_graph *g,
 		if (!init_graph(keys_start, keys_end,
 		    make_hash<T,R>(&rgph_u64_xxh64s_data, seed),
 		    edges, g->nkeys, oedges, g->nverts,
-		    &g->datalenmin, &g->datalenmax, index)) {
+		    &g->datalenmin, &g->datalenmax,
+		    index, &g->indexmin, &g->indexmax)) {
 			return RGPH_NOKEY;
 		}
 		break;
@@ -1228,6 +1251,22 @@ rgph_datalen_max(struct rgph_graph *g)
 {
 
 	return g->datalenmax;
+}
+
+extern "C"
+size_t
+rgph_index_min(struct rgph_graph *g)
+{
+
+	return g->indexmin;
+}
+
+extern "C"
+size_t
+rgph_index_max(struct rgph_graph *g)
+{
+
+	return g->indexmax;
 }
 
 extern "C"
