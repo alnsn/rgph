@@ -425,30 +425,13 @@ init_graph(Iter keys, Iter keys_end, Hash hash,
 	return e == nkeys;
 }
 
-bool
-init_index(void *index, size_t nkeys, size_t width)
+void
+init_index(uint32_t *index, size_t nkeys)
 {
-	uint8_t *index8 = (uint8_t *)index;
-	uint16_t *index16 = (uint16_t *)index;
-	uint32_t *index32 = (uint32_t *)index;
 	size_t i;
 
-	switch (width) {
-		case 1:
-			for (i = 0; i < nkeys; i++)
-				index8[i] = i;
-			return true;
-		case 2:
-			for (i = 0; i < nkeys; i++)
-				index16[i] = i;
-			return true;
-		case 4:
-			for (i = 0; i < nkeys; i++)
-				index32[i] = i;
-			return true;
-		default:
-			return false;
-		}
+	for (i = 0; i < nkeys; i++)
+		index[i] = i;
 }
 
 template<class T, int R>
@@ -1359,8 +1342,9 @@ rgph_assign(struct rgph_graph *g, int algo)
 			g->index = malloc(g->width * g->nkeys);
 			if (g->index == NULL)
 				return RGPH_NOMEM;
-			if (!init_index(g->index, g->nkeys, g->width))
-				return RGPH_INVAL;
+			g->indexmin = 0;
+			g->indexmax = g->nkeys - 1;
+			init_index((uint32_t *)g->index, g->nkeys);
 		}
 
 		g->flags &= ~RGPH_ALGO_MASK;
