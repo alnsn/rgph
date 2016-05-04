@@ -731,8 +731,11 @@ graph_nverts(int *flags, size_t nkeys)
 template<class G, class T, int R, class A>
 inline void
 assign(const edge<T,R> *edges, const T *order, size_t nkeys,
-    G *g, size_t nverts, G unassigned, A assigner)
+    A assigner, G *g, size_t nverts, size_t min, size_t max)
 {
+	const G unassigned = max + 1;
+	assert(unassigned > max);
+
 	for (size_t v = 0; v < nverts; v++)
 		g[v] = unassigned;
 
@@ -759,14 +762,14 @@ assign(const edge<T,R> *edges, const T *order, size_t nkeys,
 				const T gu = g[u];
 				assert(u != v);
 
-				// g[v] = (g[v] - g[u]) mod unassigned:
+				// g[v] = (g[v] - g[u]) mod (unassigned - min):
 				if (g[v] < gu)
-					g[v] += unassigned;
+					g[v] += unassigned - min;
 				g[v] -= gu;
 
 				// Assign all traversed vertices:
 				if (gu == unassigned)
-					g[u] = 0;
+					g[u] = min;
 			}
 
 			assert(g[v] < unassigned);
@@ -1035,7 +1038,6 @@ assign_bdz(struct rgph_graph *g)
 	const T *order = (const T *)g->order;
 	const edge_t *edges = (const edge_t *)g->edges;
 	uint8_t *assigned = (uint8_t *)g->oedges; // Reuse oedges.
-	const uint8_t unassigned = R;
 	const bdz_assigner<T,R> assigner;
 
 	assert(g->core_size == 0);
@@ -1043,8 +1045,8 @@ assign_bdz(struct rgph_graph *g)
 	g->flags |= ASSIGNED;
 	g->flags &= ~PEELED;
 
-	assign(edges, order, g->nkeys,
-	    assigned, g->nverts, unassigned, assigner);
+	assign(edges, order, g->nkeys, assigner,
+	    assigned, g->nverts, 0, R - 1);
 
 	return RGPH_SUCCESS;
 }
@@ -1059,8 +1061,12 @@ assign_chm(struct rgph_graph *g)
 	const T *index = (const T *)g->index;
 	const edge_t *edges = (const edge_t *)g->edges;
 	T *assigned = (T *)g->oedges; // Reuse oedges.
-	const T unassigned = g->indexmax + 1; // XXX this breaks assign() below
+	const T unassigned = g->indexmax + 1;
 	const chm_assigner<T,R> assigner = { index };
+
+	// Check an overflow in g->indexmax + 1:
+	if (unassigned < g->indexmax)
+		return RGPH_RANGE;
 
 	assert(index != NULL);
 	assert(g->core_size == 0);
@@ -1068,8 +1074,8 @@ assign_chm(struct rgph_graph *g)
 	g->flags |= ASSIGNED;
 	g->flags &= ~PEELED;
 
-	assign(edges, order, g->nkeys,
-	    assigned, g->nverts, unassigned, assigner);
+	assign(edges, order, g->nkeys, assigner,
+	    assigned, g->nverts, g->indexmin, g->indexmax);
 
 	return RGPH_SUCCESS;
 }
