@@ -49,12 +49,6 @@
 #define UINT32_MAX 0xffffffffu
 #endif
 
-// Min. data_width size for building a graph. Setting it to 1 or 2
-// may save you some space for smaller graphs but beware of subtleties
-// of integral promotion rules.
-// Changing it doesn't preserve backward compatibility.
-#define MIN_WIDTH_BUILD 4
-
 // Max nkeys values.
 #define MAX_NKEYS_R2_VEC 0x78787877u // Vector hashes.
 #define MAX_NKEYS_R2_S64 0x78787877u // Scalar 64 hashes.
@@ -477,39 +471,12 @@ peel_graph(edge<T,R> *edges, size_t nkeys,
 }
 
 inline size_t
-data_width(size_t size, size_t min_width)
-{
-
-	if (size <= 0xffu && min_width <= 1)
-		return 1;
-	else if (size <= 0xffffu && min_width <= 2)
-		return 2;
-	else if (size <= 0xffffffffu && min_width <= 4)
-		return 4;
-	else
-		return 0;
-}
-
-template<int R>
-inline size_t
-edge_size_impl(size_t width)
-{
-
-	switch (width) {
-	case 1: return sizeof(edge<uint8_t,R>);
-	case 2: return sizeof(edge<uint16_t,R>);
-	case 4: return sizeof(edge<uint32_t,R>);
-	default: return 0;
-	}
-}
-
-inline size_t
-edge_size(int rank, size_t width)
+edge_size(int rank)
 {
 
 	switch (rank) {
-	case 2: return edge_size_impl<2>(width);
-	case 3: return edge_size_impl<3>(width);
+	case 2: return sizeof(edge<uint32_t,2>);
+	case 3: return sizeof(edge<uint32_t,3>);
 	default: return 0;
 	}
 }
@@ -572,26 +539,13 @@ oedges_size_impl(size_t nkeys, size_t nverts)
 	return maxsize(oedges_sz, hash_sz + index_sz);
 }
 
-template<int R>
 inline size_t
-oedges_size_impl(size_t width, size_t nkeys, size_t nverts)
-{
-
-	switch (width) {
-	case 1: return oedges_size_impl<uint8_t,R>(nkeys, nverts);
-	case 2: return oedges_size_impl<uint16_t,R>(nkeys, nverts);
-	case 4: return oedges_size_impl<uint32_t,R>(nkeys, nverts);
-	default: return 0;
-	}
-}
-
-inline size_t
-oedges_size(int rank, size_t width, size_t nkeys, size_t nverts)
+oedges_size(int rank, size_t nkeys, size_t nverts)
 {
 
 	switch (rank) {
-	case 2: return oedges_size_impl<2>(width, nkeys, nverts);
-	case 3: return oedges_size_impl<3>(width, nkeys, nverts);
+	case 2: return oedges_size_impl<uint32_t,2>(nkeys, nverts);
+	case 3: return oedges_size_impl<uint32_t,3>(nkeys, nverts);
 	default: return 0;
 	}
 }
@@ -1113,7 +1067,7 @@ struct rgph_graph *
 rgph_alloc_graph(size_t nkeys, int flags)
 {
 	struct rgph_graph *g;
-	size_t nverts, width, esz, osz;
+	size_t nverts, esz, osz;
 	int save_errno;
 	int r;
 
@@ -1152,14 +1106,13 @@ rgph_alloc_graph(size_t nkeys, int flags)
 	assert(nverts > nkeys);
 
 	r = graph_rank(flags);
-	width = data_width(nverts, MIN_WIDTH_BUILD);
-	esz = edge_size(r, width);
+	esz = edge_size(r);
 	if (esz == 0) {
 		errno = EINVAL;
 		return NULL;
 	}
 
-	osz = oedges_size(r, width, nkeys, nverts);
+	osz = oedges_size(r, nkeys, nverts);
 	if (osz == 0) {
 		errno = ENOMEM;
 		return NULL;
@@ -1178,7 +1131,7 @@ rgph_alloc_graph(size_t nkeys, int flags)
 	g->seed   = 0;
 	g->flags  = flags;
 
-	g->order = calloc(width, nkeys);
+	g->order = calloc(sizeof(uint32_t), nkeys);
 	if (g->order == NULL)
 		goto err;
 
@@ -1191,7 +1144,7 @@ rgph_alloc_graph(size_t nkeys, int flags)
 		goto err;
 
 	if (flags & RGPH_ALGO_CHM) {
-		g->index = malloc(width * nkeys);
+		g->index = malloc(sizeof(uint32_t) * nkeys);
 		if (g->index == NULL)
 			goto err;
 	}
@@ -1331,32 +1284,16 @@ int
 rgph_build_graph(struct rgph_graph *g,
     unsigned long seed, rgph_entry_iterator_t keys, void *state)
 {
-	const int r = graph_rank(g->flags);
-	const size_t width = data_width(g->nverts, MIN_WIDTH_BUILD);
 
-#define SELECT(r, w) (8 * (r) + (w))
-	switch (SELECT(r, width)) {
-#if MIN_WIDTH_BUILD <= 1
-	case SELECT(2, 1):
-		return build_graph<uint8_t,2>(g, keys, state, seed);
-	case SELECT(3, 1):
-		return build_graph<uint8_t,3>(g, keys, state, seed);
-#endif
-#if MIN_WIDTH_BUILD <= 2
-	case SELECT(2, 2):
-		return build_graph<uint16_t,2>(g, keys, state, seed);
-	case SELECT(3, 2):
-		return build_graph<uint16_t,3>(g, keys, state, seed);
-#endif
-	case SELECT(2, 4):
+	switch (graph_rank(g->flags)) {
+	case 2:
 		return build_graph<uint32_t,2>(g, keys, state, seed);
-	case SELECT(3, 4):
+	case 3:
 		return build_graph<uint32_t,3>(g, keys, state, seed);
 	default:
 		assert(0 && "rgph_alloc_graph() should have caught it");
 		return RGPH_INVAL;
 	}
-#undef SELECT
 }
 
 extern "C"
@@ -1364,8 +1301,6 @@ int
 rgph_copy_edge(struct rgph_graph *g, size_t edge,
     unsigned long *to, size_t *peel_order)
 {
-	const int r = graph_rank(g->flags);
-	const size_t width = data_width(g->nverts, MIN_WIDTH_BUILD);
 
 	if (!(g->flags & BUILT))
 		return RGPH_INVAL;
@@ -1373,29 +1308,15 @@ rgph_copy_edge(struct rgph_graph *g, size_t edge,
 	if (edge >= g->nkeys)
 		return RGPH_RANGE;
 
-#define SELECT(r, w) (8 * (r) + (w))
-	switch (SELECT(r, width)) {
-#if MIN_WIDTH_BUILD <= 1
-	case SELECT(2, 1):
-		return copy_edge<uint8_t,2>(g, edge, to, peel_order);
-	case SELECT(3, 1):
-		return copy_edge<uint8_t,3>(g, edge, to, peel_order);
-#endif
-#if MIN_WIDTH_BUILD <= 2
-	case SELECT(2, 2):
-		return copy_edge<uint16_t,2>(g, edge, to, peel_order);
-	case SELECT(3, 2):
-		return copy_edge<uint16_t,3>(g, edge, to, peel_order);
-#endif
-	case SELECT(2, 4):
+	switch (graph_rank(g->flags)) {
+	case 2:
 		return copy_edge<uint32_t,2>(g, edge, to, peel_order);
-	case SELECT(3, 4):
+	case 3:
 		return copy_edge<uint32_t,3>(g, edge, to, peel_order);
 	default:
 		assert(0 && "rgph_alloc_graph() should have caught it");
 		return RGPH_INVAL;
 	}
-#undef SELECT
 }
 
 extern "C"
@@ -1403,43 +1324,25 @@ int
 rgph_find_duplicates(struct rgph_graph *g,
     rgph_entry_iterator_t keys, void *state, size_t *dup)
 {
-	const int r = graph_rank(g->flags);
-	const size_t width = data_width(g->nverts, MIN_WIDTH_BUILD);
 
 	if (!(g->flags & BUILT))
 		return RGPH_INVAL;
 
-#define SELECT(r, w) (8 * (r) + (w))
-	switch (SELECT(r, width)) {
-#if MIN_WIDTH_BUILD <= 1
-	case SELECT(2, 1):
-		return find_duplicates<uint8_t,2>(g, keys, state, dup);
-	case SELECT(3, 1):
-		return find_duplicates<uint8_t,3>(g, keys, state, dup);
-#endif
-#if MIN_WIDTH_BUILD <= 2
-	case SELECT(2, 2):
-		return find_duplicates<uint16_t,2>(g, keys, state, dup);
-	case SELECT(3, 2):
-		return find_duplicates<uint16_t,3>(g, keys, state, dup);
-#endif
-	case SELECT(2, 4):
+	switch (graph_rank(g->flags)) {
+	case 2:
 		return find_duplicates<uint32_t,2>(g, keys, state, dup);
-	case SELECT(3, 4):
+	case 3:
 		return find_duplicates<uint32_t,3>(g, keys, state, dup);
 	default:
 		assert(0 && "rgph_alloc_graph() should have caught it");
 		return RGPH_INVAL;
 	}
-#undef SELECT
 }
 
 extern "C"
 int
 rgph_assign(struct rgph_graph *g, int algo)
 {
-	const int r = graph_rank(g->flags);
-	const size_t width = data_width(g->nverts, MIN_WIDTH_BUILD);
 
 	if (!(g->flags & BUILT))
 		return RGPH_INVAL;
@@ -1464,29 +1367,15 @@ rgph_assign(struct rgph_graph *g, int algo)
 		g->flags |= algo;
 	}
 
-#define SELECT(r, w) (8 * (r) + (w))
-	switch (SELECT(r, width)) {
-#if MIN_WIDTH_BUILD <= 1
-	case SELECT(2, 1):
-		return assign<uint8_t,2>(g);
-	case SELECT(3, 1):
-		return assign<uint8_t,3>(g);
-#endif
-#if MIN_WIDTH_BUILD <= 2
-	case SELECT(2, 2):
-		return assign<uint16_t,2>(g);
-	case SELECT(3, 2):
-		return assign<uint16_t,3>(g);
-#endif
-	case SELECT(2, 4):
+	switch (graph_rank(g->flags)) {
+	case 2:
 		return assign<uint32_t,2>(g);
-	case SELECT(3, 4):
+	case 3:
 		return assign<uint32_t,3>(g);
 	default:
 		assert(0 && "rgph_alloc_graph() should have caught it");
 		return RGPH_INVAL;
 	}
-#undef SELECT
 }
 
 extern "C"
