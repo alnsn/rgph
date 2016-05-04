@@ -52,6 +52,7 @@ void rgph_free_graph(struct rgph_graph *);
 
 int rgph_flags(struct rgph_graph *);
 int rgph_rank(struct rgph_graph *);
+uint32_t rgph_unassigned(struct rgph_graph *);
 size_t rgph_entries(struct rgph_graph *);
 size_t rgph_vertices(struct rgph_graph *);
 size_t rgph_datalen_min(struct rgph_graph *);

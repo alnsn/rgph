@@ -248,6 +248,19 @@ graph_hash_bits(lua_State *L)
 }
 
 static int
+graph_unassigned(lua_State *L)
+{
+	struct rgph_graph **pg;
+
+	pg = (struct rgph_graph **)luaL_checkudata(L, 1, GRAPH_MT);
+	if (*pg == NULL)
+		return luaL_argerror(L, 1, "dead object");
+
+	lua_pushinteger(L, rgph_unassigned(*pg));
+	return 1;
+}
+
+static int
 graph_entries(lua_State *L)
 {
 	struct rgph_graph **pg;
@@ -940,6 +953,7 @@ static const luaL_Reg graph_fn[] = {
 	{ "algo", graph_algo },
 	{ "hash", graph_hash },
 	{ "hash_bits", graph_hash_bits },
+	{ "unassigned", graph_unassigned },
 	{ "entries", graph_entries },
 	{ "vertices", graph_vertices },
 	{ "datalen_min", graph_datalen_min },

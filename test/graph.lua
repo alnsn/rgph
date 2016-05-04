@@ -275,6 +275,7 @@ local function test_abcz(keys, seed, flags)
 
 	local bdz = g:algo() == "bdz"
 	local unassigned = bdz and rank or nkeys
+	assert(unassigned == g:unassigned())
 	for v = 0, nverts - 1 do
 		assert(assign[v] >= 0 and assign[v] <= unassigned)
 	end

@@ -1059,7 +1059,7 @@ assign_chm(struct rgph_graph *g)
 	const T *index = (const T *)g->index;
 	const edge_t *edges = (const edge_t *)g->edges;
 	T *assigned = (T *)g->oedges; // Reuse oedges.
-	const T unassigned = g->nkeys;
+	const T unassigned = g->indexmax + 1; // XXX this breaks assign() below
 	const chm_assigner<T,R> assigner = { index };
 
 	assert(index != NULL);
@@ -1219,6 +1219,15 @@ rgph_rank(struct rgph_graph *g)
 {
 
 	return graph_rank(g->flags);
+}
+
+extern "C"
+uint32_t
+rgph_unassigned(struct rgph_graph *g)
+{
+	const unsigned int bdz = g->flags & RGPH_ALGO_BDZ;
+
+	return bdz ? graph_rank(g->flags) : g->indexmax + 1;
 }
 
 extern "C"
