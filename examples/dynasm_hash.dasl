@@ -33,18 +33,27 @@ local function globalsbynames(globals)
 	return res
 end
 
+-- for k,v,i in index_iter { 3 } do print(k,v,i) end --> 1	nil	3
+local function index_iter(keys, v)
+	local function iter(t, k)
+		local n = next(t, k)
+		return n, v, t[n]
+	end
+	return iter, keys
+end
+
 local function build_graph(keys, flags, ntries, seed)
 	flags  = flags or ""
 	ntries = ntries or 100
 	seed   = seed or 0
 
-	local nkeys = rgph.count_keys(pairs(keys))
+	local nkeys = rgph.count_keys(index_iter(keys))
 	local g = rgph.new_graph(nkeys, flags)
 
 	for i = 1, ntries do
-		local ok, err = g:build(seed, pairs(keys))
+		local ok, err = g:build(seed, index_iter(keys))
 		if ok then break end
-		assert(not err, err) -- pairs(keys) can't fail
+		assert(not err, err) -- index_iter(keys) can't fail
 		seed = seed + 1
 	end
 
