@@ -83,6 +83,7 @@ function emit_rodata.bdz(Dst, g, assignments)
 	end
 
 	if bit32.band(nverts, stop) ~= 0 then
+		-- XXX bit32.lshift(w, ...)
 		| .dword w
 	end
 end
@@ -265,8 +266,7 @@ function emit_lookup.bdz(Dst, g)
 		| shr r8d, cl -- implicit cl&31
 		| and r8d, 3
 		|
-		| mov ecx, edi
-		| shl ecx, 1
+		| lea ecx, [edi*2]
 		| shr r9d, cl -- implicit cl&31
 		| and r9d, 3
 	end
