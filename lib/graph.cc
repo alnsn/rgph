@@ -413,7 +413,7 @@ init_graph(Iter keys, Iter keys_end, Hash hash,
 			*datalenmax = ent.datalen;
 		if (index != NULL) {
 			// chm
-			const size_t i = ent.index < nkeys ? ent.index : e;
+			const size_t i = ent.index == SIZE_MAX ? e : ent.index;
 			index[e] = i;
 			if (i < *indexmin)
 				*indexmin = i;
@@ -699,10 +699,10 @@ assign(const edge<T,R> *edges, const T *order, size_t nkeys,
 				const T gu = g[u];
 				assert(u != v);
 
-				// g[v] = (g[v] - g[u]) mod (unassigned - min):
+				// g[v] = min + (g[v] - g[u]) mod index_range:
 				if (g[v] < gu)
 					g[v] += unassigned - min;
-				g[v] -= gu;
+				g[v] -= gu - min;
 
 				// Assign all traversed vertices:
 				if (gu == unassigned)
