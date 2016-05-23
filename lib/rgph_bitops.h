@@ -108,4 +108,40 @@ fls32(uint32_t n)
 	return v;
 }
 
+static inline int
+fls64(uint64_t n)
+{
+	int v;
+
+	if (!n)
+		return 0;
+
+	v = 64;
+	if ((n & 0xFFFFFFFF00000000ULL) == 0) {
+		n <<= 32;
+		v -= 32;
+	}
+	if ((n & 0xFFFF000000000000ULL) == 0) {
+		n <<= 16;
+		v -= 16;
+	}
+	if ((n & 0xFF00000000000000ULL) == 0) {
+		n <<= 8;
+		v -= 8;
+	}
+	if ((n & 0xF000000000000000ULL) == 0) {
+		n <<= 4;
+		v -= 4;
+	}
+	if ((n & 0xC000000000000000ULL) == 0) {
+		n <<= 2;
+		v -= 2;
+	}
+	if ((n & 0x8000000000000000ULL) == 0) {
+		n <<= 1;
+		v -= 1;
+	}
+	return v;
+}
+
 #endif /* FILE_RGPH_BITOPS_H_INCLUDED */
