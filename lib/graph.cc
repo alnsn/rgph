@@ -105,10 +105,9 @@ struct oedge {
 };
 
 // Assign initial value in bdz_assign().
-template<class T, int R>
 struct bdz_assigner
 {
-	size_t operator()(T, size_t i) const
+	size_t operator()(uint32_t, size_t i) const
 	{
 
 		return i;
@@ -116,12 +115,11 @@ struct bdz_assigner
 };
 
 // Assign initial value in chm_assign().
-template<class T, int R>
 struct chm_assigner
 {
-	const T *index;
+	const uint32_t *index;
 
-	T operator()(T e, size_t) const
+	uint32_t operator()(uint32_t e, size_t) const
 	{
 
 		return index[e];
@@ -975,7 +973,7 @@ assign_bdz(struct rgph_graph *g)
 	const T *order = (const T *)g->order;
 	const edge_t *edges = (const edge_t *)g->edges;
 	uint8_t *assigned = (uint8_t *)g->oedges; // Reuse oedges.
-	const bdz_assigner<T,R> assigner;
+	const bdz_assigner assigner;
 
 	assert(g->core_size == 0);
 
@@ -999,7 +997,7 @@ assign_chm(struct rgph_graph *g)
 	const edge_t *edges = (const edge_t *)g->edges;
 	T *assigned = (T *)g->oedges; // Reuse oedges.
 	const T unassigned = g->indexmax + 1;
-	const chm_assigner<T,R> assigner = { index };
+	const chm_assigner assigner = { index };
 
 	// Check an overflow in g->indexmax + 1:
 	if (unassigned < g->indexmax)
