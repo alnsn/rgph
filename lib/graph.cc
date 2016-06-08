@@ -67,6 +67,9 @@
 
 namespace {
 
+typedef uint32_t vert_t; // vertex or key
+typedef uint32_t index_t;
+
 template<bool C> struct bool_selector {};
 
 /*
@@ -107,7 +110,7 @@ struct oedge {
 // Assign initial value in bdz_assign().
 struct bdz_assigner
 {
-	size_t operator()(uint32_t, size_t i) const
+	size_t operator()(vert_t, size_t i) const
 	{
 
 		return i;
@@ -117,9 +120,9 @@ struct bdz_assigner
 // Assign initial value in chm_assign().
 struct chm_assigner
 {
-	const uint32_t *index;
+	const index_t *index;
 
-	uint32_t operator()(uint32_t e, size_t) const
+	vert_t operator()(vert_t e, size_t) const
 	{
 
 		return index[e];
@@ -424,7 +427,7 @@ init_graph(Iter keys, Iter keys_end, Hash hash,
 }
 
 void
-init_index(uint32_t *index, size_t nkeys)
+init_index(index_t *index, size_t nkeys)
 {
 	size_t i;
 
@@ -456,8 +459,8 @@ edge_size(int rank)
 {
 
 	switch (rank) {
-	case 2: return sizeof(edge<uint32_t,2>);
-	case 3: return sizeof(edge<uint32_t,3>);
+	case 2: return sizeof(edge<vert_t,2>);
+	case 3: return sizeof(edge<vert_t,3>);
 	default: return 0;
 	}
 }
@@ -525,8 +528,8 @@ oedges_size(int rank, size_t nkeys, size_t nverts)
 {
 
 	switch (rank) {
-	case 2: return oedges_size_impl<uint32_t,2>(nkeys, nverts);
-	case 3: return oedges_size_impl<uint32_t,3>(nkeys, nverts);
+	case 2: return oedges_size_impl<vert_t,2>(nkeys, nverts);
+	case 3: return oedges_size_impl<vert_t,3>(nkeys, nverts);
 	default: return 0;
 	}
 }
@@ -601,7 +604,7 @@ graph_nverts(int *flags, size_t nkeys)
 {
 	const int r = graph_rank(*flags);
 	const bool full_range = (hash_bits(*flags) >= r * 32u);
-	const size_t div_nbits = sizeof(uint32_t) * CHAR_BIT - !full_range;
+	const size_t div_nbits = sizeof(vert_t) * CHAR_BIT - !full_range;
 	const size_t max_nkeys = graph_max_keys(*flags);
 	const size_t max_fastdiv = graph_max_fastdiv(*flags);
 
@@ -1112,7 +1115,7 @@ rgph_alloc_graph(size_t nkeys, int flags)
 	g->seed   = 0;
 	g->flags  = flags;
 
-	g->order = calloc(sizeof(uint32_t), nkeys);
+	g->order = calloc(sizeof(vert_t), nkeys);
 	if (g->order == NULL)
 		goto err;
 
@@ -1125,7 +1128,7 @@ rgph_alloc_graph(size_t nkeys, int flags)
 		goto err;
 
 	if (flags & RGPH_ALGO_CHM) {
-		g->index = malloc(sizeof(uint32_t) * nkeys);
+		g->index = malloc(sizeof(index_t) * nkeys);
 		if (g->index == NULL)
 			goto err;
 	}
@@ -1268,9 +1271,9 @@ rgph_build_graph(struct rgph_graph *g,
 
 	switch (graph_rank(g->flags)) {
 	case 2:
-		return build_graph<uint32_t,2>(g, keys, state, seed);
+		return build_graph<vert_t,2>(g, keys, state, seed);
 	case 3:
-		return build_graph<uint32_t,3>(g, keys, state, seed);
+		return build_graph<vert_t,3>(g, keys, state, seed);
 	default:
 		assert(0 && "rgph_alloc_graph() should have caught it");
 		return RGPH_INVAL;
@@ -1291,9 +1294,9 @@ rgph_copy_edge(struct rgph_graph *g, size_t edge,
 
 	switch (graph_rank(g->flags)) {
 	case 2:
-		return copy_edge<uint32_t,2>(g, edge, to, peel_order);
+		return copy_edge<vert_t,2>(g, edge, to, peel_order);
 	case 3:
-		return copy_edge<uint32_t,3>(g, edge, to, peel_order);
+		return copy_edge<vert_t,3>(g, edge, to, peel_order);
 	default:
 		assert(0 && "rgph_alloc_graph() should have caught it");
 		return RGPH_INVAL;
@@ -1311,9 +1314,9 @@ rgph_find_duplicates(struct rgph_graph *g,
 
 	switch (graph_rank(g->flags)) {
 	case 2:
-		return find_duplicates<uint32_t,2>(g, keys, state, dup);
+		return find_duplicates<vert_t,2>(g, keys, state, dup);
 	case 3:
-		return find_duplicates<uint32_t,3>(g, keys, state, dup);
+		return find_duplicates<vert_t,3>(g, keys, state, dup);
 	default:
 		assert(0 && "rgph_alloc_graph() should have caught it");
 		return RGPH_INVAL;
@@ -1342,7 +1345,7 @@ rgph_assign(struct rgph_graph *g, int algo)
 				return RGPH_NOMEM;
 			g->indexmin = 0;
 			g->indexmax = g->nkeys - 1;
-			init_index((uint32_t *)g->index, g->nkeys);
+			init_index((index_t *)g->index, g->nkeys);
 		}
 
 		g->flags &= ~RGPH_ALGO_MASK;
@@ -1351,9 +1354,9 @@ rgph_assign(struct rgph_graph *g, int algo)
 
 	switch (graph_rank(g->flags)) {
 	case 2:
-		return assign<uint32_t,2>(g);
+		return assign<vert_t,2>(g);
 	case 3:
-		return assign<uint32_t,3>(g);
+		return assign<vert_t,3>(g);
 	default:
 		assert(0 && "rgph_alloc_graph() should have caught it");
 		return RGPH_INVAL;
