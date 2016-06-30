@@ -192,8 +192,8 @@ struct scalar_hash {
 
 	inline const T *
 	operator()(const void *key, size_t keylen) {
-		const size_t nbits = sizeof(H) * CHAR_BIT / R;
-		const H mask = (H(1) << nbits) - 1;
+		constexpr size_t nbits = sizeof(H) * CHAR_BIT / R;
+		constexpr H mask = (H(1) << nbits) - 1;
 
 		H h = func(key, keylen, seed);
 		for (size_t i = 0; i < R - 1; i++)
@@ -495,9 +495,9 @@ oedges_size_impl(size_t nkeys, size_t nverts)
 {
 	assert(nverts > nkeys);
 
-	const size_t osz = sizeof(oedge<T,R>);
-	const size_t tsz = sizeof(T);
-	// static_assert(osz > tsz);
+	constexpr size_t osz = sizeof(oedge<T,R>);
+	constexpr size_t tsz = sizeof(T);
+	static_assert(osz > tsz, "oedge<T,R> must be bigger than T");
 
 	// Overflow check for nverts * osz and nverts * tsz:
 	if (nverts > SIZE_MAX / osz)
@@ -742,10 +742,10 @@ build_graph(struct rgph_graph *g,
 	typedef edge<T,R> edge_t;
 	typedef oedge<T,R> oedge_t;
 
-	T *order = (T *)g->order;
-	T *index = (T *)g->index; // For RGPH_ALGO_CHM.
-	edge_t *edges = (edge_t *)g->edges;
-	oedge_t *oedges = (oedge_t *)g->oedges;
+	auto order = (T *)g->order;
+	auto index = (T *)g->index; // For RGPH_ALGO_CHM.
+	auto edges = (edge_t *)g->edges;
+	auto oedges = (oedge_t *)g->oedges;
 
 	if (!(g->flags & ZEROED)) {
 		memset(order, 0, sizeof(T) * g->nkeys);
@@ -826,12 +826,12 @@ static const T *
 build_peel_index(struct rgph_graph *g)
 {
 	const size_t hash_sz = duphash_size<T,R>(g->nverts);
-	T *peel = (T *)((char *)g->oedges + hash_sz); // Reuse oedges.
+	auto peel = (T *)((char *)g->oedges + hash_sz); // Reuse oedges.
 
 	assert(hash_sz != 0);
 
 	if (!(g->flags & PEELED)) {
-		const T *order = (const T *)g->order;
+		auto order = (const T *)g->order;
 
 		g->flags |= PEELED;
 		g->flags &= ~ASSIGNED;
@@ -852,7 +852,7 @@ copy_edge(struct rgph_graph *g, size_t e, unsigned long *to, size_t *peel_order)
 {
 	typedef edge<T,R> edge_t;
 
-	edge_t *edges = (edge_t *)g->edges;
+	auto edges = (edge_t *)g->edges;
 
 	for (size_t r = 0; r < R; r++)
 		to[r] = edges[e].verts[r];
@@ -876,14 +876,14 @@ find_duplicates(struct rgph_graph *g,
 
 	const size_t hash_sz = g->nverts / R;
 	const size_t maxfill = g->nverts / 4; // Fill factor is 50% or 75%.
-	duphash_entry_t *hash = (duphash_entry_t *)g->oedges; // Reuse oedges.
+	auto hash = (duphash_entry_t *)g->oedges; // Reuse oedges.
 
 	for (size_t i = 0; i < hash_sz; i++)
 		hash[i] = nullptr;
 
 	int res = RGPH_NOKEY;
 	const T *peel = build_peel_index<T,R>(g);
-	const edge_t *edges = (const edge_t *)g->edges;
+	auto edges = (const edge_t *)g->edges;
 	entry_iterator keys(iter, state), keys_end;
 
 	size_t hashed = 0;
@@ -965,9 +965,9 @@ assign_bdz(struct rgph_graph *g)
 {
 	typedef edge<T,R> edge_t;
 
-	const T *order = (const T *)g->order;
-	const edge_t *edges = (const edge_t *)g->edges;
-	uint8_t *assigned = (uint8_t *)g->oedges; // Reuse oedges.
+	auto order = (const T *)g->order;
+	auto edges = (const edge_t *)g->edges;
+	auto assigned = (uint8_t *)g->oedges; // Reuse oedges.
 	const bdz_assigner assigner;
 
 	assert(g->core_size == 0);
@@ -987,10 +987,10 @@ assign_chm(struct rgph_graph *g)
 {
 	typedef edge<T,R> edge_t;
 
-	const T *order = (const T *)g->order;
-	const T *index = (const T *)g->index;
-	const edge_t *edges = (const edge_t *)g->edges;
-	T *assigned = (T *)g->oedges; // Reuse oedges.
+	auto order = (const T *)g->order;
+	auto index = (const T *)g->index;
+	auto edges = (const edge_t *)g->edges;
+	auto assigned = (T *)g->oedges; // Reuse oedges.
 	const T unassigned = g->indexmax + 1;
 	const chm_assigner assigner = { index };
 
