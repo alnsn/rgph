@@ -52,12 +52,12 @@ LUAHASHPICO=	luahash.pico $(HASHPICO) $(HASHEXPICO)
 .c.pico:
 	$(CC) $(XCFLAGS) $(PICFLAGS) $(CXXFLAGS) -c $< -o $@
 
-all-c: librgph.so librgph_hash.so
-all-lua: rgph.so #hash.so
+all-c: librgph.$(DSO) librgph_hash.$(DSO)
+all-lua: rgph.$(DSO) #hash.$(DSO)
 all: all-c all-lua
 
 luargph.pico: luargph.c
-	$(CC) `pkg-config --cflags --cflags $(LUAPKG)` $(XCFLAGS) $(PICFLAGS) $(CFLAGS) -c $< -o $@
+	$(CC) `pkg-config --cflags $(LUAPKG)` $(XCFLAGS) $(PICFLAGS) $(CFLAGS) -c $< -o $@
 
 librgph.$(DSO): $(PICO)
 	$(CC) $(PICLDFLAGS) $(LDFLAGS) -shared $(PICO) -o $@
