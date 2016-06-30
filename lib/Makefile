@@ -7,7 +7,7 @@ WARNS?=		-Wall -Wextra
 PICFLAGS?=	-fPIC
 PICLDFLAGS?=	-fPIC
 C99OPTS?=	-std=gnu99 # GNU for WEAK_ALIASES
-CXXOPTS?=	-nostdinc++ -fno-exceptions -fno-rtti
+CXXOPTS?=	-std=gnu++11 -nostdinc++ -fno-exceptions -fno-rtti
 
 CPPFLAGS+=	-DNDEBUG -DWEAK_ALIASES
 

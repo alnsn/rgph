@@ -41,14 +41,6 @@
 #include "rgph_graph.h"
 #include "rgph_hash.h"
 
-#ifndef SIZE_MAX
-#define SIZE_MAX ((size_t)-1)
-#endif
-
-#ifndef UINT32_MAX
-#define UINT32_MAX 0xffffffffu
-#endif
-
 // Max nkeys values.
 #define MAX_NKEYS_R2_VEC 0x78787877u // Vector hashes.
 #define MAX_NKEYS_R2_S64 0x78787877u // Scalar 64 hashes.
@@ -149,9 +141,9 @@ struct entry_iterator {
 	{}
 
 	entry_iterator()
-		: iter(NULL)
-		, state(NULL)
-		, cur(NULL)
+		: iter(nullptr)
+		, state(nullptr)
+		, cur(nullptr)
 	{}
 
 	void operator++() {
@@ -159,12 +151,12 @@ struct entry_iterator {
 	}
 
 	struct rgph_entry *operator->() {
-		assert(cur != NULL);
+		assert(cur != nullptr);
 		return cur;
 	}
 
 	const rgph_entry &operator*() {
-		assert(cur != NULL);
+		assert(cur != nullptr);
 		return *cur;
 	}
 };
@@ -392,13 +384,13 @@ init_graph(Iter keys, Iter keys_end, Hash hash,
 
 	assert(partsz > 1 && (nverts % R) == 0);
 
-	if (index == NULL) {
+	if (index == nullptr) {
 		// bdz
 		*indexmin = 0;
 		*indexmax = R - 1;
 	}
 
-	rgph_fastdiv_prepare(partsz, &mul, &s1, &s2, 0, NULL);
+	rgph_fastdiv_prepare(partsz, &mul, &s1, &s2, 0, nullptr);
 
 	T e = 0;
 	for (; e < nkeys && keys != keys_end; ++e, ++keys) {
@@ -412,7 +404,7 @@ init_graph(Iter keys, Iter keys_end, Hash hash,
 			*datalenmin = ent.datalen;
 		if (ent.datalen > *datalenmax)
 			*datalenmax = ent.datalen;
-		if (index != NULL) {
+		if (index != nullptr) {
 			// chm
 			const size_t i = ent.index == SIZE_MAX ? e : ent.index;
 			index[e] = i;
@@ -865,7 +857,7 @@ copy_edge(struct rgph_graph *g, size_t e, unsigned long *to, size_t *peel_order)
 	for (size_t r = 0; r < R; r++)
 		to[r] = edges[e].verts[r];
 
-	if (peel_order != NULL) {
+	if (peel_order != nullptr) {
 		const T *peel = build_peel_index<T,R>(g);
 		*peel_order = peel[e];
 	}
@@ -887,7 +879,7 @@ find_duplicates(struct rgph_graph *g,
 	duphash_entry_t *hash = (duphash_entry_t *)g->oedges; // Reuse oedges.
 
 	for (size_t i = 0; i < hash_sz; i++)
-		hash[i] = NULL;
+		hash[i] = nullptr;
 
 	int res = RGPH_NOKEY;
 	const T *peel = build_peel_index<T,R>(g);
@@ -918,7 +910,7 @@ find_duplicates(struct rgph_graph *g,
 		// Linear probing with a wrap-around.
 		size_t v = v0, vend = hash_sz;
 		for (int i = 0; i < 2; i++) {
-			for (; v < vend && hash[v] != NULL; v++) {
+			for (; v < vend && hash[v] != nullptr; v++) {
 				if (keylen == hash[v][1] &&
 				    memcmp(key, &hash[v][2], keylen) == 0) {
 					res = RGPH_SUCCESS;
@@ -934,7 +926,7 @@ find_duplicates(struct rgph_graph *g,
 			vend = v0;
 		}
 
-		if (hash[v] != NULL) {
+		if (hash[v] != nullptr) {
 			res = RGPH_AGAIN; // Hash table is full.
 			goto out;
 		}
@@ -946,7 +938,7 @@ find_duplicates(struct rgph_graph *g,
 
 		hash[v] =
 		    (duphash_entry_t)malloc(2 * sizeof(hash[v][0]) + keylen);
-		if (hash[v] == NULL) {
+		if (hash[v] == nullptr) {
 			res = RGPH_NOMEM;
 			goto out;
 		}
@@ -957,7 +949,7 @@ find_duplicates(struct rgph_graph *g,
 	}
 out:
 	for (size_t i = 0; i < hash_sz; i++) {
-		if (hash[i] != NULL)
+		if (hash[i] != nullptr)
 			free(hash[i]);
 	}
 
@@ -1006,7 +998,7 @@ assign_chm(struct rgph_graph *g)
 	if (unassigned < g->indexmax)
 		return RGPH_RANGE;
 
-	assert(index != NULL);
+	assert(index != nullptr);
 	assert(g->core_size == 0);
 
 	g->flags |= ASSIGNED;
@@ -1057,19 +1049,19 @@ rgph_alloc_graph(size_t nkeys, int flags)
 
 	if (flags & ~PUBLIC_FLAGS) {
 		errno = EINVAL;
-		return NULL;
+		return nullptr;
 	}
 
 	// Fail if both RGPH_ALGO_CHM and RGPH_ALGO_BDZ are passed.
 	if ((flags & RGPH_ALGO_MASK) == RGPH_ALGO_MASK) {
 		errno = EINVAL;
-		return NULL;
+		return nullptr;
 	}
 
 	// Don't accept bad hash flags.
 	if ((flags & RGPH_HASH_MASK) > RGPH_HASH_LAST) {
 		errno = EINVAL;
-		return NULL;
+		return nullptr;
 	}
 
 	if ((flags & RGPH_RANK_MASK) == RGPH_RANK_DEFAULT)
@@ -1084,7 +1076,7 @@ rgph_alloc_graph(size_t nkeys, int flags)
 	nverts = graph_nverts(&flags, nkeys);
 	if (nverts == 0) {
 		errno = ERANGE;
-		return NULL;
+		return nullptr;
 	}
 
 	assert(nverts > nkeys);
@@ -1093,43 +1085,43 @@ rgph_alloc_graph(size_t nkeys, int flags)
 	esz = edge_size(r);
 	if (esz == 0) {
 		errno = EINVAL;
-		return NULL;
+		return nullptr;
 	}
 
 	osz = oedges_size(r, nkeys, nverts);
 	if (osz == 0) {
 		errno = ENOMEM;
-		return NULL;
+		return nullptr;
 	}
 
 	g = (struct rgph_graph *)calloc(sizeof(*g), 1);
-	if (g == NULL)
-		return NULL;
+	if (g == nullptr)
+		return nullptr;
 
 	g->nkeys  = 0;
 	g->nverts = 0;
-	g->order  = NULL;
-	g->edges  = NULL;
-	g->oedges = NULL;
-	g->index  = NULL;
+	g->order  = nullptr;
+	g->edges  = nullptr;
+	g->oedges = nullptr;
+	g->index  = nullptr;
 	g->seed   = 0;
 	g->flags  = flags;
 
 	g->order = calloc(sizeof(vert_t), nkeys);
-	if (g->order == NULL)
+	if (g->order == nullptr)
 		goto err;
 
 	g->edges = calloc(esz, nkeys);
-	if (g->edges == NULL)
+	if (g->edges == nullptr)
 		goto err;
 
 	g->oedges = calloc(osz, 1);
-	if (g->oedges == NULL)
+	if (g->oedges == nullptr)
 		goto err;
 
 	if (flags & RGPH_ALGO_CHM) {
 		g->index = malloc(sizeof(index_t) * nkeys);
-		if (g->index == NULL)
+		if (g->index == nullptr)
 			goto err;
 	}
 
@@ -1145,7 +1137,7 @@ err:
 	save_errno = errno;
 	rgph_free_graph(g);
 	errno = save_errno;
-	return NULL;
+	return nullptr;
 }
 
 extern "C"
@@ -1339,9 +1331,9 @@ rgph_assign(struct rgph_graph *g, int algo)
 		if (algo != RGPH_ALGO_BDZ && algo != RGPH_ALGO_CHM)
 			return RGPH_INVAL;
 
-		if (algo == RGPH_ALGO_CHM && g->index == NULL) {
+		if (algo == RGPH_ALGO_CHM && g->index == nullptr) {
 			g->index = malloc(g->width * g->nkeys);
-			if (g->index == NULL)
+			if (g->index == nullptr)
 				return RGPH_NOMEM;
 			g->indexmin = 0;
 			g->indexmax = g->nkeys - 1;
@@ -1370,13 +1362,13 @@ rgph_assignments(struct rgph_graph *g, size_t *width)
 	const unsigned int flags = g->flags;
 	const void *assigned = g->oedges; // Reused.
 
-	if (width != NULL)
+	if (width != nullptr)
 		*width = (flags & RGPH_ALGO_BDZ) ? 1 : g->width;
 
 	if (flags & ASSIGNED)
 		return assigned;
 	else
-		return NULL;
+		return nullptr;
 }
 
 extern "C"
