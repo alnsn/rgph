@@ -712,7 +712,6 @@ assign(const edge<T,R> *edges, const T *order, size_t nkeys,
 struct rgph_graph {
 	size_t nkeys;
 	size_t nverts;
-	size_t width; // sizeof(T)
 	void *order;  // Output order of edges, points to T[nkeys] array.
 	void *edges;  // Points to edge<T,R>[nkeys] array.
 	void *oedges; // oedge<T,R>[nverts], can be reused for peel order index.
@@ -753,7 +752,6 @@ build_graph(struct rgph_graph *g,
 		memset(oedges, 0, sizeof(oedge_t) * g->nverts);
 	}
 
-	g->width = sizeof(T);
 	g->core_size = g->nkeys;
 	g->datalenmin = SIZE_MAX;
 	g->datalenmax = 0;
@@ -1332,12 +1330,18 @@ rgph_assign(struct rgph_graph *g, int algo)
 			return RGPH_INVAL;
 
 		if (algo == RGPH_ALGO_CHM && g->index == nullptr) {
-			g->index = malloc(g->width * g->nkeys);
+			const size_t nkeys = g->nkeys;
+
+			if (nkeys > SIZE_MAX / sizeof(index_t))
+				return RGPH_NOMEM;
+
+			g->index = malloc(sizeof(index_t) * nkeys);
 			if (g->index == nullptr)
 				return RGPH_NOMEM;
+
 			g->indexmin = 0;
-			g->indexmax = g->nkeys - 1;
-			init_index((index_t *)g->index, g->nkeys);
+			g->indexmax = nkeys - 1;
+			init_index((index_t *)g->index, nkeys);
 		}
 
 		g->flags &= ~RGPH_ALGO_MASK;
@@ -1363,7 +1367,7 @@ rgph_assignments(struct rgph_graph *g, size_t *width)
 	const void *assigned = g->oedges; // Reused.
 
 	if (width != nullptr)
-		*width = (flags & RGPH_ALGO_BDZ) ? 1 : g->width;
+		*width = (flags & RGPH_ALGO_BDZ) ? 1 : sizeof(key_t);
 
 	if (flags & ASSIGNED)
 		return assigned;
@@ -1375,8 +1379,7 @@ extern "C"
 int rgph_copy_assignment(struct rgph_graph *g, size_t n, unsigned int *to)
 {
 	const unsigned int flags = g->flags;
-	const size_t width = (flags & RGPH_ALGO_BDZ) ? 1 : g->width;
-	const void *assigned = g->oedges; // Reused.
+	const void *assignments = g->oedges; // Reused.
 
 	if (!(flags & ASSIGNED))
 		return RGPH_INVAL;
@@ -1384,15 +1387,12 @@ int rgph_copy_assignment(struct rgph_graph *g, size_t n, unsigned int *to)
 	if (n >= g->nverts)
 		return RGPH_RANGE;
 
-	switch (width) {
-	case 1:
-		*to = ((const uint8_t *)assigned)[n];
+	switch (flags & RGPH_ALGO_MASK) {
+	case RGPH_ALGO_BDZ:
+		*to = static_cast<const uint8_t *>(assignments)[n];
 		return RGPH_SUCCESS;
-	case 2:
-		*to = ((const uint16_t *)assigned)[n];
-		return RGPH_SUCCESS;
-	case 4:
-		*to = ((const uint32_t *)assigned)[n];
+	case RGPH_ALGO_CHM:
+		*to = static_cast<const key_t *>(assignments)[n];
 		return RGPH_SUCCESS;
 	default:
 		assert(0 && "rgph_alloc_graph() should have caught it");
