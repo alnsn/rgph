@@ -714,7 +714,12 @@ struct rgph_graph {
 	size_t nverts;
 	void *order;  // Output order of edges, points to T[nkeys] array.
 	void *edges;  // Points to edge<T,R>[nkeys] array.
-	void *oedges; // oedge<T,R>[nverts], can be reused for peel order index.
+	union {
+		void *oedges;             // oedge<T,R>[nverts]
+		duphash_entry_t *duphash; // shared wtih duplicates
+		vert_t *chm_assignments;  // and assignments.
+		uint8_t *bdz_assignments; // +duphash_size to peel order index
+	};
 	void *index;  // Data index for RGPH_ALGO_CHM.
 	size_t core_size; // R-core size.
 	size_t datalenmin;
@@ -824,7 +829,8 @@ static const T *
 build_peel_index(struct rgph_graph *g)
 {
 	const size_t hash_sz = duphash_size<T,R>(g->nverts);
-	auto peel = (T *)((char *)g->oedges + hash_sz); // Reuse oedges.
+	// Reuse oedges:
+	auto peel = reinterpret_cast<T *>(g->bdz_assignments + hash_sz);
 
 	assert(hash_sz != 0);
 
@@ -874,7 +880,7 @@ find_duplicates(struct rgph_graph *g,
 
 	const size_t hash_sz = g->nverts / R;
 	const size_t maxfill = g->nverts / 4; // Fill factor is 50% or 75%.
-	auto hash = static_cast<duphash_entry_t *>(g->oedges); // Reuse oedges.
+	auto hash = g->duphash; // Reuse oedges.
 
 	for (size_t i = 0; i < hash_sz; i++)
 		hash[i] = nullptr;
@@ -934,8 +940,8 @@ find_duplicates(struct rgph_graph *g,
 			goto out;
 		}
 
-		hash[v] =
-		    (duphash_entry_t)malloc(2 * sizeof(hash[v][0]) + keylen);
+		hash[v] = static_cast<duphash_entry_t>(
+		    malloc(2 * sizeof(hash[v][0]) + keylen));
 		if (hash[v] == nullptr) {
 			res = RGPH_NOMEM;
 			goto out;
@@ -965,7 +971,7 @@ assign_bdz(struct rgph_graph *g)
 
 	auto order = static_cast<const T *>(g->order);
 	auto edges = static_cast<const edge_t *>(g->edges);
-	auto assigned = static_cast<uint8_t *>(g->oedges); // Reuse oedges.
+	auto assigned = g->bdz_assignments; // Reuse oedges.
 	const bdz_assigner assigner;
 
 	assert(g->core_size == 0);
@@ -988,7 +994,7 @@ assign_chm(struct rgph_graph *g)
 	auto order = static_cast<const T *>(g->order);
 	auto index = static_cast<const T *>(g->index);
 	auto edges = static_cast<const edge_t *>(g->edges);
-	auto assigned = static_cast<T *>(g->oedges); // Reuse oedges.
+	auto assigned = static_cast<T *>(g->chm_assignments); // Reuse oedges.
 	const T unassigned = g->indexmax + 1;
 	const chm_assigner assigner = { index };
 
