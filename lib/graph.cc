@@ -611,25 +611,25 @@ graph_nverts(int *flags, size_t nkeys)
 
 	assert((nverts % r) == 0);
 
-	if ((*flags & RGPH_DIV_MASK) == RGPH_DIV_DEFAULT)
+	if ((*flags & RGPH_MOD_MASK) == RGPH_MOD_DEFAULT)
 		return nverts;
 
 	const size_t pow2_div = round_up_pow2(nverts / r);
 
 	// Max divisor of a full range hash isn't a power of two.
 	if (pow2_div > UINT32_MAX / r)
-		*flags &= ~RGPH_DIV_POW2;
+		*flags &= ~RGPH_MOD_POW2;
 
 	if (nverts / r > max_fastdiv)
-		*flags &= ~RGPH_DIV_FAST;
+		*flags &= ~RGPH_MOD_FASTDIV;
 
-	if (!(*flags & RGPH_DIV_POW2) && !(*flags & RGPH_DIV_FAST))
+	if (!(*flags & RGPH_MOD_POW2) && !(*flags & RGPH_MOD_FASTDIV))
 		return 0;
-	if ((*flags & RGPH_DIV_POW2) && !(*flags & RGPH_DIV_FAST))
+	if ((*flags & RGPH_MOD_POW2) && !(*flags & RGPH_MOD_FASTDIV))
 		return pow2_div * r;
 
 	const size_t max_div =
-	    (*flags & RGPH_DIV_POW2) ? pow2_div : max_fastdiv;
+	    (*flags & RGPH_MOD_POW2) ? pow2_div : max_fastdiv;
 
 	assert(nverts / r > 1 && nverts / r <= max_div);
 
@@ -644,16 +644,16 @@ graph_nverts(int *flags, size_t nkeys)
 
 		rgph_fastdiv_prepare(div, &mul, &s1, &s2, div_nbits, &inc);
 		if (s1 == 0 && inc == 0) {
-			*flags &= ~RGPH_DIV_MASK;
-			*flags |= RGPH_DIV_FAST;
+			*flags &= ~RGPH_MOD_MASK;
+			*flags |= RGPH_MOD_FASTDIV;
 			return div * r;
 		}
 	}
 
 	assert(is_pow2(max_div));
 
-	*flags &= ~RGPH_DIV_MASK;
-	*flags |=  RGPH_DIV_POW2;
+	*flags &= ~RGPH_MOD_MASK;
+	*flags |=  RGPH_MOD_POW2;
 	return max_div * r;
 }
 

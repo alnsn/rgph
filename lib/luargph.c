@@ -72,8 +72,8 @@ static const struct flag_str flag_strings[] = {
 	{ RGPH_RANK3,          RGPH_RANK_MASK, "rank3"     },
 	{ RGPH_ALGO_CHM,       RGPH_ALGO_MASK, "chm"       },
 	{ RGPH_ALGO_BDZ,       RGPH_ALGO_MASK, "bdz"       },
-	{ RGPH_DIV_POW2,       RGPH_DIV_MASK,  "pow2"      },
-	{ RGPH_DIV_FAST,       RGPH_DIV_MASK,  "fastdiv"   },
+	{ RGPH_MOD_POW2,       RGPH_MOD_MASK,  "pow2"      },
+	{ RGPH_MOD_FASTDIV,    RGPH_MOD_MASK,  "fastdiv"   },
 	/* XXX { RGPH_INDEX_XXX } */
 };
 
@@ -405,9 +405,9 @@ graph_div_hint(lua_State *L)
 
 	flags = rgph_flags(*pg);
 
-	if (flags & RGPH_DIV_POW2)
+	if (flags & RGPH_MOD_POW2)
 		lua_pushstring(L, "pow2");
-	else if (flags & RGPH_DIV_FAST)
+	else if (flags & RGPH_MOD_FASTDIV)
 		lua_pushstring(L, "fastdiv");
 	else
 		lua_pushstring(L, "");
