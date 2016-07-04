@@ -59,7 +59,7 @@
 
 namespace {
 
-typedef uint32_t vert_t; // vertex or key
+typedef uint32_t vert_t; // vertex or key, V in templates
 typedef uint32_t index_t;
 
 template<bool C> struct bool_selector {};
@@ -79,9 +79,9 @@ template<bool C> struct bool_selector {};
   * All partitions in a generated graph have equal number of vertices,
   * that is, nverts is always a multiple of R.
   */
-template<class T, int R>
+template<class V, int R>
 struct edge {
-	T verts[R]; // v0, v1 (and v2, if R==3).
+	V verts[R]; // v0, v1 (and v2, if R==3).
 };
 
 /*
@@ -92,11 +92,11 @@ struct edge {
  * Every time an edge is added or removed, the edge's verts values
  * are XORed with corresponding overts values.
  */
-template<class T, int R>
+template<class V, int R>
 struct oedge {
-	T overts[R-1]; // XORed v1 (and v2, if R==3).
-	T degree;      // Degree of v0.
-	T edge;
+	V overts[R-1]; // XORed v1 (and v2, if R==3).
+	V degree;      // Degree of v0.
+	V edge;
 };
 
 // Assign initial value in bdz_assign().
@@ -177,20 +177,20 @@ operator!=(const entry_iterator &a, const entry_iterator &b)
 }
 
 // Scalar hash returns a scalar value of type H.
-template<class T, int R, class H>
+template<class V, int R, class H>
 struct scalar_hash {
 	typedef H (*func_t)(const void *, size_t, uint32_t);
 
 	const func_t func;
 	const unsigned long seed;
-	T hashes[3];
+	V hashes[3];
 
 	inline scalar_hash(func_t f, unsigned long seed)
 		: func(f)
 		, seed(seed)
 	{}
 
-	inline const T *
+	inline const V *
 	operator()(const void *key, size_t keylen) {
 		constexpr size_t nbits = sizeof(H) * CHAR_BIT / R;
 		constexpr H mask = (H(1) << nbits) - 1;
@@ -204,31 +204,31 @@ struct scalar_hash {
 };
 
 // Vector hash initialises an array of hash values (x3 or x4).
-template<class T, int R, class H>
+template<class V, int R, class H>
 struct vector_hash {
 	typedef void (*func_t)(const void *, size_t, uint32_t, H *);
 
 	const func_t func;
 	const unsigned long seed;
-	T hashes[4]; // Some hashes are x4.
+	V hashes[4]; // Some hashes are x4.
 
 	inline vector_hash(func_t f, unsigned long seed)
 		: func(f)
 		, seed(seed)
 	{}
 
-	inline const T *
+	inline const V *
 	operator()(const void *key, size_t keylen) {
-		bool_selector<(sizeof(T) == sizeof(H))> selector;
+		bool_selector<(sizeof(V) == sizeof(H))> selector;
 		return this->hashit(selector, key, keylen);
 	}
 
-	inline const T *
+	inline const V *
 	hashit(bool_selector<true>, const void *key, size_t keylen) {
 		func(key, keylen, seed, hashes);
 		return hashes;
 	}
-	inline const T *
+	inline const V *
 	hashit(bool_selector<false>, const void *key, size_t keylen) {
 		H h[4]; // Some hashes are x4.
 		func(key, keylen, seed, h);
@@ -238,25 +238,25 @@ struct vector_hash {
 	}
 };
 
-template<class T, int R, class H>
-inline scalar_hash<T,R,H>
+template<class V, int R, class H>
+inline scalar_hash<V,R,H>
 make_hash(H (*func)(const void *, size_t, uint32_t), unsigned long seed)
 {
 
-	return scalar_hash<T,R,H>(func, seed);
+	return scalar_hash<V,R,H>(func, seed);
 }
 
-template<class T, int R, class H>
-inline vector_hash<T,R,H>
+template<class V, int R, class H>
+inline vector_hash<V,R,H>
 make_hash(void (*func)(const void *, size_t, uint32_t, H *), unsigned long seed)
 {
 
-	return vector_hash<T,R,H>(func, seed);
+	return vector_hash<V,R,H>(func, seed);
 }
 
-template<class T>
+template<class V>
 inline void
-add_remove_oedge(oedge<T,2> *oedges, int delta, T e, T v0, T v1)
+add_remove_oedge(oedge<V,2> *oedges, int delta, V e, V v0, V v1)
 {
 
 	oedges[v0].overts[0] ^= v1;
@@ -264,17 +264,17 @@ add_remove_oedge(oedge<T,2> *oedges, int delta, T e, T v0, T v1)
 	oedges[v0].edge ^= e;
 }
 
-template<class T>
+template<class V>
 inline void
-remove_edge(oedge<T,2> *oedges, T e, T v0, T v1)
+remove_edge(oedge<V,2> *oedges, V e, V v0, V v1)
 {
 
 	return add_remove_oedge(oedges, -1, e, v0, v1);
 }
 
-template<class T>
+template<class V>
 inline void
-add_remove_oedge(oedge<T,3> *oedges, int delta, T e, T v0, T v1, T v2)
+add_remove_oedge(oedge<V,3> *oedges, int delta, V e, V v0, V v1, V v2)
 {
 
 	oedges[v0].overts[v1 < v2 ? 0 : 1] ^= v1;
@@ -283,34 +283,34 @@ add_remove_oedge(oedge<T,3> *oedges, int delta, T e, T v0, T v1, T v2)
 	oedges[v0].edge ^= e;
 }
 
-template<class T>
+template<class V>
 inline void
-remove_oedge(oedge<T,2> *oedges, T e, T v0, T v1)
+remove_oedge(oedge<V,2> *oedges, V e, V v0, V v1)
 {
 
 	return add_remove_oedge(oedges, -1, e, v0, v1);
 }
 
-template<class T>
+template<class V>
 inline void
-remove_oedge(oedge<T,3> *oedges, T e, T v0, T v1, T v2)
+remove_oedge(oedge<V,3> *oedges, V e, V v0, V v1, V v2)
 {
 
 	return add_remove_oedge(oedges, -1, e, v0, v1, v2);
 }
 
-template<class T>
+template<class V>
 inline void
-add_edge(oedge<T,2> *oedges, T e, const T *verts)
+add_edge(oedge<V,2> *oedges, V e, const V *verts)
 {
 
 	add_remove_oedge(oedges, 1, e, verts[0], verts[1]);
 	add_remove_oedge(oedges, 1, e, verts[1], verts[0]);
 }
 
-template<class T>
+template<class V>
 inline void
-add_edge(oedge<T,3> *oedges, T e, const T *verts)
+add_edge(oedge<V,3> *oedges, V e, const V *verts)
 {
 
 	add_remove_oedge(oedges, 1, e, verts[0], verts[1], verts[2]);
@@ -318,14 +318,14 @@ add_edge(oedge<T,3> *oedges, T e, const T *verts)
 	add_remove_oedge(oedges, 1, e, verts[2], verts[0], verts[1]);
 }
 
-template<class T>
+template<class V>
 inline size_t
-remove_vertex(oedge<T,2> *oedges, T v0, T *order, size_t top)
+remove_vertex(oedge<V,2> *oedges, V v0, V *order, size_t top)
 {
 
 	if (oedges[v0].degree == 1) {
-		const T e = oedges[v0].edge;
-		const T v1 = oedges[v0].overts[0];
+		const V e = oedges[v0].edge;
+		const V v1 = oedges[v0].overts[0];
 		oedges[v0].degree = 0;
 		remove_oedge(oedges, e, v1, v0);
 		order[--top] = e;
@@ -334,15 +334,15 @@ remove_vertex(oedge<T,2> *oedges, T v0, T *order, size_t top)
 	return top;
 }
 
-template<class T>
+template<class V>
 inline size_t
-remove_vertex(oedge<T,3> *oedges, T v0, T *order, size_t top)
+remove_vertex(oedge<V,3> *oedges, V v0, V *order, size_t top)
 {
 
 	if (oedges[v0].degree == 1) {
-		const T e = oedges[v0].edge;
-		const T v1 = oedges[v0].overts[0];
-		const T v2 = oedges[v0].overts[1];
+		const V e = oedges[v0].edge;
+		const V v1 = oedges[v0].overts[0];
+		const V v2 = oedges[v0].overts[1];
 		oedges[v0].degree = 0;
 		remove_oedge(oedges, e, v1, v0, v2);
 		remove_oedge(oedges, e, v2, v0, v1);
@@ -369,15 +369,15 @@ fastrem(uint32_t val, uint32_t div, uint64_t mul, uint8_t s1, uint8_t s2)
 	return val - div * fastdiv(val, mul, s1, s2);
 }
 
-template<class Iter, class Hash, class T, int R>
+template<class Iter, class Hash, class V, int R>
 bool
 init_graph(Iter keys, Iter keys_end, Hash hash,
-    edge<T,R> *edges, size_t nkeys, oedge<T,R> *oedges, size_t nverts,
+    edge<V,R> *edges, size_t nkeys, oedge<V,R> *oedges, size_t nverts,
     size_t *datalenmin, size_t *datalenmax,
-    T *index, size_t *indexmin, size_t *indexmax)
+    V *index, size_t *indexmin, size_t *indexmax)
 {
 	// partsz is a partition size of an R-partite R-graph.
-	const T partsz = nverts / R;
+	const V partsz = nverts / R;
 	// Fast division by partsz.
 	uint32_t mul;
 	uint8_t s1, s2;
@@ -392,11 +392,11 @@ init_graph(Iter keys, Iter keys_end, Hash hash,
 
 	rgph_fastdiv_prepare(partsz, &mul, &s1, &s2, 0, nullptr);
 
-	T e = 0;
+	V e = 0;
 	for (; e < nkeys && keys != keys_end; ++e, ++keys) {
 		const rgph_entry &ent = *keys;
-		const T *verts = hash(ent.key, ent.keylen);
-		for (T r = 0; r < R; ++r)
+		const V *verts = hash(ent.key, ent.keylen);
+		for (V r = 0; r < R; ++r)
 			edges[e].verts[r] = r * partsz +
 			    fastrem(verts[r], partsz, mul, s1, s2);
 		add_edge(oedges, e, edges[e].verts);
@@ -427,18 +427,18 @@ init_index(index_t *index, size_t nkeys)
 		index[i] = i;
 }
 
-template<class T, int R>
+template<class V, int R>
 size_t
-peel_graph(edge<T,R> *edges, size_t nkeys,
-    oedge<T,R> *oedges, size_t nverts, T *order)
+peel_graph(edge<V,R> *edges, size_t nkeys,
+    oedge<V,R> *oedges, size_t nverts, V *order)
 {
 	size_t top = nkeys;
 
-	for (T v0 = 0; v0 < nverts; ++v0)
+	for (V v0 = 0; v0 < nverts; ++v0)
 		top = remove_vertex(oedges, v0, order, top);
 
 	for (size_t i = nkeys; i > 0 && i > top; --i) {
-		const edge<T,R> &e = edges[order[i-1]];
+		const edge<V,R> &e = edges[order[i-1]];
 		for (size_t r = 0; r < R; ++r)
 			top = remove_vertex(oedges, e.verts[r], order, top);
 	}
@@ -464,7 +464,7 @@ maxsize(size_t a, size_t b)
 	return a > b ? a : b;
 }
 
-template<class T, int R>
+template<class V, int R>
 inline size_t
 duphash_size(size_t nverts)
 {
@@ -475,36 +475,36 @@ duphash_size(size_t nverts)
 	if (nelems > SIZE_MAX / sizeof(duphash_entry_t))
 		return 0;
 
-	// Round up to T's size because the hash table is followed by
+	// Round up to V's size because the hash table is followed by
 	// a peel index array. In practice, rounding doesn't make any
-	// difference because T isn't bigger than duphash_entry_t.
-	return round_up(nelems * sizeof(duphash_entry_t), sizeof(T));
+	// difference because V isn't bigger than duphash_entry_t.
+	return round_up(nelems * sizeof(duphash_entry_t), sizeof(V));
 }
 
 /*
  * Memory allocated for oedges is shared with a hash table and a peel
  * index. Typically, oedges takes more space but it can take less
- * space for small T.
+ * space for small V.
  * It's also shared with the assign functions but they need less
- * space: chm takes T[nverts] elements which is always smaller than
- * oedge<T,R>[nverts], bdz needs only nverts bytes.
+ * space: chm takes V[nverts] elements which is always smaller than
+ * oedge<V,R>[nverts], bdz needs only nverts bytes.
  */
-template<class T, int R>
+template<class V, int R>
 inline size_t
 oedges_size_impl(size_t nkeys, size_t nverts)
 {
 	assert(nverts > nkeys);
 
-	constexpr size_t osz = sizeof(oedge<T,R>);
-	constexpr size_t tsz = sizeof(T);
-	static_assert(osz > tsz, "oedge<T,R> must be bigger than T");
+	constexpr size_t osz = sizeof(oedge<V,R>);
+	constexpr size_t tsz = sizeof(V);
+	static_assert(osz > tsz, "oedge<V,R> must be bigger than V");
 
 	// Overflow check for nverts * osz and nverts * tsz:
 	if (nverts > SIZE_MAX / osz)
 		return 0;
 
 	const size_t oedges_sz = nverts * osz;
-	const size_t hash_sz = duphash_size<T,R>(nverts);
+	const size_t hash_sz = duphash_size<V,R>(nverts);
 	if (hash_sz == 0)
 		return 0;
 
@@ -658,9 +658,9 @@ graph_nverts(int *flags, size_t nkeys)
 }
 
 // The destination array is often called g in computer science literature.
-template<class G, class T, int R, class A>
+template<class G, class V, int R, class A>
 inline void
-assign(const edge<T,R> *edges, const T *order, size_t nkeys,
+assign(const edge<V,R> *edges, const V *order, size_t nkeys,
     A assigner, G *g, size_t nverts, size_t min, size_t max)
 {
 	const G unassigned = max + 1;
@@ -670,11 +670,11 @@ assign(const edge<T,R> *edges, const T *order, size_t nkeys,
 		g[v] = unassigned;
 
 	for (size_t i = 0; i < nkeys; i++) {
-		const T e = order[i];
+		const V e = order[i];
 		assert(e < nkeys);
 
 		for (size_t j = 0; j < R; j++) {
-			const T v = edges[e].verts[j];
+			const V v = edges[e].verts[j];
 			assert(v < nverts);
 
 			if (g[v] != unassigned)
@@ -684,12 +684,12 @@ assign(const edge<T,R> *edges, const T *order, size_t nkeys,
 			assert(g[v] < unassigned);
 
 			for (size_t k = 1; k < R; k++) {
-				const T u = edges[e].verts[(j + k) % R];
+				const V u = edges[e].verts[(j + k) % R];
 				// Some compilers aren't smart enough to
 				// use hints inside asserts in NDEBUG build.
 				// Cache g[u] value to avoid reloading it
 				// after writing to g[v]:
-				const T gu = g[u];
+				const V gu = g[u];
 				assert(u != v);
 
 				// g[v] = min + (g[v] - g[u]) mod index_range:
@@ -712,10 +712,10 @@ assign(const edge<T,R> *edges, const T *order, size_t nkeys,
 struct rgph_graph {
 	size_t nkeys;
 	size_t nverts;
-	void *order;  // Output order of edges, points to T[nkeys] array.
-	void *edges;  // Points to edge<T,R>[nkeys] array.
+	void *order;  // Output order of edges, points to V[nkeys] array.
+	void *edges;  // Points to edge<V,R>[nkeys] array.
 	union {
-		void *oedges;             // oedge<T,R>[nverts]
+		void *oedges;             // oedge<V,R>[nverts]
 		duphash_entry_t *duphash; // shared wtih duplicates
 		vert_t *chm_assignments;  // and assignments.
 		uint8_t *bdz_assignments; // +duphash_size to peel order index
@@ -738,21 +738,21 @@ enum {
 	ASSIGNED = 0x08000000  // Assignment step is done.
 };
 
-template<class T, int R>
+template<class V, int R>
 static int
 build_graph(struct rgph_graph *g,
     rgph_entry_iterator_t keys, void *state, unsigned long seed)
 {
-	typedef edge<T,R> edge_t;
-	typedef oedge<T,R> oedge_t;
+	typedef edge<V,R> edge_t;
+	typedef oedge<V,R> oedge_t;
 
-	auto order = static_cast<T *>(g->order);
-	auto index = static_cast<T *>(g->index); // For RGPH_ALGO_CHM.
+	auto order = static_cast<V *>(g->order);
+	auto index = static_cast<V *>(g->index); // For RGPH_ALGO_CHM.
 	auto edges = static_cast<edge_t *>(g->edges);
 	auto oedges = static_cast<oedge_t *>(g->oedges);
 
 	if (!(g->flags & ZEROED)) {
-		memset(order, 0, sizeof(T) * g->nkeys);
+		memset(order, 0, sizeof(V) * g->nkeys);
 		memset(edges, 0, sizeof(edge_t) * g->nkeys);
 		memset(oedges, 0, sizeof(oedge_t) * g->nverts);
 	}
@@ -770,7 +770,7 @@ build_graph(struct rgph_graph *g,
 	switch (g->flags & RGPH_HASH_MASK) {
 	case RGPH_HASH_JENKINS2V:
 		if (!init_graph(keys_start, keys_end,
-		    make_hash<T,R>(&rgph_u32x3_jenkins2v_data, seed),
+		    make_hash<V,R>(&rgph_u32x3_jenkins2v_data, seed),
 		    edges, g->nkeys, oedges, g->nverts,
 		    &g->datalenmin, &g->datalenmax,
 		    index, &g->indexmin, &g->indexmax)) {
@@ -779,7 +779,7 @@ build_graph(struct rgph_graph *g,
 		break;
 	case RGPH_HASH_MURMUR32V:
 		if (!init_graph(keys_start, keys_end,
-		    make_hash<T,R>(&rgph_u32x4_murmur32v_data, seed),
+		    make_hash<V,R>(&rgph_u32x4_murmur32v_data, seed),
 		    edges, g->nkeys, oedges, g->nverts,
 		    &g->datalenmin, &g->datalenmax,
 		    index, &g->indexmin, &g->indexmax)) {
@@ -788,7 +788,7 @@ build_graph(struct rgph_graph *g,
 		break;
 	case RGPH_HASH_MURMUR32S:
 		if (!init_graph(keys_start, keys_end,
-		    make_hash<T,R>(&rgph_u32_murmur32s_data, seed),
+		    make_hash<V,R>(&rgph_u32_murmur32s_data, seed),
 		    edges, g->nkeys, oedges, g->nverts,
 		    &g->datalenmin, &g->datalenmax,
 		    index, &g->indexmin, &g->indexmax)) {
@@ -797,7 +797,7 @@ build_graph(struct rgph_graph *g,
 		break;
 	case RGPH_HASH_XXH32S:
 		if (!init_graph(keys_start, keys_end,
-		    make_hash<T,R>(&rgph_u32_xxh32s_data, seed),
+		    make_hash<V,R>(&rgph_u32_xxh32s_data, seed),
 		    edges, g->nkeys, oedges, g->nverts,
 		    &g->datalenmin, &g->datalenmax,
 		    index, &g->indexmin, &g->indexmax)) {
@@ -806,7 +806,7 @@ build_graph(struct rgph_graph *g,
 		break;
 	case RGPH_HASH_XXH64S:
 		if (!init_graph(keys_start, keys_end,
-		    make_hash<T,R>(&rgph_u64_xxh64s_data, seed),
+		    make_hash<V,R>(&rgph_u64_xxh64s_data, seed),
 		    edges, g->nkeys, oedges, g->nverts,
 		    &g->datalenmin, &g->datalenmax,
 		    index, &g->indexmin, &g->indexmax)) {
@@ -824,22 +824,22 @@ build_graph(struct rgph_graph *g,
 	return g->core_size == 0 ? RGPH_SUCCESS : RGPH_AGAIN;
 }
 
-template<class T, int R>
-static const T *
+template<class V, int R>
+static const V *
 build_peel_index(struct rgph_graph *g)
 {
-	const size_t hash_sz = duphash_size<T,R>(g->nverts);
+	const size_t hash_sz = duphash_size<V,R>(g->nverts);
 	// Reuse oedges:
-	auto peel = reinterpret_cast<T *>(g->bdz_assignments + hash_sz);
+	auto peel = reinterpret_cast<V *>(g->bdz_assignments + hash_sz);
 
 	assert(hash_sz != 0);
 
 	if (!(g->flags & PEELED)) {
-		auto order = static_cast<const T *>(g->order);
+		auto order = static_cast<const V *>(g->order);
 
 		g->flags |= PEELED;
 		g->flags &= ~ASSIGNED;
-		memset(peel, 0, sizeof(T) * g->nkeys);
+		memset(peel, 0, sizeof(V) * g->nkeys);
 
 		for (size_t i = g->nkeys; i > g->core_size; i--) {
 			assert(peel[order[i-1]] == 0);
@@ -850,11 +850,11 @@ build_peel_index(struct rgph_graph *g)
 	return peel;
 }
 
-template<class T, int R>
+template<class V, int R>
 static int
 copy_edge(struct rgph_graph *g, size_t e, unsigned long *to, size_t *peel_order)
 {
-	typedef edge<T,R> edge_t;
+	typedef edge<V,R> edge_t;
 
 	auto edges = static_cast<edge_t *>(g->edges);
 
@@ -862,19 +862,19 @@ copy_edge(struct rgph_graph *g, size_t e, unsigned long *to, size_t *peel_order)
 		to[r] = edges[e].verts[r];
 
 	if (peel_order != nullptr) {
-		const T *peel = build_peel_index<T,R>(g);
+		const V *peel = build_peel_index<V,R>(g);
 		*peel_order = peel[e];
 	}
 
 	return RGPH_SUCCESS;
 }
 
-template<class T, int R>
+template<class V, int R>
 static int
 find_duplicates(struct rgph_graph *g,
     rgph_entry_iterator_t iter, void *state, size_t *dup)
 {
-	typedef edge<T,R> edge_t;
+	typedef edge<V,R> edge_t;
 
 	assert((g->nverts % R) == 0);
 
@@ -886,7 +886,7 @@ find_duplicates(struct rgph_graph *g,
 		hash[i] = nullptr;
 
 	int res = RGPH_NOKEY;
-	const T *peel = build_peel_index<T,R>(g);
+	const V *peel = build_peel_index<V,R>(g);
 	auto edges = static_cast<const edge_t *>(g->edges);
 	entry_iterator keys(iter, state), keys_end;
 
@@ -907,7 +907,7 @@ find_duplicates(struct rgph_graph *g,
 
 		const void *key = keys->key;
 		const size_t keylen = keys->keylen;
-		const T v0 = edges[e].verts[0];
+		const V v0 = edges[e].verts[0];
 
 		assert(v0 < hash_sz);
 
@@ -963,13 +963,13 @@ out:
 	return res;
 }
 
-template<class T, int R>
+template<class V, int R>
 static int
 assign_bdz(struct rgph_graph *g)
 {
-	typedef edge<T,R> edge_t;
+	typedef edge<V,R> edge_t;
 
-	auto order = static_cast<const T *>(g->order);
+	auto order = static_cast<const V *>(g->order);
 	auto edges = static_cast<const edge_t *>(g->edges);
 	auto assigned = g->bdz_assignments; // Reuse oedges.
 	const bdz_assigner assigner;
@@ -985,17 +985,17 @@ assign_bdz(struct rgph_graph *g)
 	return RGPH_SUCCESS;
 }
 
-template<class T, int R>
+template<class V, int R>
 static int
 assign_chm(struct rgph_graph *g)
 {
-	typedef edge<T,R> edge_t;
+	typedef edge<V,R> edge_t;
 
-	auto order = static_cast<const T *>(g->order);
-	auto index = static_cast<const T *>(g->index);
+	auto order = static_cast<const V *>(g->order);
+	auto index = static_cast<const V *>(g->index);
 	auto edges = static_cast<const edge_t *>(g->edges);
-	auto assigned = static_cast<T *>(g->chm_assignments); // Reuse oedges.
-	const T unassigned = g->indexmax + 1;
+	auto assigned = static_cast<V *>(g->chm_assignments); // Reuse oedges.
+	const V unassigned = g->indexmax + 1;
 	const chm_assigner assigner = { index };
 
 	// Check an overflow in g->indexmax + 1:
@@ -1014,16 +1014,16 @@ assign_chm(struct rgph_graph *g)
 	return RGPH_SUCCESS;
 }
 
-template<class T, int R>
+template<class V, int R>
 static int
 assign(struct rgph_graph *g)
 {
 
 	switch (g->flags & RGPH_ALGO_MASK) {
 	case RGPH_ALGO_BDZ:
-		return assign_bdz<T,R>(g);
+		return assign_bdz<V,R>(g);
 	case RGPH_ALGO_CHM:
-		return assign_chm<T,R>(g);
+		return assign_chm<V,R>(g);
 	default:
 		assert(0 && "rgph_alloc_graph() should have caught it");
 		return RGPH_INVAL;
