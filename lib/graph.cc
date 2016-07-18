@@ -183,7 +183,7 @@ struct scalar_hash {
 
 	const func_t func;
 	const unsigned long seed;
-	V hashes[3];
+	mutable V hashes[3];
 
 	inline scalar_hash(func_t f, unsigned long seed)
 		: func(f)
@@ -191,7 +191,7 @@ struct scalar_hash {
 	{}
 
 	inline const V *
-	operator()(const void *key, size_t keylen) {
+	operator()(const void *key, size_t keylen) const {
 		constexpr size_t nbits = sizeof(H) * CHAR_BIT / R;
 		constexpr H mask = (H(1) << nbits) - 1;
 
@@ -210,7 +210,7 @@ struct vector_hash {
 
 	const func_t func;
 	const unsigned long seed;
-	V hashes[4]; // Some hashes are x4.
+	mutable V hashes[4]; // Some hashes are x4.
 
 	inline vector_hash(func_t f, unsigned long seed)
 		: func(f)
@@ -218,18 +218,18 @@ struct vector_hash {
 	{}
 
 	inline const V *
-	operator()(const void *key, size_t keylen) {
+	operator()(const void *key, size_t keylen) const {
 		bool_selector<(sizeof(V) == sizeof(H))> selector;
 		return this->hashit(selector, key, keylen);
 	}
 
 	inline const V *
-	hashit(bool_selector<true>, const void *key, size_t keylen) {
+	hashit(bool_selector<true>, const void *key, size_t keylen) const {
 		func(key, keylen, seed, hashes);
 		return hashes;
 	}
 	inline const V *
-	hashit(bool_selector<false>, const void *key, size_t keylen) {
+	hashit(bool_selector<false>, const void *key, size_t keylen) const {
 		H h[4]; // Some hashes are x4.
 		func(key, keylen, seed, h);
 		for (size_t i = 0; i < R; i++)
@@ -371,7 +371,7 @@ fastrem(uint32_t val, uint32_t div, uint64_t mul, uint8_t s1, uint8_t s2)
 
 template<class Iter, class Hash, class V, int R>
 bool
-init_graph(Iter keys, Iter keys_end, Hash hash,
+init_graph(Iter &keys, const Iter &keys_end, const Hash &hash,
     edge<V,R> *edges, size_t nkeys, oedge<V,R> *oedges, size_t nverts,
     size_t *datalenmin, size_t *datalenmax,
     V *index, size_t *indexmin, size_t *indexmax)
