@@ -63,21 +63,19 @@ struct flag_str {
 };
 
 static const struct flag_str flag_strings[] = {
-	{ RGPH_HASH_JENKINS2V, RGPH_HASH_MASK, "jenkins2v" },
-	{ RGPH_HASH_MURMUR32V, RGPH_HASH_MASK, "murmur32v" },
-	{ RGPH_HASH_MURMUR32S, RGPH_HASH_MASK, "murmur32s" },
-	{ RGPH_HASH_XXH32S,    RGPH_HASH_MASK, "xxh32s"    },
-	{ RGPH_HASH_XXH64S,    RGPH_HASH_MASK, "xxh64s"    },
-	{ RGPH_RANK2,          RGPH_RANK_MASK, "rank2"     },
-	{ RGPH_RANK3,          RGPH_RANK_MASK, "rank3"     },
-	{ RGPH_ALGO_CHM,       RGPH_ALGO_MASK, "chm"       },
-	{ RGPH_ALGO_BDZ,       RGPH_ALGO_MASK, "bdz"       },
-	{ RGPH_MOD_POW2,       RGPH_MOD_MASK,  "pow2"      },
-	{ RGPH_MOD_FASTDIV,    RGPH_MOD_MASK,  "fastdiv"   },
-	/* XXX { RGPH_INDEX_XXX } */
+	{ RGPH_HASH_JENKINS2V, RGPH_HASH_MASK,  "jenkins2v" },
+	{ RGPH_HASH_MURMUR32V, RGPH_HASH_MASK,  "murmur32v" },
+	{ RGPH_HASH_MURMUR32S, RGPH_HASH_MASK,  "murmur32s" },
+	{ RGPH_HASH_XXH32S,    RGPH_HASH_MASK,  "xxh32s"    },
+	{ RGPH_HASH_XXH64S,    RGPH_HASH_MASK,  "xxh64s"    },
+	{ RGPH_RANK2,          RGPH_RANK_MASK,  "rank2"     },
+	{ RGPH_RANK3,          RGPH_RANK_MASK,  "rank3"     },
+	{ RGPH_ALGO_CHM,       RGPH_ALGO_MASK,  "chm"       },
+	{ RGPH_ALGO_BDZ,       RGPH_ALGO_MASK,  "bdz"       },
+	{ RGPH_MOD_POW2,       RGPH_MOD_MASK,   "pow2"      },
+	{ RGPH_MOD_FASTDIV,    RGPH_MOD_MASK,   "fastdiv"   },
+	{ RGPH_INDEX_COMPACT,  RGPH_INDEX_MASK, "compact"   },
 };
-
-static const char *algo_strings[] = { "", "chm", "bdz" };
 
 
 static const struct flag_str *
@@ -244,19 +242,6 @@ graph_hash_bits(lua_State *L)
 		return luaL_argerror(L, 1, "dead object");
 
 	lua_pushinteger(L, rgph_hash_bits(*pg));
-	return 1;
-}
-
-static int
-graph_unassigned(lua_State *L)
-{
-	struct rgph_graph **pg;
-
-	pg = (struct rgph_graph **)luaL_checkudata(L, 1, GRAPH_MT);
-	if (*pg == NULL)
-		return luaL_argerror(L, 1, "dead object");
-
-	lua_pushinteger(L, rgph_unassigned(*pg));
 	return 1;
 }
 
@@ -428,7 +413,7 @@ graph_seed(lua_State *L)
 	return 1;
 }
 
-static struct rgph_entry *
+static const struct rgph_entry *
 graph_build_iter(void *raw_state)
 {
 	struct build_iter_state *state = (struct build_iter_state *)raw_state;
@@ -448,8 +433,9 @@ graph_build_iter(void *raw_state)
 	/* XXX don't convert to string. */
 	state->ent.key  = lua_tolstring(L, top + 0, &state->ent.keylen);
 	state->ent.data = lua_tolstring(L, top + 1, &state->ent.datalen);
-	state->ent.index = lua_isnil(L, top + 2) ?
-	    SIZE_MAX : (size_t)lua_tointeger(L, top + 2);
+	state->ent.has_index = !lua_isnil(L, top + 2);
+	state->ent.index = state->ent.has_index ?
+	   lua_tointeger(L, top + 2) : 0;
 	return state->ent.key == NULL ? NULL : &state->ent;
 }
 
@@ -667,18 +653,16 @@ static int
 graph_assign(lua_State *L)
 {
 	struct rgph_graph **pg, *g;
-	int res, algo;
+	int res, flags;
 
 	pg = (struct rgph_graph **)luaL_checkudata(L, 1, GRAPH_MT);
 	if (*pg == NULL)
 		return luaL_argerror(L, 1, "dead object");
 
-	algo = luaL_checkoption(L, 2, "", algo_strings);
-	if (algo != 0) /* not default? */
-		algo = *find_flag_by_name(algo_strings[algo]);
+	flags = parse_flags(L, 2);
 
 	g = *pg;
-	res = rgph_assign(g, algo);
+	res = rgph_assign(g, flags);
 
 	switch (res) {
 	case RGPH_SUCCESS:
@@ -718,7 +702,7 @@ static int
 assign_get(lua_State *L)
 {
 	struct rgph_graph **pg;
-	unsigned int val;
+	unsigned long long val;
 	int res;
 
 	pg = (struct rgph_graph **)luaL_checkudata(L, 1, ASSIGN_MT);
@@ -953,7 +937,6 @@ static const luaL_Reg graph_fn[] = {
 	{ "algo", graph_algo },
 	{ "hash", graph_hash },
 	{ "hash_bits", graph_hash_bits },
-	{ "unassigned", graph_unassigned },
 	{ "entries", graph_entries },
 	{ "vertices", graph_vertices },
 	{ "datalen_min", graph_datalen_min },

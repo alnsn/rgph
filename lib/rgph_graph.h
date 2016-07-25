@@ -30,6 +30,7 @@
 #define RGPH_GRAPH_H_INCLUDED
 
 #include <stddef.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -39,26 +40,26 @@ struct rgph_graph;
 
 struct rgph_entry {
 	const void *key;
-	size_t keylen;
 	const void *data;
+	size_t keylen;
 	size_t datalen;
-	size_t index; /* Valid index or SIZE_MAX. */
+	uint64_t index;
+	uint8_t has_index;
 };
 
-typedef struct rgph_entry * (*rgph_entry_iterator_t)(void *);
+typedef const struct rgph_entry * (*rgph_entry_iterator_t)(void *);
 
 struct rgph_graph *rgph_alloc_graph(size_t, int);
 void rgph_free_graph(struct rgph_graph *);
 
 int rgph_flags(struct rgph_graph *);
 int rgph_rank(struct rgph_graph *);
-uint32_t rgph_unassigned(struct rgph_graph *);
 size_t rgph_entries(struct rgph_graph *);
 size_t rgph_vertices(struct rgph_graph *);
 size_t rgph_datalen_min(struct rgph_graph *);
 size_t rgph_datalen_max(struct rgph_graph *);
-size_t rgph_index_min(struct rgph_graph *);
-size_t rgph_index_max(struct rgph_graph *);
+uint64_t rgph_index_min(struct rgph_graph *);
+uint64_t rgph_index_max(struct rgph_graph *);
 size_t rgph_core_size(struct rgph_graph *);
 unsigned long rgph_seed(struct rgph_graph *);
 size_t rgph_hash_bits(struct rgph_graph *);
@@ -77,7 +78,7 @@ int rgph_find_duplicates(struct rgph_graph *,
 int rgph_assign(struct rgph_graph *, int);
 int rgph_is_assigned(struct rgph_graph *);
 const void *rgph_assignments(struct rgph_graph *, size_t *);
-int rgph_copy_assignment(struct rgph_graph *, size_t, unsigned int *);
+int rgph_copy_assignment(struct rgph_graph *, size_t, unsigned long long *);
 
 #ifdef __cplusplus
 }

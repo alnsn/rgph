@@ -64,13 +64,12 @@
 
 #define RGPH_MOD_MASK    0x7000
 #define RGPH_MOD_DEFAULT 0
-#define RGPH_MOD_POW2    0x1000 /* div = nverts/R is a power of 2.           */
+#define RGPH_MOD_POW2    0x1000 /* div = nverts / R is a power of 2.         */
 #define RGPH_MOD_FASTDIV 0x2000 /* n / div = (n * magic) >> 32 >> post_shift */
+#define RGPH_MOD_LEMIRE  XXX
 
-/* XXX
-#define	RGPH_INDEX_MASK    0xc000
+#define	RGPH_INDEX_MASK    0x10000
 #define	RGPH_INDEX_DEFAULT 0
-#define	RGPH_INDEX_XXX     0x4000
-*/
+#define	RGPH_INDEX_COMPACT 0x10000
 
 #endif /* !RGPH_DEFS_H_INCLUDED */
