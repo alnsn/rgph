@@ -1526,18 +1526,16 @@ extern "C"
 uint64_t
 rgph_index_min(struct rgph_graph *g)
 {
-	unsigned int const bdz = g->flags & RGPH_ALGO_BDZ;
 
-	return bdz ? 0 : g->indexmin;
+	return g->indexmin;
 }
 
 extern "C"
 uint64_t
 rgph_index_max(struct rgph_graph *g)
 {
-	unsigned int const bdz = g->flags & RGPH_ALGO_BDZ;
 
-	return bdz ? graph_rank(g->flags) - 1 : g->indexmax;
+	return g->indexmax;
 }
 
 extern "C"
@@ -1673,7 +1671,7 @@ rgph_assign(struct rgph_graph *g, int algo_index_flags)
 	case RGPH_ALGO_BDZ:
 		break;
 	case RGPH_ALGO_CHM:
-		if (g->flags & RGPH_ALGO_BDZ) {
+		if (flags & RGPH_ALGO_BDZ) {
 			g->indexmin = 0;
 			g->indexmax = g->nkeys - 1;
 		}
