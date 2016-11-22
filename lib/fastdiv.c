@@ -223,15 +223,15 @@ rgph_fastdiv_prepare(uint32_t div, uint32_t *m,
 	uint64_t mt;
 	int l;
 
-	assert(div > 1);
+	assert(div > 0);
 
 	if (nbits == 0) {
 		/* fast_divide32(3) from NetBSD. */
 		l = fls32(div - 1);
 		mt = ((UINT64_C(1) << l) - div) << 32;
 		*m = (uint32_t)(mt / div + 1);
-		*s1 = 1;
-		*s2 = l - 1;
+		*s1 = (l > 1) ? 1 : l;
+		*s2 = (l == 0) ? 0 : l - 1;
 	} else {
 		mi = compute_unsigned_magic_info(div, nbits);
 		*m = mi.multiplier;
