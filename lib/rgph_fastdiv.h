@@ -36,8 +36,7 @@
 extern "C" {
 #endif
 
-void rgph_fastdiv_prepare(uint32_t, uint32_t *, uint8_t *, uint8_t *,
-    unsigned int, int *);
+void rgph_fastdiv_prepare(uint32_t, uint32_t *, uint8_t *, uint8_t *, int);
 
 #ifdef __cplusplus
 }

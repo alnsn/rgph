@@ -42,6 +42,7 @@ int main()
 			}
 
 			if ((i & (i - 1)) == 0) {
+				/* Power of two. */
 				assert(m < 2);
 				assert(s1 == branchfree);
 				assert((1u << (s1 + s2)) == i);

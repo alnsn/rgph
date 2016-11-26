@@ -61,14 +61,6 @@
 #define MAX_NKEYS_R3_S64 0x00266666u // Scalar 64 hashes.
 #define MAX_NKEYS_R3_S32 0x000004ccu // Scalar 32 hashes.
 
-// Max values for fastdiv divisors.
-#define MAX_FASTDIV_R2_VEC 0x7fff8000u // Vector hashes.
-#define MAX_FASTDIV_R2_S64 0x7fff8000u // Scalar 64 hashes.
-#define MAX_FASTDIV_R2_S32 0x00007fffu // Scalar 32 hashes.
-#define MAX_FASTDIV_R3_VEC 0x55555555u // Vector hashes.
-#define MAX_FASTDIV_R3_S64 0x000fffffu // Scalar 64 hashes.
-#define MAX_FASTDIV_R3_S32 0x000001ffu // Scalar 32 hashes.
-
 namespace {
 
 enum {
@@ -77,7 +69,7 @@ enum {
 	BIG_INDEX= 0x10000000, // Chm index is an array of big_index_t elements.
 	PEELED   = 0x08000000, // Peel order index is built.
 	ASSIGNED = 0x04000000, // Assignment step is done.
-	PUBLIC_FLAGS= 0x1ffff
+	PUBLIC_FLAGS = 0xffff
 };
 
 typedef uint32_t vert_t;         // Vertex or key; V in templates.
@@ -174,10 +166,19 @@ struct scalar_hash {
 struct fastrem_partition {
 	vert_t  partsz; // Partition size of an R-partite R-graph.
 	vert_t  mul;
-	uint8_t s1;
 	uint8_t s2;
 
 	inline fastrem_partition(size_t, size_t);
+
+	inline uint32_t operator()(vert_t const *, size_t) const;
+};
+
+// http://lemire.me/blog/2016/06/27/a-fast-alternative-to-the-modulo-reduction/
+struct lemire_partition {
+	vert_t  partsz; // Partition size of an R-partite R-graph.
+	uint8_t shift;
+
+	inline lemire_partition(size_t, size_t, size_t);
 
 	inline uint32_t operator()(vert_t const *, size_t) const;
 };
@@ -321,8 +322,9 @@ remove_vertex(oedge<V,3> *oedges, V v0, V *order, size_t top)
 
 // fast_divide32(3) from NetBSD.
 inline uint32_t
-fastdiv(uint32_t val, uint64_t mul, uint8_t s1, uint8_t s2)
+fastdiv(uint32_t val, uint64_t mul, uint8_t s2)
 {
+	uint8_t constexpr s1 = 1; // s1 is 1 for every partsz greater than 1.
 	uint32_t const hi = (val * mul) >> 32;
 
 	return (hi + ((val - hi) >> s1)) >> s2;
@@ -330,10 +332,10 @@ fastdiv(uint32_t val, uint64_t mul, uint8_t s1, uint8_t s2)
 
 // fast_remainder32(3) from NetBSD.
 inline uint32_t
-fastrem(uint32_t val, uint32_t div, uint64_t mul, uint8_t s1, uint8_t s2)
+fastrem(uint32_t val, uint32_t div, uint64_t mul, uint8_t s2)
 {
 
-	return val - div * fastdiv(val, mul, s1, s2);
+	return val - div * fastdiv(val, mul, s2);
 }
 
 inline entry_iterator::entry_iterator()
@@ -450,16 +452,35 @@ inline
 fastrem_partition::fastrem_partition(size_t nverts, size_t r)
 	: partsz(nverts / r)
 {
+	bool constexpr branchless = true;
+	uint8_t s1;
 
 	assert(partsz > 1 && (nverts % r) == 0);
-	rgph_fastdiv_prepare(partsz, &mul, &s1, &s2, 0, nullptr);
+	rgph_fastdiv_prepare(partsz, &mul, &s1, &s2, branchless);
+	assert(s1 == 1); // s1 is 1 for every partsz greater than 1.
 }
 
 inline uint32_t
 fastrem_partition::operator()(vert_t const *h, size_t r) const
 {
 
-	return fastrem(h[r], partsz, mul, s1, s2) + r * partsz;
+	return fastrem(h[r], partsz, mul, s2) + r * partsz;
+}
+
+inline
+lemire_partition::lemire_partition(size_t nverts, size_t r, size_t nbits)
+	: partsz(nverts / r)
+	, shift(nbits > 32 * r ? 32 : nbits / r)
+{
+
+	assert(partsz > 1 && (nverts % r) == 0);
+}
+
+inline uint32_t
+lemire_partition::operator()(vert_t const *h, size_t r) const
+{
+
+	return ((h[r] * (uint64_t)partsz) >> shift) + r * partsz;
 }
 
 inline size_t
@@ -636,15 +657,14 @@ init_graph_chm(Iter &keys, Iter const &keys_end,
 	return e;
 }
 
-template<class Iter, class Hash, class V, int R>
+template<class Iter, class Part, class Hash, class V, int R>
 int
-init_graph(Iter &keys, Iter const &keys_end, Hash const &hash,
-    edge<V,R> *edges, size_t nkeys, oedge<V,R> *oedges, size_t nverts,
+init_graph(Iter &keys, Iter const &keys_end, Part const &part, Hash const &hash,
+    edge<V,R> *edges, size_t nkeys, oedge<V,R> *oedges,
     unsigned int flags, size_t *datalenmin, size_t *datalenmax,
     void **index, big_index_t *indexmin, big_index_t *indexmax)
 {
 	V e = 0;
-	fastrem_partition const part(nverts, R);
 
 	switch (flags & RGPH_ALGO_MASK) {
 	case RGPH_ALGO_BDZ:
@@ -834,7 +854,6 @@ graph_rank(unsigned int flags)
 	return (flags & RGPH_RANK_MASK) == RGPH_RANK2 ? 2 : 3;
 }
 
-// See ../examples/calc-constants.c.
 inline size_t
 graph_max_keys(unsigned int flags)
 {
@@ -854,87 +873,23 @@ graph_max_keys(unsigned int flags)
 }
 
 inline size_t
-graph_max_fastdiv(unsigned int flags)
-{
-	int const rank = graph_rank(flags);
-	size_t const nbits = hash_bits(flags);
-
-	if (nbits >= 96)
-		return (rank == 2) ? MAX_FASTDIV_R2_VEC : MAX_FASTDIV_R3_VEC;
-	else if (nbits == 64)
-		return (rank == 2) ? MAX_FASTDIV_R2_S64 : MAX_FASTDIV_R3_S64;
-	else if (nbits == 32)
-		return (rank == 2) ? MAX_FASTDIV_R2_S32 : MAX_FASTDIV_R3_S32;
-	else {
-		assert(0 && "rgph_alloc_graph() should have caught it");
-		return 0;
-	}
-}
-
-inline size_t
 graph_nverts(int *flags, size_t nkeys)
 {
-	int const r = graph_rank(*flags);
-	bool const full_range = (hash_bits(*flags) >= r * 32u);
-	size_t const div_nbits = sizeof(vert_t) * CHAR_BIT - !full_range;
 	size_t const max_nkeys = graph_max_keys(*flags);
-	size_t const max_fastdiv = graph_max_fastdiv(*flags);
 
 	if (nkeys == 0 || nkeys > max_nkeys)
 		return 0;
 
-	size_t nverts = (r == 2) ? 2 * nkeys + (nkeys + 7) / 8
-	                         : 1 * nkeys + (nkeys + 3) / 4;
-	nverts = round_up(nverts, r);
-	if (nverts < 24)
-		nverts = 24;
+	int const rank = graph_rank(*flags);
+	// nverts is approx. 2.125*nkeys for rank 2 and 1.25*nkeys for rank 3.
+	int const scale = 4 - rank;
+	int const fract = 1 << (5 - rank);
+	size_t const nv = scale * nkeys + round_up(nkeys, fract) / fract;
+	size_t const nverts = maxsize(round_up(nv, rank), 24);
 
-	assert((nverts % r) == 0);
+	assert(nverts > nkeys && nverts > scale * nkeys); // No overflow.
 
-	if ((*flags & RGPH_MOD_MASK) == RGPH_MOD_DEFAULT)
-		return nverts;
-
-	size_t const pow2_div = round_up_pow2(nverts / r);
-
-	// Max divisor of a full range hash isn't a power of two.
-	if (pow2_div > UINT32_MAX / r)
-		*flags &= ~RGPH_MOD_POW2;
-
-	if (nverts / r > max_fastdiv)
-		*flags &= ~RGPH_MOD_FASTDIV;
-
-	if (!(*flags & RGPH_MOD_POW2) && !(*flags & RGPH_MOD_FASTDIV))
-		return 0;
-	if ((*flags & RGPH_MOD_POW2) && !(*flags & RGPH_MOD_FASTDIV))
-		return pow2_div * r;
-
-	size_t const max_div =
-	    (*flags & RGPH_MOD_POW2) ? pow2_div : max_fastdiv;
-
-	assert(nverts / r > 1 && nverts / r <= max_div);
-
-	for (size_t div = nverts / r; div <= max_div; div++) {
-		uint32_t mul;
-		uint8_t s1, s2;
-		int inc;
-
-		// rgph_fastdiv_prepare() below doesn't work for powers of 2.
-		if (is_pow2(div))
-			continue;
-
-		rgph_fastdiv_prepare(div, &mul, &s1, &s2, div_nbits, &inc);
-		if (s1 == 0 && inc == 0) {
-			*flags &= ~RGPH_MOD_MASK;
-			*flags |= RGPH_MOD_FASTDIV;
-			return div * r;
-		}
-	}
-
-	assert(is_pow2(max_div));
-
-	*flags &= ~RGPH_MOD_MASK;
-	*flags |=  RGPH_MOD_POW2;
-	return max_div * r;
+	return nverts;
 }
 
 // The destination array is often called g in computer science literature.
@@ -1068,6 +1023,7 @@ build_graph(struct rgph_graph *g,
 	size_t const nkeys = g->nkeys;
 	size_t const nverts = g->nverts;
 	unsigned int const flags = g->flags;
+	size_t const nbits = hash_bits(flags);
 	int res = RGPH_INVAL;
 
 	if ((flags & ZEROED) == 0) {
@@ -1086,39 +1042,84 @@ build_graph(struct rgph_graph *g,
 
 	entry_iterator keys_start(keys, state), keys_end;
 
-	switch (flags & RGPH_HASH_MASK) {
-	case RGPH_HASH_JENKINS2V:
+	switch (flags & (RGPH_HASH_MASK | RGPH_REDUCE_MASK)) {
+	case RGPH_HASH_JENKINS2V|RGPH_REDUCE_MOD:
 		res = init_graph(keys_start, keys_end,
+		    fastrem_partition(nverts, R),
 		    make_hash<V,R>(&rgph_u32x3_jenkins2v_data, seed),
-		    edges, nkeys, oedges, nverts,
+		    edges, nkeys, oedges,
 		    flags, &g->datalenmin, &g->datalenmax,
 		    &g->index, &g->indexmin, &g->indexmax);
 		break;
-	case RGPH_HASH_MURMUR32V:
+	case RGPH_HASH_MURMUR32V|RGPH_REDUCE_MOD:
 		res = init_graph(keys_start, keys_end,
+		    fastrem_partition(nverts, R),
 		    make_hash<V,R>(&rgph_u32x4_murmur32v_data, seed),
-		    edges, nkeys, oedges, nverts,
+		    edges, nkeys, oedges,
 		    flags, &g->datalenmin, &g->datalenmax,
 		    &g->index, &g->indexmin, &g->indexmax);
 		break;
-	case RGPH_HASH_MURMUR32S:
+	case RGPH_HASH_MURMUR32S|RGPH_REDUCE_MOD:
 		res = init_graph(keys_start, keys_end,
+		    fastrem_partition(nverts, R),
 		    make_hash<V,R>(&rgph_u32_murmur32s_data, seed),
-		    edges, nkeys, oedges, nverts,
+		    edges, nkeys, oedges,
 		    flags, &g->datalenmin, &g->datalenmax,
 		    &g->index, &g->indexmin, &g->indexmax);
 		break;
-	case RGPH_HASH_XXH32S:
+	case RGPH_HASH_XXH32S|RGPH_REDUCE_MOD:
 		res = init_graph(keys_start, keys_end,
+		    fastrem_partition(nverts, R),
 		    make_hash<V,R>(&rgph_u32_xxh32s_data, seed),
-		    edges, nkeys, oedges, nverts,
+		    edges, nkeys, oedges,
 		    flags, &g->datalenmin, &g->datalenmax,
 		    &g->index, &g->indexmin, &g->indexmax);
 		break;
-	case RGPH_HASH_XXH64S:
+	case RGPH_HASH_XXH64S|RGPH_REDUCE_MOD:
 		res = init_graph(keys_start, keys_end,
+		    fastrem_partition(nverts, R),
 		    make_hash<V,R>(&rgph_u64_xxh64s_data, seed),
-		    edges, nkeys, oedges, nverts,
+		    edges, nkeys, oedges,
+		    flags, &g->datalenmin, &g->datalenmax,
+		    &g->index, &g->indexmin, &g->indexmax);
+		break;
+	case RGPH_HASH_JENKINS2V|RGPH_REDUCE_MUL:
+		res = init_graph(keys_start, keys_end,
+		    lemire_partition(nverts, R, nbits),
+		    make_hash<V,R>(&rgph_u32x3_jenkins2v_data, seed),
+		    edges, nkeys, oedges,
+		    flags, &g->datalenmin, &g->datalenmax,
+		    &g->index, &g->indexmin, &g->indexmax);
+		break;
+	case RGPH_HASH_MURMUR32V|RGPH_REDUCE_MUL:
+		res = init_graph(keys_start, keys_end,
+		    lemire_partition(nverts, R, nbits),
+		    make_hash<V,R>(&rgph_u32x4_murmur32v_data, seed),
+		    edges, nkeys, oedges,
+		    flags, &g->datalenmin, &g->datalenmax,
+		    &g->index, &g->indexmin, &g->indexmax);
+		break;
+	case RGPH_HASH_MURMUR32S|RGPH_REDUCE_MUL:
+		res = init_graph(keys_start, keys_end,
+		    lemire_partition(nverts, R, nbits),
+		    make_hash<V,R>(&rgph_u32_murmur32s_data, seed),
+		    edges, nkeys, oedges,
+		    flags, &g->datalenmin, &g->datalenmax,
+		    &g->index, &g->indexmin, &g->indexmax);
+		break;
+	case RGPH_HASH_XXH32S|RGPH_REDUCE_MUL:
+		res = init_graph(keys_start, keys_end,
+		    lemire_partition(nverts, R, nbits),
+		    make_hash<V,R>(&rgph_u32_xxh32s_data, seed),
+		    edges, nkeys, oedges,
+		    flags, &g->datalenmin, &g->datalenmax,
+		    &g->index, &g->indexmin, &g->indexmax);
+		break;
+	case RGPH_HASH_XXH64S|RGPH_REDUCE_MUL:
+		res = init_graph(keys_start, keys_end,
+		    lemire_partition(nverts, R, nbits),
+		    make_hash<V,R>(&rgph_u64_xxh64s_data, seed),
+		    edges, nkeys, oedges,
 		    flags, &g->datalenmin, &g->datalenmax,
 		    &g->index, &g->indexmin, &g->indexmax);
 		break;
@@ -1406,6 +1407,12 @@ rgph_alloc_graph(size_t nkeys, int flags)
 		return nullptr;
 	}
 
+	// Fail if both RGPH_REDUCE_MOD and RGPH_REDUCE_MUL are passed.
+	if ((flags & RGPH_REDUCE_MASK) == RGPH_REDUCE_MASK) {
+		errno = EINVAL;
+		return nullptr;
+	}
+
 	if ((flags & RGPH_RANK_MASK) == RGPH_RANK_DEFAULT)
 		flags |= RGPH_RANK3;
 
@@ -1414,6 +1421,9 @@ rgph_alloc_graph(size_t nkeys, int flags)
 
 	if ((flags & RGPH_HASH_MASK) == RGPH_HASH_DEFAULT)
 		flags |= RGPH_HASH_JENKINS2V;
+
+	if ((flags & RGPH_REDUCE_MASK) == RGPH_REDUCE_DEFAULT)
+		flags |= RGPH_REDUCE_MOD;
 
 	nverts = graph_nverts(&flags, nkeys);
 	if (nverts == 0) {

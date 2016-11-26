@@ -62,14 +62,14 @@
 #define	RGPH_ALGO_CHM      0x400
 #define	RGPH_ALGO_BDZ      0x800
 
-#define RGPH_MOD_MASK    0x7000
-#define RGPH_MOD_DEFAULT 0
-#define RGPH_MOD_POW2    0x1000 /* div = nverts / R is a power of 2.         */
-#define RGPH_MOD_FASTDIV 0x2000 /* n / div = (n * magic) >> 32 >> post_shift */
-#define RGPH_MOD_LEMIRE  XXX
+#define RGPH_REDUCE_MASK    0x3000
+#define RGPH_REDUCE_DEFAULT 0
+#define RGPH_REDUCE_MOD     0x1000 /* Modulo reduction of a hash.             */
+#define RGPH_REDUCE_MUL     0x2000 /* Alternative reduction by multiplication.*/
 
-#define	RGPH_INDEX_MASK    0x10000
+#define	RGPH_INDEX_MASK    0xc000
 #define	RGPH_INDEX_DEFAULT 0
-#define	RGPH_INDEX_COMPACT 0x10000
+#define	RGPH_INDEX_COMPACT 0x4000
+#define	RGPH_INDEX_XXX     0x8000
 
 #endif /* !RGPH_DEFS_H_INCLUDED */

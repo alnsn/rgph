@@ -63,18 +63,18 @@ struct flag_str {
 };
 
 static const struct flag_str flag_strings[] = {
-	{ RGPH_HASH_JENKINS2V, RGPH_HASH_MASK,  "jenkins2v" },
-	{ RGPH_HASH_MURMUR32V, RGPH_HASH_MASK,  "murmur32v" },
-	{ RGPH_HASH_MURMUR32S, RGPH_HASH_MASK,  "murmur32s" },
-	{ RGPH_HASH_XXH32S,    RGPH_HASH_MASK,  "xxh32s"    },
-	{ RGPH_HASH_XXH64S,    RGPH_HASH_MASK,  "xxh64s"    },
-	{ RGPH_RANK2,          RGPH_RANK_MASK,  "rank2"     },
-	{ RGPH_RANK3,          RGPH_RANK_MASK,  "rank3"     },
-	{ RGPH_ALGO_CHM,       RGPH_ALGO_MASK,  "chm"       },
-	{ RGPH_ALGO_BDZ,       RGPH_ALGO_MASK,  "bdz"       },
-	{ RGPH_MOD_POW2,       RGPH_MOD_MASK,   "pow2"      },
-	{ RGPH_MOD_FASTDIV,    RGPH_MOD_MASK,   "fastdiv"   },
-	{ RGPH_INDEX_COMPACT,  RGPH_INDEX_MASK, "compact"   },
+	{ RGPH_HASH_JENKINS2V, RGPH_HASH_MASK,   "jenkins2v" },
+	{ RGPH_HASH_MURMUR32V, RGPH_HASH_MASK,   "murmur32v" },
+	{ RGPH_HASH_MURMUR32S, RGPH_HASH_MASK,   "murmur32s" },
+	{ RGPH_HASH_XXH32S,    RGPH_HASH_MASK,   "xxh32s"    },
+	{ RGPH_HASH_XXH64S,    RGPH_HASH_MASK,   "xxh64s"    },
+	{ RGPH_RANK2,          RGPH_RANK_MASK,   "rank2"     },
+	{ RGPH_RANK3,          RGPH_RANK_MASK,   "rank3"     },
+	{ RGPH_ALGO_CHM,       RGPH_ALGO_MASK,   "chm"       },
+	{ RGPH_ALGO_BDZ,       RGPH_ALGO_MASK,   "bdz"       },
+	{ RGPH_REDUCE_MOD,     RGPH_REDUCE_MASK, "mod"       },
+	{ RGPH_REDUCE_MUL,     RGPH_REDUCE_MASK, "mul"       },
+	{ RGPH_INDEX_COMPACT,  RGPH_INDEX_MASK,  "compact"   },
 };
 
 
@@ -379,7 +379,7 @@ graph_flags(lua_State *L)
 }
 
 static int
-graph_div_hint(lua_State *L)
+graph_reduction(lua_State *L)
 {
 	struct rgph_graph **pg;
 	int flags;
@@ -390,10 +390,10 @@ graph_div_hint(lua_State *L)
 
 	flags = rgph_flags(*pg);
 
-	if (flags & RGPH_MOD_POW2)
-		lua_pushstring(L, "pow2");
-	else if (flags & RGPH_MOD_FASTDIV)
-		lua_pushstring(L, "fastdiv");
+	if (flags & RGPH_REDUCE_MOD)
+		lua_pushstring(L, "mod");
+	else if (flags & RGPH_REDUCE_MUL)
+		lua_pushstring(L, "mul");
 	else
 		lua_pushstring(L, "");
 
@@ -458,25 +458,19 @@ static int
 fastdiv_prepare_fn(lua_State *L)
 {
 	uint32_t div, mul;
-	int nbits, inc;
+	int branchless;
 	uint8_t s1, s2;
 
 	div = luaL_checkinteger(L, 1);
-	nbits = luaL_optinteger(L, 2, 0);
+	branchless = lua_toboolean(L, 2);
 
-	if (nbits + 0u > sizeof(div) * CHAR_BIT)
-		return luaL_argerror(L, 2, "out of range");
-
-	rgph_fastdiv_prepare(div, &mul, &s1, &s2, nbits, &inc);
+	rgph_fastdiv_prepare(div, &mul, &s1, &s2, branchless);
 
 	lua_pushinteger(L, mul);
 	lua_pushinteger(L, s1);
 	lua_pushinteger(L, s2);
 
-	if (nbits > 0)
-		lua_pushboolean(L, inc);
-
-	return nbits > 0 ? 4 : 3;
+	return 3;
 }
 
 static int
@@ -945,7 +939,7 @@ static const luaL_Reg graph_fn[] = {
 	{ "index_max", graph_index_max },
 	{ "core_size", graph_core_size },
 	{ "flags", graph_flags },
-	{ "division_hint", graph_div_hint },
+	{ "reduction", graph_reduction },
 	{ "build", graph_build },
 	{ "find_duplicates", graph_find_duplicates },
 	{ "assign", graph_assign },
