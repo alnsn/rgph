@@ -51,11 +51,10 @@ rgph_fastdiv_prepare(uint32_t div, uint32_t *m,
 	*s1 = (l > 1) ? 1 : l;
 	*s2 = (l == 0) ? 0 : l - 1;
 
-	if (branchless)
+	if (branchless || div == 1)
 		return;
 
 	if (magic == 0) { /* div == nextpow2 */
-		*m = 0;
 		*s1 -= 1;
 		*s2 += 1;
 	} else {

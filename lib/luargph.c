@@ -462,8 +462,10 @@ fastdiv_prepare_fn(lua_State *L)
 	uint8_t s1, s2;
 
 	div = luaL_checkinteger(L, 1);
-	branchless = lua_toboolean(L, 2);
+	if (div < 1)
+		return luaL_argerror(L, 1, "unsupported divisor");
 
+	branchless = lua_toboolean(L, 2);
 	rgph_fastdiv_prepare(div, &mul, &s1, &s2, branchless);
 
 	lua_pushinteger(L, mul);
