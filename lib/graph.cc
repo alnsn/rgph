@@ -66,9 +66,8 @@ namespace {
 enum {
 	ZEROED   = 0x40000000, // The order, edges and oedges arrays are zeroed.
 	BUILT    = 0x20000000, // Graph is built.
-	BIG_INDEX= 0x10000000, // Chm index is an array of big_index_t elements.
-	PEELED   = 0x08000000, // Peel order index is built.
-	ASSIGNED = 0x04000000, // Assignment step is done.
+	PEELED   = 0x10000000, // Peel order index is built.
+	ASSIGNED = 0x08000000, // Assignment step is done.
 	PUBLIC_FLAGS = 0xffff
 };
 
@@ -516,97 +515,60 @@ make_hash(void (*func)(void const *, size_t, uint32_t, H *), unsigned long seed)
 }
 
 template<class X>
-void init_chm_index(X *index, size_t n)
+inline void
+init_chm_index(X *index, size_t n)
 {
 
 	for (size_t i = 0; i < n; i++)
 		index[i] = i;
 }
 
+inline void
+copy_chm_index(void *new_index, void *index, size_t n)
+{
+	auto dst = static_cast<big_index_t *>(new_index);
+	auto src = static_cast<index_t const *>(index);
+
+	for (size_t i = 0; i < n; ++i)
+		dst[i] = src[i];
+}
+
 void *
-alloc_chm_index(size_t nkeys, size_t n, big_index_t indexmax)
+realloc_chm_index(void *index, size_t nkeys, size_t e, big_index_t indexmax)
 {
 	bool const big = indexmax > INDEX_MAX;
 	size_t const elemsz = big ? sizeof(big_index_t) : sizeof(index_t);
+	void *new_index;
 
 	if (nkeys > SIZE_MAX / elemsz) {
 		errno = ENOMEM;
 		return nullptr;
 	}
 
-	void *ptr = malloc(nkeys * elemsz);
-	if (ptr == nullptr)
+	new_index = malloc(elemsz * nkeys);
+	if (new_index == nullptr)
 		return nullptr;
 
-	if (big)
-		init_chm_index(static_cast<big_index_t *>(ptr), n);
-	else
-		init_chm_index(static_cast<index_t *>(ptr), n);
-
-	return ptr;
-}
-
-void *
-realloc_chm_index(void *index, size_t nkeys, size_t e)
-{
-	void *big_index;
-
-	if (nkeys > SIZE_MAX / sizeof(big_index_t)) {
-		errno = ENOMEM;
-		return nullptr;
+	if (index != nullptr) {
+		copy_chm_index(new_index, index, e);
+		free(index);
+	} else if (big) {
+		init_chm_index(static_cast<big_index_t *>(new_index), e);
+	} else {
+		init_chm_index(static_cast<index_t *>(new_index), e);
 	}
 
-	big_index = malloc(sizeof(big_index_t) * nkeys);
-	if (big_index == nullptr)
-		return nullptr;
-
-	auto src = static_cast<index_t const *>(index);
-	auto dst = static_cast<big_index_t *>(big_index);
-
-	for (size_t i = 0; i <= e; ++i)
-		dst[i] = src[i];
-
-	free(index);
-
-	return big_index;
+	return new_index;
 }
 
-// Init graph for bdz algorithm.
-template<class Iter, class Hash, class Part, class V, int R>
+template<class X, class Iter, class Hash, class Reduce, class V, int R>
 inline V
-init_graph_bdz(Iter &keys, Iter const &keys_end,
-    Hash const &hash, Part const &part,
+init_graph(Iter &keys, Iter const &keys_end,
+    Reduce const &reduce, Hash const &hash,
     edge<V,R> *edges, size_t nkeys, oedge<V,R> *oedges,
-    size_t *datalenmin, size_t *datalenmax)
-{
-	V e = 0;
-
-	for (; e < nkeys && keys != keys_end; ++e, ++keys) {
-		rgph_entry const &ent = *keys;
-
-		if (ent.datalen > *datalenmax)
-			*datalenmax = ent.datalen;
-		if (ent.datalen < *datalenmin)
-			*datalenmin = ent.datalen;
-
-		V const *verts = hash(ent.key, ent.keylen);
-		for (V r = 0; r < R; ++r)
-			edges[e].verts[r] = part(verts, r);
-
-		add_edge(oedges, e, edges[e].verts);
-	}
-
-	return e;
-}
-
-// Init graph for chm algorithm.
-template<class X, class Iter, class Hash, class Part, class V, int R>
-inline V
-init_graph_chm(Iter &keys, Iter const &keys_end,
-    Hash const &hash, Part const &part,
-    V e, edge<V,R> *edges, size_t nkeys, oedge<V,R> *oedges,
     size_t *datalenmin, size_t *datalenmax,
-    X *index, big_index_t *indexmin, big_index_t *indexmax)
+    big_index_t *indexmin, big_index_t *indexmax,
+    V e, X *index)
 {
 	static_assert(sizeof(nullptr_index_t) < sizeof(index_t),
 	    "Impossible to detect nullptr index at compile-time.");
@@ -649,7 +611,7 @@ init_graph_chm(Iter &keys, Iter const &keys_end,
 
 		V const *verts = hash(ent.key, ent.keylen);
 		for (V r = 0; r < R; ++r)
-			edges[e].verts[r] = part(verts, r);
+			edges[e].verts[r] = reduce(verts, r);
 
 		add_edge(oedges, e, edges[e].verts);
 	}
@@ -657,65 +619,55 @@ init_graph_chm(Iter &keys, Iter const &keys_end,
 	return e;
 }
 
-template<class Iter, class Part, class Hash, class V, int R>
+template<class Iter, class Reduce, class Hash, class V, int R>
 int
-init_graph(Iter &keys, Iter const &keys_end, Part const &part, Hash const &hash,
+init_graph(Iter &keys, Iter const &keys_end,
+    Reduce const &reduce, Hash const &hash,
     edge<V,R> *edges, size_t nkeys, oedge<V,R> *oedges,
-    unsigned int flags, size_t *datalenmin, size_t *datalenmax,
+    size_t *datalenmin, size_t *datalenmax,
     void **index, big_index_t *indexmin, big_index_t *indexmax)
 {
 	V e = 0;
 
-	switch (flags & RGPH_ALGO_MASK) {
-	case RGPH_ALGO_BDZ:
-		*indexmin = 0;
-		*indexmax = R - 1;
-		e = init_graph_bdz(keys, keys_end, hash, part,
-		    edges, nkeys, oedges, datalenmin, datalenmax);
-		break;
-	case RGPH_ALGO_CHM:
-		if (*index == nullptr) {
-			e = init_graph_chm(keys, keys_end, hash, part,
-			    e, edges, nkeys, oedges, datalenmin, datalenmax,
-			    static_cast<nullptr_index_t *>(*index),
-			    indexmin, indexmax);
-			if (e == nkeys)
-				return RGPH_SUCCESS;
-			else if (keys == keys_end)
-				return RGPH_NOKEY;
+	if (*index == nullptr) {
+		e = init_graph(keys, keys_end, reduce, hash,
+		    edges, nkeys, oedges, datalenmin, datalenmax,
+		    indexmin, indexmax,
+		    e, static_cast<nullptr_index_t *>(*index));
+		if (e == nkeys)
+			return RGPH_SUCCESS;
+		else if (keys == keys_end)
+			return RGPH_NOKEY;
 
-			*index = alloc_chm_index(nkeys, e, *indexmax);
-			if (*index == nullptr)
-				return RGPH_NOMEM;
-		}
-
-		if (*indexmax <= INDEX_MAX) {
-			e = init_graph_chm(keys, keys_end, hash, part,
-			    e, edges, nkeys, oedges, datalenmin, datalenmax,
-			    static_cast<index_t *>(*index),
-			    indexmin, indexmax);
-			if (e == nkeys)
-				return RGPH_SUCCESS;
-			else if (keys == keys_end)
-				return RGPH_NOKEY;
-
-			void *big_index = realloc_chm_index(*index, nkeys, e);
-			if (big_index == nullptr)
-				return RGPH_NOMEM;
-			*index = big_index;
-		}
-
-		assert (*indexmax > INDEX_MAX);
-
-		e = init_graph_chm(keys, keys_end, hash, part,
-		    e, edges, nkeys, oedges, datalenmin, datalenmax,
-		    static_cast<big_index_t *>(*index),
-		    indexmin, indexmax);
-		break;
-	default:
-		assert(0 && "rgph_alloc_graph() should have caught it");
-		return RGPH_INVAL;
+		*index = realloc_chm_index(*index, nkeys, e, *indexmax);
+		if (*index == nullptr)
+			return RGPH_NOMEM;
 	}
+
+	if (*indexmax <= INDEX_MAX) {
+		void *big_index;
+
+		e = init_graph(keys, keys_end, reduce, hash,
+		    edges, nkeys, oedges, datalenmin, datalenmax,
+		    indexmin, indexmax,
+		    e, static_cast<index_t *>(*index));
+		if (e == nkeys)
+			return RGPH_SUCCESS;
+		else if (keys == keys_end)
+			return RGPH_NOKEY;
+
+		big_index = realloc_chm_index(*index, nkeys, e, *indexmax);
+		if (big_index == nullptr)
+			return RGPH_NOMEM;
+		*index = big_index;
+	}
+
+	assert (*indexmax > INDEX_MAX);
+
+	e = init_graph(keys, keys_end, reduce, hash,
+	    edges, nkeys, oedges, datalenmin, datalenmax,
+	    indexmin, indexmax,
+	    e, static_cast<big_index_t *>(*index));
 
 	return e == nkeys ? RGPH_SUCCESS : RGPH_NOKEY;
 }
@@ -1035,10 +987,8 @@ build_graph(struct rgph_graph *g,
 	g->core_size = nkeys;
 	g->datalenmin = SIZE_MAX;
 	g->datalenmax = 0;
-	g->indexmin = BIG_INDEX_MAX;
-	g->indexmax = 0;
 	g->seed = seed;
-	g->flags &= PUBLIC_FLAGS; // Reset flags.
+	g->flags &= PUBLIC_FLAGS; // Reset internal flags.
 
 	entry_iterator keys_start(keys, state), keys_end;
 
@@ -1048,7 +998,7 @@ build_graph(struct rgph_graph *g,
 		    fastrem_partition(nverts, R),
 		    make_hash<V,R>(&rgph_u32x3_jenkins2v_data, seed),
 		    edges, nkeys, oedges,
-		    flags, &g->datalenmin, &g->datalenmax,
+		    &g->datalenmin, &g->datalenmax,
 		    &g->index, &g->indexmin, &g->indexmax);
 		break;
 	case RGPH_HASH_MURMUR32V|RGPH_REDUCE_MOD:
@@ -1056,7 +1006,7 @@ build_graph(struct rgph_graph *g,
 		    fastrem_partition(nverts, R),
 		    make_hash<V,R>(&rgph_u32x4_murmur32v_data, seed),
 		    edges, nkeys, oedges,
-		    flags, &g->datalenmin, &g->datalenmax,
+		    &g->datalenmin, &g->datalenmax,
 		    &g->index, &g->indexmin, &g->indexmax);
 		break;
 	case RGPH_HASH_MURMUR32S|RGPH_REDUCE_MOD:
@@ -1064,7 +1014,7 @@ build_graph(struct rgph_graph *g,
 		    fastrem_partition(nverts, R),
 		    make_hash<V,R>(&rgph_u32_murmur32s_data, seed),
 		    edges, nkeys, oedges,
-		    flags, &g->datalenmin, &g->datalenmax,
+		    &g->datalenmin, &g->datalenmax,
 		    &g->index, &g->indexmin, &g->indexmax);
 		break;
 	case RGPH_HASH_XXH32S|RGPH_REDUCE_MOD:
@@ -1072,7 +1022,7 @@ build_graph(struct rgph_graph *g,
 		    fastrem_partition(nverts, R),
 		    make_hash<V,R>(&rgph_u32_xxh32s_data, seed),
 		    edges, nkeys, oedges,
-		    flags, &g->datalenmin, &g->datalenmax,
+		    &g->datalenmin, &g->datalenmax,
 		    &g->index, &g->indexmin, &g->indexmax);
 		break;
 	case RGPH_HASH_XXH64S|RGPH_REDUCE_MOD:
@@ -1080,7 +1030,7 @@ build_graph(struct rgph_graph *g,
 		    fastrem_partition(nverts, R),
 		    make_hash<V,R>(&rgph_u64_xxh64s_data, seed),
 		    edges, nkeys, oedges,
-		    flags, &g->datalenmin, &g->datalenmax,
+		    &g->datalenmin, &g->datalenmax,
 		    &g->index, &g->indexmin, &g->indexmax);
 		break;
 	case RGPH_HASH_JENKINS2V|RGPH_REDUCE_MUL:
@@ -1088,7 +1038,7 @@ build_graph(struct rgph_graph *g,
 		    lemire_partition(nverts, R, nbits),
 		    make_hash<V,R>(&rgph_u32x3_jenkins2v_data, seed),
 		    edges, nkeys, oedges,
-		    flags, &g->datalenmin, &g->datalenmax,
+		    &g->datalenmin, &g->datalenmax,
 		    &g->index, &g->indexmin, &g->indexmax);
 		break;
 	case RGPH_HASH_MURMUR32V|RGPH_REDUCE_MUL:
@@ -1096,7 +1046,7 @@ build_graph(struct rgph_graph *g,
 		    lemire_partition(nverts, R, nbits),
 		    make_hash<V,R>(&rgph_u32x4_murmur32v_data, seed),
 		    edges, nkeys, oedges,
-		    flags, &g->datalenmin, &g->datalenmax,
+		    &g->datalenmin, &g->datalenmax,
 		    &g->index, &g->indexmin, &g->indexmax);
 		break;
 	case RGPH_HASH_MURMUR32S|RGPH_REDUCE_MUL:
@@ -1104,7 +1054,7 @@ build_graph(struct rgph_graph *g,
 		    lemire_partition(nverts, R, nbits),
 		    make_hash<V,R>(&rgph_u32_murmur32s_data, seed),
 		    edges, nkeys, oedges,
-		    flags, &g->datalenmin, &g->datalenmax,
+		    &g->datalenmin, &g->datalenmax,
 		    &g->index, &g->indexmin, &g->indexmax);
 		break;
 	case RGPH_HASH_XXH32S|RGPH_REDUCE_MUL:
@@ -1112,7 +1062,7 @@ build_graph(struct rgph_graph *g,
 		    lemire_partition(nverts, R, nbits),
 		    make_hash<V,R>(&rgph_u32_xxh32s_data, seed),
 		    edges, nkeys, oedges,
-		    flags, &g->datalenmin, &g->datalenmax,
+		    &g->datalenmin, &g->datalenmax,
 		    &g->index, &g->indexmin, &g->indexmax);
 		break;
 	case RGPH_HASH_XXH64S|RGPH_REDUCE_MUL:
@@ -1120,7 +1070,7 @@ build_graph(struct rgph_graph *g,
 		    lemire_partition(nverts, R, nbits),
 		    make_hash<V,R>(&rgph_u64_xxh64s_data, seed),
 		    edges, nkeys, oedges,
-		    flags, &g->datalenmin, &g->datalenmax,
+		    &g->datalenmin, &g->datalenmax,
 		    &g->index, &g->indexmin, &g->indexmax);
 		break;
 	default:
@@ -1128,20 +1078,8 @@ build_graph(struct rgph_graph *g,
 		return RGPH_INVAL;
 	}
 
-	if (g->index != nullptr && g->indexmax > INDEX_MAX)
-		g->flags |= BIG_INDEX;
-
 	if (res != RGPH_SUCCESS)
 		return res;
-
-	if (need_assigned_bitset(g->flags, g->indexmin, g->indexmax)) {
-		size_t const wbits = sizeof(g->assigned[0]) * CHAR_BIT;
-
-		g->assigned = (int *)malloc(
-		    sizeof(g->assigned[0]) * ((nverts - 1) / wbits + 1));
-		if (g->assigned == nullptr)
-			return RGPH_NOMEM;
-	}
 
 	g->core_size = peel_graph(edges, nkeys, oedges, nverts, order);
 
@@ -1311,11 +1249,9 @@ graph_assign_bdz(struct rgph_graph *g)
 
 template<class V, int R, class X>
 int
-graph_assign_chm(struct rgph_graph *g, int algo_index_flags)
+graph_assign_chm(struct rgph_graph *g)
 {
 	typedef edge<V,R> edge_t;
-
-	assert((algo_index_flags & ~(RGPH_ALGO_MASK|RGPH_INDEX_MASK)) == 0);
 
 	auto order = static_cast<V const *>(g->order);
 	auto index = static_cast<X const *>(g->index);
@@ -1326,13 +1262,19 @@ graph_assign_chm(struct rgph_graph *g, int algo_index_flags)
 	assert(sizeof(X) == sizeof(index_t) || index != nullptr);
 	assert(g->core_size == 0);
 
-	g->flags |= ASSIGNED;
-	g->flags &= ~PEELED;
+	if (need_assigned_bitset(g->flags, g->indexmin, g->indexmax)) {
+		if (g->assigned == nullptr) {
+			size_t const wsize = sizeof(g->assigned[0]);
+			size_t const wbits = wsize * CHAR_BIT;
+			size_t const nwords = (g->nverts - 1) / wbits + 1;
 
-	if (need_assigned_bitset(algo_index_flags, g->indexmin, g->indexmax)) {
+			g->assigned = (int *)malloc(wsize * nwords);
+			if (g->assigned == nullptr)
+				return RGPH_NOMEM;
+		}
 		assign(edges, order, g->nkeys, assigner,
 		    assignments, g->nverts, g->assigned);
-	} else if (algo_index_flags & RGPH_INDEX_COMPACT) {
+	} else if (g->flags & RGPH_INDEX_COMPACT) {
 		assign(edges, order, g->nkeys, assigner,
 		    assignments, g->nverts, g->indexmin, g->indexmax);
 	} else {
@@ -1343,27 +1285,151 @@ graph_assign_chm(struct rgph_graph *g, int algo_index_flags)
 		    assignments, g->nverts, 0, indexmax);
 	}
 
+	g->flags |= ASSIGNED;
+	g->flags &= ~PEELED;
+
 	return RGPH_SUCCESS;
 }
 
 template<class V, int R>
 int
-graph_assign(struct rgph_graph *g, int algo_index_flags)
+graph_assign(struct rgph_graph *g)
 {
 
-	assert((algo_index_flags & ~(RGPH_ALGO_MASK|RGPH_INDEX_MASK)) == 0);
-
-	switch (algo_index_flags & RGPH_ALGO_MASK) {
+	switch (g->flags & RGPH_ALGO_MASK) {
 	case RGPH_ALGO_BDZ:
 		return graph_assign_bdz<V,R>(g);
 	case RGPH_ALGO_CHM:
-		return (g->flags & BIG_INDEX)
-		    ? graph_assign_chm<V,R,big_index_t>(g, algo_index_flags)
-		    : graph_assign_chm<V,R,index_t>(g, algo_index_flags);
+		return (g->indexmax > INDEX_MAX)
+		    ? graph_assign_chm<V,R,big_index_t>(g)
+		    : graph_assign_chm<V,R,index_t>(g);
 	default:
 		assert(0 && "rgph_alloc_graph() should have caught it");
 		return RGPH_INVAL;
 	}
+}
+
+inline bool
+set_default_flags(int *flags)
+{
+
+	if (*flags & ~PUBLIC_FLAGS)
+		return false;
+
+	// Fail if both RGPH_RANK2 and RGPH_RANK3 are passed.
+	if ((*flags & RGPH_RANK_MASK) == RGPH_RANK_MASK)
+		return false;
+
+	// Don't accept bad hash flags.
+	if ((*flags & RGPH_HASH_MASK) > RGPH_HASH_LAST)
+		return false;
+
+	// Fail if both RGPH_ALGO_CHM and RGPH_ALGO_BDZ are passed.
+	if ((*flags & RGPH_ALGO_MASK) == RGPH_ALGO_MASK)
+		return false;
+
+	// Fail if both RGPH_REDUCE_MOD and RGPH_REDUCE_MUL are passed.
+	if ((*flags & RGPH_REDUCE_MASK) == RGPH_REDUCE_MASK)
+		return false;
+
+	// Fail if both RGPH_INDEX_COMPACT and RGPH_INDEX_SPARSE are passed.
+	if ((*flags & RGPH_INDEX_MASK) == RGPH_INDEX_MASK)
+		return false;
+
+	if ((*flags & RGPH_RANK_MASK) == RGPH_RANK_DEFAULT)
+		*flags |= RGPH_RANK3;
+
+	if ((*flags & RGPH_HASH_MASK) == RGPH_HASH_DEFAULT)
+		*flags |= RGPH_HASH_JENKINS2V;
+
+	if ((*flags & RGPH_ALGO_MASK) == RGPH_ALGO_DEFAULT)
+		*flags |= RGPH_ALGO_CHM;
+
+	if ((*flags & RGPH_REDUCE_MASK) == RGPH_REDUCE_DEFAULT)
+		*flags |= RGPH_REDUCE_MOD;
+
+	if ((*flags & RGPH_INDEX_MASK) == RGPH_INDEX_DEFAULT)
+		*flags |= RGPH_INDEX_COMPACT;
+
+	return true;
+}
+
+inline bool
+check_flags(int flags)
+{
+
+	return set_default_flags(&flags);
+}
+
+inline bool
+flags_changed(unsigned int *flags, int new_flags, unsigned int mask)
+{
+	unsigned int const select_flags = new_flags & mask;
+
+	return select_flags != 0 && select_flags != (*flags & mask);
+}
+
+bool
+update_flags_for_build(unsigned int *flags, int new_flags, size_t nkeys)
+{
+
+	if (!check_flags(new_flags))
+		return false;
+
+	if (flags_changed(flags, new_flags, RGPH_RANK_MASK))
+		return false;
+
+	if ((new_flags & RGPH_HASH_MASK) != RGPH_HASH_DEFAULT) {
+		if (nkeys > graph_max_keys(new_flags))
+			return false;
+
+		*flags &= ~RGPH_HASH_MASK;
+		*flags |= new_flags & RGPH_HASH_MASK;
+	}
+
+	if ((new_flags & RGPH_ALGO_MASK) != RGPH_ALGO_DEFAULT) {
+		*flags &= ~RGPH_ALGO_MASK;
+		*flags |= new_flags & RGPH_ALGO_MASK;
+	}
+
+	if ((new_flags & RGPH_REDUCE_MASK) != RGPH_REDUCE_DEFAULT) {
+		*flags &= ~RGPH_REDUCE_MASK;
+		*flags |= new_flags & RGPH_REDUCE_MASK;
+	}
+
+	if ((new_flags & RGPH_INDEX_MASK) != RGPH_INDEX_DEFAULT) {
+		*flags &= ~RGPH_INDEX_MASK;
+		*flags |= new_flags & RGPH_INDEX_MASK;
+	}
+
+	return true;
+}
+
+bool
+update_flags_for_assign(unsigned int *flags, int new_flags)
+{
+
+	if (!check_flags(new_flags))
+		return false;
+
+	if (flags_changed(flags, new_flags, RGPH_RANK_MASK))
+		return false;
+
+	if (flags_changed(flags, new_flags, RGPH_HASH_MASK))
+		return false;
+
+	if (flags_changed(flags, new_flags, RGPH_ALGO_MASK))
+		return false;
+
+	if (flags_changed(flags, new_flags, RGPH_REDUCE_MASK))
+		return false;
+
+	if ((new_flags & RGPH_INDEX_MASK) != RGPH_INDEX_DEFAULT) {
+		*flags &= ~RGPH_INDEX_MASK;
+		*flags |= new_flags & RGPH_INDEX_MASK;
+	}
+
+	return true;
 }
 
 } // anon namespace
@@ -1390,40 +1456,10 @@ rgph_alloc_graph(size_t nkeys, int flags)
 	int save_errno;
 	int r;
 
-	if (flags & ~PUBLIC_FLAGS) {
+	if (!set_default_flags(&flags)) {
 		errno = EINVAL;
 		return nullptr;
 	}
-
-	// Fail if both RGPH_ALGO_CHM and RGPH_ALGO_BDZ are passed.
-	if ((flags & RGPH_ALGO_MASK) == RGPH_ALGO_MASK) {
-		errno = EINVAL;
-		return nullptr;
-	}
-
-	// Don't accept bad hash flags.
-	if ((flags & RGPH_HASH_MASK) > RGPH_HASH_LAST) {
-		errno = EINVAL;
-		return nullptr;
-	}
-
-	// Fail if both RGPH_REDUCE_MOD and RGPH_REDUCE_MUL are passed.
-	if ((flags & RGPH_REDUCE_MASK) == RGPH_REDUCE_MASK) {
-		errno = EINVAL;
-		return nullptr;
-	}
-
-	if ((flags & RGPH_RANK_MASK) == RGPH_RANK_DEFAULT)
-		flags |= RGPH_RANK3;
-
-	if ((flags & RGPH_ALGO_MASK) == RGPH_ALGO_DEFAULT)
-		flags |= RGPH_ALGO_CHM;
-
-	if ((flags & RGPH_HASH_MASK) == RGPH_HASH_DEFAULT)
-		flags |= RGPH_HASH_JENKINS2V;
-
-	if ((flags & RGPH_REDUCE_MASK) == RGPH_REDUCE_DEFAULT)
-		flags |= RGPH_REDUCE_MOD;
 
 	nverts = graph_nverts(&flags, nkeys);
 	if (nverts == 0) {
@@ -1474,6 +1510,8 @@ rgph_alloc_graph(size_t nkeys, int flags)
 	g->core_size  = nkeys;
 	g->datalenmin = SIZE_MAX;
 	g->datalenmax = 0;
+	g->indexmin = BIG_INDEX_MAX;
+	g->indexmax = 0;
 	g->flags      = flags | ZEROED; // calloc
 
 	return g;
@@ -1592,9 +1630,12 @@ rgph_is_assigned(struct rgph_graph *g)
 
 extern "C"
 int
-rgph_build_graph(struct rgph_graph *g,
+rgph_build_graph(struct rgph_graph *g, int flags,
     unsigned long seed, rgph_entry_iterator_t keys, void *state)
 {
+
+	if (!update_flags_for_build(&g->flags, flags, g->nkeys))
+		return RGPH_INVAL;
 
 	switch (graph_rank(g->flags)) {
 	case 2:
@@ -1652,49 +1693,21 @@ rgph_find_duplicates(struct rgph_graph *g,
 
 extern "C"
 int
-rgph_assign(struct rgph_graph *g, int algo_index_flags)
+rgph_assign(struct rgph_graph *g, int flags)
 {
-	unsigned int const flags = g->flags;
 
-	if (!(flags & BUILT))
+	if (!(g->flags & BUILT))
 		return RGPH_INVAL;
 	if (g->core_size != 0)
 		return RGPH_AGAIN;
-
-	if (algo_index_flags & ~(RGPH_ALGO_MASK|RGPH_INDEX_MASK))
+	if (!update_flags_for_assign(&g->flags, flags))
 		return RGPH_INVAL;
 
-	switch (algo_index_flags & RGPH_INDEX_MASK) {
-	case 0:
-		algo_index_flags |= flags & RGPH_INDEX_MASK;
-		break;
-	case RGPH_INDEX_COMPACT:
-		break;
-	default:
-		return RGPH_INVAL;
-	}
-
-	switch (algo_index_flags & RGPH_ALGO_MASK) {
-	case 0:
-		algo_index_flags |= flags & RGPH_ALGO_MASK;
-		break;
-	case RGPH_ALGO_BDZ:
-		break;
-	case RGPH_ALGO_CHM:
-		if (flags & RGPH_ALGO_BDZ) {
-			g->indexmin = 0;
-			g->indexmax = g->nkeys - 1;
-		}
-		break;
-	default:
-		return RGPH_INVAL;
-	}
-
-	switch (graph_rank(flags)) {
+	switch (graph_rank(g->flags)) {
 	case 2:
-		return graph_assign<vert_t,2>(g, algo_index_flags);
+		return graph_assign<vert_t,2>(g);
 	case 3:
-		return graph_assign<vert_t,3>(g, algo_index_flags);
+		return graph_assign<vert_t,3>(g);
 	default:
 		assert(0 && "rgph_alloc_graph() should have caught it");
 		return RGPH_INVAL;
@@ -1705,10 +1718,9 @@ extern "C"
 void const *
 rgph_assignments(struct rgph_graph *g, size_t *width)
 {
-	unsigned int const flags = g->flags;
-	bool const big = (flags & BIG_INDEX) != 0;
-	bool const bdz = (flags & RGPH_ALGO_BDZ) != 0;
-	bool const assigned = (flags & ASSIGNED) != 0;
+	bool const big = (g->indexmax > INDEX_MAX);
+	bool const bdz = (g->flags & RGPH_ALGO_BDZ) != 0;
+	bool const assigned = (g->flags & ASSIGNED) != 0;
 
 	if (assigned && width != nullptr)
 		*width = bdz ? 1 : big ? sizeof(big_index_t) : sizeof(index_t);
@@ -1737,7 +1749,7 @@ rgph_copy_assignment(struct rgph_graph *g, size_t n, unsigned long long *to)
 		*to = static_cast<uint8_t const *>(assignments)[n];
 		return RGPH_SUCCESS;
 	case RGPH_ALGO_CHM:
-		if (flags & BIG_INDEX)
+		if (g->indexmax > INDEX_MAX)
 			*to = static_cast<big_index_t const *>(assignments)[n];
 		else
 			*to = static_cast<index_t const *>(assignments)[n];

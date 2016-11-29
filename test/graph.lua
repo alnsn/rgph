@@ -7,6 +7,9 @@ if not bit32 then bit32 = require "bit" end
 local args = { ... }
 local seed = tonumber(args[1] or "123456789")
 
+local rank2_max = { vec = 0x78787877, s64 = 0x78787877, s32 = 0x00007878 }
+local rank3_max = { vec = 0xccccccca, s64 = 0x00266666, s32 = 0x000004cc }
+
 local function test_out_of_range(nkeys, flags)
 	local ok, msg = pcall(rgph.new_graph, nkeys, flags)
 	assert(not ok and msg:find("out of range"))
@@ -17,9 +20,6 @@ local function test_good_range(nkeys, flags, reduction)
 	local g = assert(rgph.new_graph(nkeys, flags))
 	assert(g:reduction() == reduction)
 end
-
-local rank2_max = { vec = 0x78787877, s64 = 0x78787877, s32 = 0x00007878 }
-local rank3_max = { vec = 0xccccccca, s64 = 0x00266666, s32 = 0x000004cc }
 
 -- rank2 vector hash
 test_out_of_range(0, "jenkins2v,rank2")
@@ -96,10 +96,20 @@ test_out_of_range(rank3_max.s32 + 1, "xxh32s,rank3,mod")
 test_out_of_range(rank3_max.s32 + 1, "xxh32s,rank3,mul")
 
 
+local function align_up_pow2(n)
+	local r = 1
+	while n > 0 do
+		n = bit32.rshift(n, 1)
+		r = 2 * r
+	end
+	return r
+end
+
 local abcz = { a=1, b=2, c=3, d=4, e=5, f=6, g=7, h=8, i=9, j=10,
                k=11, l=12, m=13, n=14, o=15, p=16, q=17, r=18,
                s=19, t=20, u=21, v=22, w=23, x=24, y=25, z=26 }
 
+-- XXX test the "compact" and the "sparse" flags more thoroughly
 local function test_abcz(keys, seed, flags)
 	local nkeys = rgph.count_keys(pairs(keys))
 	local g = rgph.new_graph(nkeys, flags)
@@ -112,7 +122,7 @@ local function test_abcz(keys, seed, flags)
 	assert(#flags > 0 and flags:find(g:reduction()))
 
 	while true do
-		local ok, err = g:build(seed, pairs(keys))
+		local ok, err = g:build(nil, seed, pairs(keys))
 		if ok then break end
 		assert(not err, err) -- pairs(keys) can't fail
 		seed = seed + 1
@@ -123,12 +133,13 @@ local function test_abcz(keys, seed, flags)
 	assert(g:datalen_max() == 2)
 
 	local bdz = g:algo() == "bdz"
-	local unassigned = bdz and rank or nkeys
+	local unassigned = bdz and rank or
+	    (g:index() == "compact" and nkeys or align_up_pow2(nkeys))
 
-	local assign = assert(g:assign(bdz and "bdz" or "chm,compact"))
+	local assign = assert(g:assign())
 
 	for v = 0, nverts - 1 do
-		assert(assign[v] >= 0 and assign[v] <= unassigned)
+		assert(assign[v] >= 0 and assign[v] < unassigned)
 	end
 
 	if bdz then
@@ -314,3 +325,130 @@ test_abcz(abcz, seed, "xxh64s,mod,bdz,rank3")
 test_abcz(abcz, seed, "xxh64s,mul,rank3")
 test_abcz(abcz, seed, "xxh64s,mul,chm,rank3")
 test_abcz(abcz, seed, "xxh64s,mul,bdz,rank3")
+
+
+local function test_build_flags_bad_change(nkeys, flags, build_flags)
+	local seed = 0
+	local g = assert(rgph.new_graph(nkeys, flags))
+	local ok, err = g:build(build_flags, seed, pairs {})
+	assert(not ok and err == "invalid value")
+end
+
+local function test_build_flags_change(keys, seed, flags, build_flags)
+	local nkeys = rgph.count_keys(pairs(keys))
+	local g = rgph.new_graph(nkeys, flags)
+
+	while true do
+		local ok, err = g:build(build_flags, seed, pairs(keys))
+		if ok then break end
+		assert(not err, err) -- pairs(keys) can't fail
+		seed = seed + 1
+	end
+
+	assert(g:assign() and g:assign(build_flags))
+end
+
+local function test_assign_flags_bad_change(keys, seed, flags, assign_flags)
+	local nkeys = rgph.count_keys(pairs(keys))
+	local g = rgph.new_graph(nkeys, flags)
+
+	while true do
+		local ok, err = g:build(flags, seed, pairs(keys))
+		if ok then break end
+		assert(not err, err) -- pairs(keys) can't fail
+		seed = seed + 1
+	end
+
+	local ok, err = g:assign(assign_flags)
+	assert(not ok and err == "invalid value")
+end
+
+local function test_assign_flags_change(keys, seed, flags, assign_flags)
+	local nkeys = rgph.count_keys(pairs(keys))
+	local g = rgph.new_graph(nkeys, flags)
+
+	while true do
+		local ok, err = g:build(flags, seed, pairs(keys))
+		if ok then break end
+		assert(not err, err) -- pairs(keys) can't fail
+		seed = seed + 1
+	end
+
+	assert(g:assign(assign_flags))
+end
+
+test_build_flags_bad_change(1, nil, "rank2")
+test_build_flags_bad_change(1, "rank2", "rank3")
+
+test_build_flags_bad_change(rank3_max.s32+1, "jenkins2v", "xxh32s")
+test_build_flags_bad_change(rank2_max.s32+1, "jenkins2v,rank2", "xxh32s,rank2")
+test_build_flags_bad_change(rank3_max.s32+1, "jenkins2v,rank3", "xxh32s,rank3")
+
+test_build_flags_bad_change(rank3_max.s32+1, "murmur32v", "murmur32s")
+test_build_flags_bad_change(rank2_max.s32+1, "murmur32v,rank2", "murmur32s")
+test_build_flags_bad_change(rank3_max.s32+1, "murmur32v,rank3", "murmur32s")
+
+test_build_flags_bad_change(rank3_max.s32+1, "xxh64s", "murmur32s")
+test_build_flags_bad_change(rank2_max.s32+1, "xxh64s,rank2", "murmur32s,rank2")
+test_build_flags_bad_change(rank3_max.s32+1, "xxh64s,rank3", "murmur32s,rank3")
+
+test_build_flags_bad_change(rank3_max.s32+1, "xxh64s", "xxh32s")
+test_build_flags_bad_change(rank2_max.s32+1, "xxh64s,rank2", "xxh32s,rank2")
+test_build_flags_bad_change(rank3_max.s32+1, "xxh64s,rank3", "xxh32s,rank3")
+
+test_build_flags_change(abcz, seed)
+test_build_flags_change(abcz, seed, "", nil)
+test_build_flags_change(abcz, seed, nil, "")
+test_build_flags_change(abcz, seed, "", "")
+
+-- XXX some tests hang:
+test_build_flags_change(abcz, seed, "chm", "bdz")
+test_build_flags_change(abcz, seed, "bdz", "chm")
+test_build_flags_change(abcz, seed, "mul", "mod")
+--test_build_flags_change(abcz, seed, "mod", "mul")
+test_build_flags_change(abcz, seed, "sparse", "compact")
+test_build_flags_change(abcz, seed, "compact", "sparse")
+test_build_flags_change(abcz, seed, "bdz,mul", "chm,mod")
+test_build_flags_change(abcz, seed, "chm,mul", "bdz,mod")
+--test_build_flags_change(abcz, seed, "bdz,mod", "chm,mul")
+--test_build_flags_change(abcz, seed, "chm,mod", "bdz,mul")
+test_build_flags_change(abcz, seed, "chm,sparse", "bdz,compact")
+test_build_flags_change(abcz, seed, "bdz,sparse", "chm,compact")
+test_build_flags_change(abcz, seed, "chm,compact", "bdz,sparse")
+test_build_flags_change(abcz, seed, "bdz,compact", "chm,sparse")
+test_build_flags_change(abcz, seed, "jenkins2v", "xxh32s")
+test_build_flags_change(abcz, seed, "xxh32s", "jenkins2v")
+test_build_flags_change(abcz, seed, "murmur32v", "xxh32s")
+--test_build_flags_change(abcz, seed, "xxh32s", "murmur32v")
+test_build_flags_change(abcz, seed, "jenkins2v", "xxh64s")
+test_build_flags_change(abcz, seed, "xxh64s", "jenkins2v")
+
+test_assign_flags_bad_change(abcz, seed, "", "rank2")
+test_assign_flags_bad_change(abcz, seed, "rank3", "rank2")
+test_assign_flags_bad_change(abcz, seed, "rank2", "rank3")
+
+-- XXX some tests hang:
+test_assign_flags_bad_change(abcz, seed, "mod", "mul")
+--test_assign_flags_bad_change(abcz, seed, "mul", "mod")
+test_assign_flags_bad_change(abcz, seed, "xxh32s", "xxh64s")
+test_assign_flags_bad_change(abcz, seed, "bdz", "chm")
+test_assign_flags_bad_change(abcz, seed, "chm", "bdz")
+--test_assign_flags_bad_change(abcz, seed, "bdz,mul", "chm,mod")
+--test_assign_flags_bad_change(abcz, seed, "chm,mul", "bdz,mod")
+test_assign_flags_bad_change(abcz, seed, "bdz,mod", "chm,mul")
+test_assign_flags_bad_change(abcz, seed, "chm,mod", "bdz,mul")
+
+test_assign_flags_change(abcz, seed, nil, "")
+test_assign_flags_change(abcz, seed, "", nil)
+test_assign_flags_change(abcz, seed, "", "")
+
+test_assign_flags_change(abcz, seed, nil, "compact")
+test_assign_flags_change(abcz, seed, nil, "compact")
+test_assign_flags_change(abcz, seed, nil, "sparse")
+test_assign_flags_change(abcz, seed, nil, "sparse")
+test_assign_flags_change(abcz, seed, "sparse", "compact")
+test_assign_flags_change(abcz, seed, "compact", "sparse")
+test_assign_flags_change(abcz, seed, "bdz,sparse", "bdz,compact")
+test_assign_flags_change(abcz, seed, "bdz,compact", "bdz,sparse")
+test_assign_flags_change(abcz, seed, "chm,sparse", "chm,compact")
+test_assign_flags_change(abcz, seed, "chm,compact", "chm,sparse")

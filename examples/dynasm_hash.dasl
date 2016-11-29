@@ -25,6 +25,16 @@ local function const64(c, add)
 	return (c[1] + add) + c[2] * 0x100000000ll
 end
 
+local function ctz(n, z)
+	if n == 0 then return z or 32 end
+	local res = 0
+	while bit32.band(n, 1) == 0 do
+		res = res + 1
+		n = bit32.rshift(n, 1)
+	end
+	return res
+end
+
 local function globalsbynames(globals)
 	local res = {}
 	for i = 0, #globalnames do
@@ -60,6 +70,26 @@ local function build_graph(keys, flags, ntries, seed)
 	return g
 end
 
+-- Returns a number of bits required for storing chm index values.
+-- Also returns a min value and a range of index values.
+local function chm_index_bits(g)
+	local base = g:index_min()
+	local range = g:index_max() - base + 1
+
+	if range <= 4 then
+		return 2, base, range
+	elseif range <= 16 then
+		return 4, base, range
+	elseif range <= 256 then
+		return 8, base, range
+	elseif range <= 65536 then
+		return 16, base, range
+	else
+		assert(range <= 0x100000000)
+		return 32, base, range
+	end
+end
+
 -- Call emit_rodata[g:algo()] to emit rdonly lookup table.
 local emit_rodata = {}
 
@@ -85,6 +115,38 @@ function emit_rodata.bdz(Dst, g, assignments)
 	if bit32.band(nverts, stop) ~= 0 then
 		-- XXX bit32.lshift(w, ...)
 		| .dword w
+	end
+end
+
+function emit_rodata.chm(Dst, g, assignments, keys)
+	local nverts = g:vertices()
+	local rank = g:rank()
+	local unassigned = g:unassigned()
+	local bits, base = chm_index_bits(g)
+	local b, stop = 0, 8 / bits - 1 -- when bits < 8
+
+	for v = 0, nverts - 1 do
+		local a = assignments[v]
+		if a == unassigned then a = base end
+
+		if bits == 32 then
+			| .dword a - base
+		elseif bits == 16 then
+			| .word a - base
+		elseif bits == 8 then
+			| .byte a - base
+		else -- bits < 8
+			local n = bit32.band(v, stop)
+			b = bit32.bor(bit32.lshift(a - base, bits * n), b)
+			if n == stop then
+				| .byte b
+				b = 0
+			end
+		end
+	end
+
+	if bits < 8 and bit32.band(nverts, stop) ~= 0 then
+		| .byte b
 	end
 end
 
@@ -298,6 +360,67 @@ function emit_lookup.bdz(Dst, g)
 	end
 end
 
+function emit_lookup.chm(Dst, g)
+	local nverts = g:vertices()
+	local rank = g:rank()
+	local bits, base, range = chm_index_bits(g)
+	local mask = bits == 32 and 0xffffffff or bit32.lshift(1, bits) - 1
+	local pow2 = bit32.band(range, range - 1) == 0
+
+	| lea r10, [->rodata_start]
+
+	if bits == 32 then
+		| mov eax, dword [r10+rdi*4]
+		| add eax, dword [r10+rcx*4]
+	elseif bits == 16 then
+		| mov ax, word [r10+rdi*2]
+		| add ax, word [r10+rcx*2]
+	elseif bits == 8 then
+		| mov al, byte [r10+rdi]
+		| add al, byte [r10+rcx]
+	else -- bits < 8
+		local ecxshift = ctz(bits)
+		local indexshift = 3 - ecxshift -- to index in rodata_start
+		local ecxmask = bit32.lshift(1, indexshift) - 1
+
+		| mov r9d, edi
+		| shr r9d, indexshift
+		| mov r9b, byte [r10+r9]
+		|
+		| mov r8d, ecx
+		| shr r8d, indexshift
+		| mov r8b, byte [r10+r8]
+		|
+		| and ecx, ecxmask
+		| shl ecx, ecxshift
+		| shr r8b, cl
+		|
+		| mov ecx, edi
+		| and ecx, ecxmask
+		| shl ecx, ecxshift
+		| shr r9b, cl
+
+		if not pow2 then
+			| and r8d, mask
+			| and r9d, mask
+		end
+
+		| lea eax, [r9d+r8d]
+	end
+
+	if mask ~= 0xffffffff then
+		| and eax, mask
+	elseif not pow2 then
+		| cmp eax, range - 1
+		| lea edi, [eax-range]
+		| cmovg eax, edi
+	end
+
+	if base ~= 0 then
+		| add eax, base
+	end
+end
+
 function _M.generate(keys, flags, ntries, seed)
 	local g = build_graph(keys, flags, ntries, seed)
 
@@ -331,7 +454,7 @@ function _M.generate(keys, flags, ntries, seed)
 	| .rodata
 	| .align 4
 	|->rodata_start:
-	emit_rodata_fn(Dst, g, assignments)
+	emit_rodata_fn(Dst, g, assignments, keys)
 
 	local buf, size = Dst:build()
 	local hash_fn = globalsbynames(globals).hash_fn

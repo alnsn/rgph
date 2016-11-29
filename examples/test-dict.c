@@ -28,7 +28,7 @@ struct rgph_entry *iterator_func(void *state)
 
 int main(int argc, char *argv[])
 {
-	struct iterator_state state = { 0 };
+	struct iterator_state state = { NULL, { NULL, NULL, 0, 0, 0, false } };
 	struct rgph_graph *g;
 	const char *filename = "/usr/share/dict/words";
 	size_t core, nkeys = 1;

@@ -75,6 +75,7 @@ static const struct flag_str flag_strings[] = {
 	{ RGPH_REDUCE_MOD,     RGPH_REDUCE_MASK, "mod"       },
 	{ RGPH_REDUCE_MUL,     RGPH_REDUCE_MASK, "mul"       },
 	{ RGPH_INDEX_COMPACT,  RGPH_INDEX_MASK,  "compact"   },
+	{ RGPH_INDEX_SPARSE,   RGPH_INDEX_MASK,  "sparse"    },
 };
 
 
@@ -229,6 +230,19 @@ graph_hash(lua_State *L)
 		return luaL_argerror(L, 1, "dead object");
 
 	lua_pushstring(L, find_flag(rgph_flags(*pg) & RGPH_HASH_MASK)->str);
+	return 1;
+}
+
+static int
+graph_index(lua_State *L)
+{
+	struct rgph_graph **pg;
+
+	pg = (struct rgph_graph **)luaL_checkudata(L, 1, GRAPH_MT);
+	if (*pg == NULL)
+		return luaL_argerror(L, 1, "dead object");
+
+	lua_pushstring(L, find_flag(rgph_flags(*pg) & RGPH_INDEX_MASK)->str);
 	return 1;
 }
 
@@ -457,7 +471,8 @@ count_keys_fn(lua_State *L)
 static int
 fastdiv_prepare_fn(lua_State *L)
 {
-	uint32_t div, mul;
+	lua_Integer div;
+	uint32_t mul;
 	int branchless;
 	uint8_t s1, s2;
 
@@ -569,20 +584,22 @@ graph_build(lua_State *L)
 	struct build_iter_state state;
 	struct rgph_graph **pg;
 	unsigned long seed;
-	const int nargs = 3;
+	int flags;
+	const int nargs = 4;
 	int res;
 
 	pg = (struct rgph_graph **)luaL_checkudata(L, 1, GRAPH_MT);
 	if (*pg == NULL)
 		return luaL_argerror(L, 1, "dead object");
 
-	seed = luaL_checkinteger(L, 2);
+	flags = parse_flags(L, 2);
+	seed = luaL_checkinteger(L, 3);
 	luaL_checkany(L, nargs); /* Will check later if it's callable. */
 
 	state.L = L;
 	state.top = nargs + 2; /* Iterator state and the first var. */
 
-	res = rgph_build_graph(*pg, seed, &graph_build_iter, &state);
+	res = rgph_build_graph(*pg, flags, seed, &graph_build_iter, &state);
 
 	lua_pushboolean(L, res == RGPH_SUCCESS);
 	switch (res) {
@@ -932,6 +949,7 @@ static const luaL_Reg graph_fn[] = {
 	{ "rank", graph_rank },
 	{ "algo", graph_algo },
 	{ "hash", graph_hash },
+	{ "index", graph_index },
 	{ "hash_bits", graph_hash_bits },
 	{ "entries", graph_entries },
 	{ "vertices", graph_vertices },
