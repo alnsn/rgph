@@ -1238,12 +1238,12 @@ graph_assign_bdz(struct rgph_graph *g)
 
 	assert(g->core_size == 0);
 
-	g->flags |= ASSIGNED;
-	g->flags &= ~PEELED;
+	g->flags &= ~(PEELED|ASSIGNED);
 
 	assign(edges, order, g->nkeys, assigner,
 	    assignments, g->nverts, 0, R - 1);
 
+	g->flags |= ASSIGNED;
 	return RGPH_SUCCESS;
 }
 
@@ -1418,11 +1418,13 @@ update_flags_for_assign(unsigned int *flags, int new_flags)
 	if (flags_changed(flags, new_flags, RGPH_HASH_MASK))
 		return false;
 
-	if (flags_changed(flags, new_flags, RGPH_ALGO_MASK))
-		return false;
-
 	if (flags_changed(flags, new_flags, RGPH_REDUCE_MASK))
 		return false;
+
+	if ((new_flags & RGPH_ALGO_MASK) != RGPH_ALGO_DEFAULT) {
+		*flags &= ~RGPH_ALGO_MASK;
+		*flags |= new_flags & RGPH_ALGO_MASK;
+	}
 
 	if ((new_flags & RGPH_INDEX_MASK) != RGPH_INDEX_DEFAULT) {
 		*flags &= ~RGPH_INDEX_MASK;
