@@ -156,7 +156,7 @@ new_graph_fn(lua_State *L)
 
 	nkeys = luaL_checkinteger(L, 1);
 	if (nkeys < 0)
-		return luaL_argerror(L, 1, "not in range");
+		return luaL_argerror(L, 1, "out of range");
 
 	flags = parse_flags(L, 2);
 
@@ -914,7 +914,7 @@ graph_edge(lua_State *L)
 
 	switch (res) {
 	case RGPH_RANGE:
-		return luaL_error(L, "edge is out of range");
+		return luaL_error(L, "out of range");
 	case RGPH_SUCCESS:
 		rank = rgph_rank(*pg);
 		switch (rank) {
