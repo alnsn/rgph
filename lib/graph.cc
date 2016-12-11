@@ -1369,19 +1369,19 @@ flags_changed(unsigned int *flags, int new_flags, unsigned int mask)
 	return select_flags != 0 && select_flags != (*flags & mask);
 }
 
-bool
+int
 update_flags_for_build(unsigned int *flags, int new_flags, size_t nkeys)
 {
 
 	if (!check_flags(new_flags))
-		return false;
+		return RGPH_INVAL;
 
 	if (flags_changed(flags, new_flags, RGPH_RANK_MASK))
-		return false;
+		return RGPH_INVAL;
 
 	if ((new_flags & RGPH_HASH_MASK) != RGPH_HASH_DEFAULT) {
 		if (nkeys > graph_max_keys(new_flags))
-			return false;
+			return RGPH_RANGE;
 
 		*flags &= ~RGPH_HASH_MASK;
 		*flags |= new_flags & RGPH_HASH_MASK;
@@ -1402,24 +1402,27 @@ update_flags_for_build(unsigned int *flags, int new_flags, size_t nkeys)
 		*flags |= new_flags & RGPH_INDEX_MASK;
 	}
 
-	return true;
+	return RGPH_SUCCESS;
 }
 
-bool
+int
 update_flags_for_assign(unsigned int *flags, int new_flags)
 {
 
+	if (!(*flags & BUILT))
+		return RGPH_INVAL;
+
 	if (!check_flags(new_flags))
-		return false;
+		return RGPH_INVAL;
 
 	if (flags_changed(flags, new_flags, RGPH_RANK_MASK))
-		return false;
+		return RGPH_INVAL;
 
 	if (flags_changed(flags, new_flags, RGPH_HASH_MASK))
-		return false;
+		return RGPH_INVAL;
 
 	if (flags_changed(flags, new_flags, RGPH_REDUCE_MASK))
-		return false;
+		return RGPH_INVAL;
 
 	if ((new_flags & RGPH_ALGO_MASK) != RGPH_ALGO_DEFAULT) {
 		*flags &= ~RGPH_ALGO_MASK;
@@ -1431,7 +1434,7 @@ update_flags_for_assign(unsigned int *flags, int new_flags)
 		*flags |= new_flags & RGPH_INDEX_MASK;
 	}
 
-	return true;
+	return RGPH_SUCCESS;
 }
 
 } // anon namespace
@@ -1635,9 +1638,10 @@ int
 rgph_build_graph(struct rgph_graph *g, int flags,
     unsigned long seed, rgph_entry_iterator_t keys, void *state)
 {
+	int res = update_flags_for_build(&g->flags, flags, g->nkeys);
 
-	if (!update_flags_for_build(&g->flags, flags, g->nkeys))
-		return RGPH_INVAL;
+	if (res != RGPH_SUCCESS)
+		return res;
 
 	switch (graph_rank(g->flags)) {
 	case 2:
@@ -1697,13 +1701,13 @@ extern "C"
 int
 rgph_assign(struct rgph_graph *g, int flags)
 {
+	int res = update_flags_for_assign(&g->flags, flags);
 
-	if (!(g->flags & BUILT))
-		return RGPH_INVAL;
+	if (res != RGPH_SUCCESS)
+		return res;
+
 	if (g->core_size != 0)
 		return RGPH_AGAIN;
-	if (!update_flags_for_assign(&g->flags, flags))
-		return RGPH_INVAL;
 
 	switch (graph_rank(g->flags)) {
 	case 2:
