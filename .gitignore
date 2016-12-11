@@ -1,0 +1,6 @@
+*.a
+*.o
+*.pico
+*.so
+a.out
+tags
