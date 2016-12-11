@@ -6,10 +6,10 @@ local nkeys = tonumber(args[2] or "1")
 local file  = args[3] or "/usr/share/dict/words"
 
 local f = io.open(file)
-local g = rgph.new_graph(nkeys, "xxh64s,rank3,chm,mul")
+local g = rgph.new_graph(nkeys, "rank3")
 print(g:entries(), g:vertices())
 
-local ok,err = g:build(nil, seed, f:lines())
+local ok,err = g:build("xxh64s,chm,mul", seed, f:lines())
 f:close()
 print(ok, err)
 
