@@ -168,12 +168,12 @@ new_graph_fn(lua_State *L)
 	*pg = rgph_alloc_graph(nkeys, flags);
 	if (*pg == NULL) {
 		switch (errno) {
-		case ERANGE:
-			return luaL_argerror(L, 1, "out of range");
 		case EINVAL:
 			return luaL_argerror(L, 2, "invalid flags");
 		case ENOMEM:
 			return luaL_error(L, "not enough memory");
+		case ERANGE:
+			return luaL_argerror(L, 1, "out of range");
 		default:
 			return luaL_error(L, "errno %d", errno);
 		}
@@ -612,6 +612,9 @@ graph_build(lua_State *L)
 	case RGPH_NOKEY:
 		lua_pushstring(L, "iterator returned no key");
 		return 2;
+	case RGPH_RANGE:
+		lua_pushstring(L, "out of range");
+		return 2;
 	default:
 		lua_pushfstring(L, "unknown error %d", res);
 		return 2;
@@ -680,13 +683,13 @@ graph_assign(lua_State *L)
 	switch (res) {
 	case RGPH_SUCCESS:
 		break;
-	case RGPH_INVAL:
-		lua_pushboolean(L, 0);
-		lua_pushstring(L, "invalid value");
-		return 2;
 	case RGPH_AGAIN:
 		lua_pushboolean(L, 0);
 		lua_pushstring(L, "try again");
+		return 2;
+	case RGPH_INVAL:
+		lua_pushboolean(L, 0);
+		lua_pushstring(L, "invalid value");
 		return 2;
 	case RGPH_NOMEM:
 		lua_pushboolean(L, 0);
