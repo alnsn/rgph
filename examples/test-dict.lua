@@ -1,15 +1,15 @@
 local rgph = require "rgph"
 
 local args = { ... }
-local nkeys = tonumber(args[1] or "1")
-local seed  = tonumber(args[2] or "0")
+local seed  = tonumber(args[1] or "0")
+local nkeys = tonumber(args[2] or "1")
 local file  = args[3] or "/usr/share/dict/words"
 
 local f = io.open(file)
-local g = rgph.new_graph(nkeys, "jenkins2v,rank3,chm")
+local g = rgph.new_graph(nkeys, "xxh64s,rank3,chm,mul")
 print(g:entries(), g:vertices())
 
-local ok,err = g:build(seed, f:lines())
+local ok,err = g:build(nil, seed, f:lines())
 f:close()
 print(ok, err)
 
