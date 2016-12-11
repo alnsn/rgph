@@ -334,6 +334,13 @@ local function test_build_flags_bad_change(nkeys, flags, build_flags)
 	assert(not ok and err == "invalid value")
 end
 
+local function test_build_flags_bad_range(nkeys, flags, build_flags)
+	local seed = 0
+	local g = assert(rgph.new_graph(nkeys, flags))
+	local ok, err = g:build(build_flags, seed, pairs {})
+	assert(not ok and err == "out of range")
+end
+
 local function test_build_flags_change(keys, seed, flags, build_flags)
 	local nkeys = rgph.count_keys(pairs(keys))
 	local g = rgph.new_graph(nkeys, flags)
@@ -380,21 +387,21 @@ end
 test_build_flags_bad_change(1, nil, "rank2")
 test_build_flags_bad_change(1, "rank2", "rank3")
 
-test_build_flags_bad_change(rank3_max.s32+1, "jenkins2v", "xxh32s")
-test_build_flags_bad_change(rank2_max.s32+1, "jenkins2v,rank2", "xxh32s,rank2")
-test_build_flags_bad_change(rank3_max.s32+1, "jenkins2v,rank3", "xxh32s,rank3")
+test_build_flags_bad_range(rank3_max.s32+1, "jenkins2v", "xxh32s")
+test_build_flags_bad_range(rank2_max.s32+1, "jenkins2v,rank2", "xxh32s,rank2")
+test_build_flags_bad_range(rank3_max.s32+1, "jenkins2v,rank3", "xxh32s,rank3")
 
-test_build_flags_bad_change(rank3_max.s32+1, "murmur32v", "murmur32s")
-test_build_flags_bad_change(rank2_max.s32+1, "murmur32v,rank2", "murmur32s")
-test_build_flags_bad_change(rank3_max.s32+1, "murmur32v,rank3", "murmur32s")
+test_build_flags_bad_range(rank3_max.s32+1, "murmur32v", "murmur32s")
+test_build_flags_bad_range(rank2_max.s32+1, "murmur32v,rank2", "murmur32s")
+test_build_flags_bad_range(rank3_max.s32+1, "murmur32v,rank3", "murmur32s")
 
-test_build_flags_bad_change(rank3_max.s32+1, "xxh64s", "murmur32s")
-test_build_flags_bad_change(rank2_max.s32+1, "xxh64s,rank2", "murmur32s,rank2")
-test_build_flags_bad_change(rank3_max.s32+1, "xxh64s,rank3", "murmur32s,rank3")
+test_build_flags_bad_range(rank3_max.s32+1, "xxh64s", "murmur32s")
+test_build_flags_bad_range(rank2_max.s32+1, "xxh64s,rank2", "murmur32s,rank2")
+test_build_flags_bad_range(rank3_max.s32+1, "xxh64s,rank3", "murmur32s,rank3")
 
-test_build_flags_bad_change(rank3_max.s32+1, "xxh64s", "xxh32s")
-test_build_flags_bad_change(rank2_max.s32+1, "xxh64s,rank2", "xxh32s,rank2")
-test_build_flags_bad_change(rank3_max.s32+1, "xxh64s,rank3", "xxh32s,rank3")
+test_build_flags_bad_range(rank3_max.s32+1, "xxh64s", "xxh32s")
+test_build_flags_bad_range(rank2_max.s32+1, "xxh64s,rank2", "xxh32s,rank2")
+test_build_flags_bad_range(rank3_max.s32+1, "xxh64s,rank3", "xxh32s,rank3")
 
 test_build_flags_change(abcz, seed)
 test_build_flags_change(abcz, seed, "", nil)
