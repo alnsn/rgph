@@ -115,7 +115,6 @@ local function test_abcz(keys, seed, flags)
 	local g = rgph.new_graph(nkeys, flags)
 	local rank = g:rank()
 	local nverts = g:vertices()
-	local div = nverts / rank
 
 	flags = g:flags()
 
