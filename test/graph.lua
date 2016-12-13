@@ -131,11 +131,17 @@ local function test_abcz(keys, seed, flags)
 	assert(g:datalen_min() == 1)
 	assert(g:datalen_max() == 2)
 
+	assert(g:index_min() == 0)
+	assert(g:index_max() == nkeys - 1)
+
 	local bdz = g:algo() == "bdz"
 	local unassigned = bdz and rank or
 	    (g:index() == "compact" and nkeys or align_up_pow2(nkeys))
 
 	local assign = assert(g:assign())
+
+	assert(g:index_min() == 0)
+	assert(g:index_max() == nkeys - 1)
 
 	for v = 0, nverts - 1 do
 		assert(assign[v] >= 0 and assign[v] < unassigned)
