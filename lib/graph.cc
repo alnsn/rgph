@@ -920,7 +920,8 @@ assign(edge<V,R> const *edges, V const *order, size_t nkeys,
 			if (g[v] != unassigned)
 				continue;
 
-			g[v] = assigner(e, j); // j for bdz and index[e] for chm
+			// bdz_assigner returns j, chm_assigner returns index[e]
+			g[v] = assigner(e, j) - min;
 			assert(g[v] < unassigned);
 
 			for (size_t k = 1; k < R; k++) {
