@@ -96,13 +96,19 @@ test_out_of_range(rank3_max.s32 + 1, "xxh32s,rank3,mod")
 test_out_of_range(rank3_max.s32 + 1, "xxh32s,rank3,mul")
 
 
-local function align_up_pow2(n)
+local function align_up_pow2_bit32(n)
 	local r = 1
 	while n > 0 do
 		n = bit32.rshift(n, 1)
 		r = 2 * r
 	end
 	return r
+end
+
+local function align_up_pow2(n)
+	local mod = math.pow(2, 32)
+	return n < mod and align_up_pow2_bit32(n) or
+	    align_up_pow2_bit32(math.floor(n / mod)) * mod
 end
 
 local abcz = { a=1, b=2, c=3, d=4, e=5, f=6, g=7, h=8, i=9, j=10,
@@ -755,3 +761,342 @@ test_assign_flags_change(abcz, seed, "bdz,sparse", "bdz,compact")
 test_assign_flags_change(abcz, seed, "bdz,compact", "bdz,sparse")
 test_assign_flags_change(abcz, seed, "chm,sparse", "chm,compact")
 test_assign_flags_change(abcz, seed, "chm,compact", "chm,sparse")
+
+
+local zcba = { z=2601, y=2502, x=2403, w=2304, v=2205, u=2106, t=2007,
+               s=1908, r=1809, q=1710, p=1611, o=1512, n=1413, m=1314,
+	       l=1215, k=1116, j=1017, i=918, h=819, g=720, f=621,
+	       e=522, d=423, c=324, b=225, a=126 }
+
+-- XXX Test values greater than 2^51.
+local zero_to_2p31 = { a=0, b=2, c=3, d=4, e=5, f=6, g=7, z=math.pow(2, 31) }
+local zero_to_2p32 = { a=0, b=2, c=3, d=4, e=5, f=6, g=7, z=math.pow(2, 32) }
+local zero_to_2p33 = { a=0, b=2, c=3, d=4, e=5, f=6, g=7, z=math.pow(2, 33) }
+local zero_to_2p51 = { a=0, b=2, c=3, d=4, e=5, f=6, g=7, z=math.pow(2, 51) }
+
+local zero_to_2p31m1 = { a=0, b=2, c=3, d=4, e=5, f=6, z=math.pow(2, 31) - 1 }
+local zero_to_2p32m1 = { a=0, b=2, c=3, d=4, e=5, f=6, z=math.pow(2, 32) - 1 }
+local zero_to_2p33m1 = { a=0, b=2, c=3, d=4, e=5, f=6, z=math.pow(2, 33) - 1 }
+local zero_to_2p51m1 = { a=0, b=2, c=3, d=4, e=5, f=6, z=math.pow(2, 51) - 1 }
+
+local one_to_2p31 = { a=1, b=2, c=3, d=4, e=5, f=6, g=7, z=math.pow(2, 31) }
+local one_to_2p32 = { a=1, b=2, c=3, d=4, e=5, f=6, g=7, z=math.pow(2, 32) }
+local one_to_2p33 = { a=1, b=2, c=3, d=4, e=5, f=6, g=7, z=math.pow(2, 33) }
+local one_to_2p51 = { a=0, b=2, c=3, d=4, e=5, f=6, g=7, z=math.pow(2, 51) }
+
+local one_to_2p31m1 = { a=1, b=2, c=3, d=4, e=5, f=6, z=math.pow(2, 31) - 1 }
+local one_to_2p32m1 = { a=1, b=2, c=3, d=4, e=5, f=6, z=math.pow(2, 32) - 1 }
+local one_to_2p33m1 = { a=1, b=2, c=3, d=4, e=5, f=6, z=math.pow(2, 33) - 1 }
+local one_to_2p51m1 = { a=0, b=2, c=3, d=4, e=5, f=6, z=math.pow(2, 51) - 1 }
+
+
+-- for k,v,i in index_iter { K=3 } do print(k,v,i) end --> K	nil	3
+local function index_iter(keys, v)
+	local function iter(t, k)
+		local n = next(t, k)
+		return n, v, t[n]
+	end
+	return iter, keys
+end
+
+local function minmax(t)
+	local min, max
+	for k,v in pairs(t) do
+		if not min or min > v then
+			min = v
+		end
+		if not max or max < v then
+			max = v
+		end
+	end
+	return min, max
+end
+
+local function test_index(keys, seed, flags)
+	local value = flags and "build with flags " .. flags or "no flags"
+	local min,max = minmax(keys)
+	local nkeys = rgph.count_keys(index_iter(keys, value))
+	local g = rgph.new_graph(nkeys, flags)
+	local rank = g:rank()
+	local nverts = g:vertices()
+
+	while true do
+		local ok, err = g:build(flags, seed, index_iter(keys, value))
+		if ok then break end
+		assert(not err, err) -- index_iter(keys, value) can't fail
+		seed = seed + 1
+	end
+
+	assert(g:datalen_min() == #value)
+	assert(g:datalen_max() == #value)
+
+	assert(g:index_min() == min)
+	assert(g:index_max() == max)
+
+	local assign = assert(g:assign("chm"))
+
+	local compact = g:index() == "compact"
+	local unassigned = compact and max - min + 1 or align_up_pow2(max)
+
+	assert(g:index_min() == min)
+	assert(g:index_max() == max)
+
+	for v = 0, nverts - 1 do
+		assert(assign[v] >= 0 and assign[v] < unassigned)
+	end
+
+	local e = 0
+	for k, _, i in index_iter(keys) do
+		e = e + 1
+		local edges = { g:edge(e) }
+
+		local h = 0
+		for j = 1, rank do
+			local v = edges[j]
+			local a = assign[v]
+			assert(a < unassigned, "must be assigned")
+			h = h + a
+			if h >= unassigned then h = h - unassigned end
+		end
+
+		if compact then
+			h = h + min
+		end
+
+		assert(h == i, "must be order-preserving minimal hash")
+	end
+end
+
+test_index(abcz, seed, "bdz,rank2")
+test_index(abcz, seed, "bdz,rank3")
+test_index(abcz, seed, "chm,rank2")
+test_index(abcz, seed, "chm,rank3")
+test_index(abcz, seed, "bdz,rank2,sparse")
+test_index(abcz, seed, "bdz,rank3,sparse")
+test_index(abcz, seed, "chm,rank2,sparse")
+test_index(abcz, seed, "chm,rank3,sparse")
+test_index(abcz, seed, "bdz,rank2,compact")
+test_index(abcz, seed, "bdz,rank3,compact")
+test_index(abcz, seed, "chm,rank2,compact")
+test_index(abcz, seed, "chm,rank3,compact")
+
+test_index(zcba, seed, "bdz,rank2")
+test_index(zcba, seed, "bdz,rank3")
+test_index(zcba, seed, "chm,rank2")
+test_index(zcba, seed, "chm,rank3")
+test_index(zcba, seed, "bdz,rank2,sparse")
+test_index(zcba, seed, "bdz,rank3,sparse")
+test_index(zcba, seed, "chm,rank2,sparse")
+test_index(zcba, seed, "chm,rank3,sparse")
+test_index(zcba, seed, "bdz,rank2,compact")
+test_index(zcba, seed, "bdz,rank3,compact")
+test_index(zcba, seed, "chm,rank2,compact")
+test_index(zcba, seed, "chm,rank3,compact")
+
+test_index(zero_to_2p31, seed, "bdz,rank2")
+test_index(zero_to_2p31, seed, "bdz,rank3")
+test_index(zero_to_2p31, seed, "chm,rank2")
+test_index(zero_to_2p31, seed, "chm,rank3")
+test_index(zero_to_2p31, seed, "bdz,rank2,sparse")
+test_index(zero_to_2p31, seed, "bdz,rank3,sparse")
+test_index(zero_to_2p31, seed, "chm,rank2,sparse")
+test_index(zero_to_2p31, seed, "chm,rank3,sparse")
+test_index(zero_to_2p31, seed, "bdz,rank2,compact")
+test_index(zero_to_2p31, seed, "bdz,rank3,compact")
+test_index(zero_to_2p31, seed, "chm,rank2,compact")
+test_index(zero_to_2p31, seed, "chm,rank3,compact")
+
+test_index(zero_to_2p32, seed, "bdz,rank2")
+test_index(zero_to_2p32, seed, "bdz,rank3")
+test_index(zero_to_2p32, seed, "chm,rank2")
+test_index(zero_to_2p32, seed, "chm,rank3")
+test_index(zero_to_2p32, seed, "bdz,rank2,sparse")
+test_index(zero_to_2p32, seed, "bdz,rank3,sparse")
+test_index(zero_to_2p32, seed, "chm,rank2,sparse")
+test_index(zero_to_2p32, seed, "chm,rank3,sparse")
+test_index(zero_to_2p32, seed, "bdz,rank2,compact")
+test_index(zero_to_2p32, seed, "bdz,rank3,compact")
+test_index(zero_to_2p32, seed, "chm,rank2,compact")
+test_index(zero_to_2p32, seed, "chm,rank3,compact")
+
+test_index(zero_to_2p33, seed, "bdz,rank2")
+test_index(zero_to_2p33, seed, "bdz,rank3")
+test_index(zero_to_2p33, seed, "chm,rank2")
+test_index(zero_to_2p33, seed, "chm,rank3")
+test_index(zero_to_2p33, seed, "bdz,rank2,sparse")
+test_index(zero_to_2p33, seed, "bdz,rank3,sparse")
+test_index(zero_to_2p33, seed, "chm,rank2,sparse")
+test_index(zero_to_2p33, seed, "chm,rank3,sparse")
+test_index(zero_to_2p33, seed, "bdz,rank2,compact")
+test_index(zero_to_2p33, seed, "bdz,rank3,compact")
+test_index(zero_to_2p33, seed, "chm,rank2,compact")
+test_index(zero_to_2p33, seed, "chm,rank3,compact")
+
+test_index(zero_to_2p51, seed, "bdz,rank2")
+test_index(zero_to_2p51, seed, "bdz,rank3")
+test_index(zero_to_2p51, seed, "chm,rank2")
+test_index(zero_to_2p51, seed, "chm,rank3")
+test_index(zero_to_2p51, seed, "bdz,rank2,sparse")
+test_index(zero_to_2p51, seed, "bdz,rank3,sparse")
+test_index(zero_to_2p51, seed, "chm,rank2,sparse")
+test_index(zero_to_2p51, seed, "chm,rank3,sparse")
+test_index(zero_to_2p51, seed, "bdz,rank2,compact")
+test_index(zero_to_2p51, seed, "bdz,rank3,compact")
+test_index(zero_to_2p51, seed, "chm,rank2,compact")
+test_index(zero_to_2p51, seed, "chm,rank3,compact")
+
+test_index(zero_to_2p31m1, seed, "bdz,rank2")
+test_index(zero_to_2p31m1, seed, "bdz,rank3")
+test_index(zero_to_2p31m1, seed, "chm,rank2")
+test_index(zero_to_2p31m1, seed, "chm,rank3")
+test_index(zero_to_2p31m1, seed, "bdz,rank2,sparse")
+test_index(zero_to_2p31m1, seed, "bdz,rank3,sparse")
+test_index(zero_to_2p31m1, seed, "chm,rank2,sparse")
+test_index(zero_to_2p31m1, seed, "chm,rank3,sparse")
+test_index(zero_to_2p31m1, seed, "bdz,rank2,compact")
+test_index(zero_to_2p31m1, seed, "bdz,rank3,compact")
+test_index(zero_to_2p31m1, seed, "chm,rank2,compact")
+test_index(zero_to_2p31m1, seed, "chm,rank3,compact")
+
+test_index(zero_to_2p32m1, seed, "bdz,rank2")
+test_index(zero_to_2p32m1, seed, "bdz,rank3")
+test_index(zero_to_2p32m1, seed, "chm,rank2")
+test_index(zero_to_2p32m1, seed, "chm,rank3")
+test_index(zero_to_2p32m1, seed, "bdz,rank2,sparse")
+test_index(zero_to_2p32m1, seed, "bdz,rank3,sparse")
+test_index(zero_to_2p32m1, seed, "chm,rank2,sparse")
+test_index(zero_to_2p32m1, seed, "chm,rank3,sparse")
+test_index(zero_to_2p32m1, seed, "bdz,rank2,compact")
+test_index(zero_to_2p32m1, seed, "bdz,rank3,compact")
+test_index(zero_to_2p32m1, seed, "chm,rank2,compact")
+test_index(zero_to_2p32m1, seed, "chm,rank3,compact")
+
+test_index(zero_to_2p33m1, seed, "bdz,rank2")
+test_index(zero_to_2p33m1, seed, "bdz,rank3")
+test_index(zero_to_2p33m1, seed, "chm,rank2")
+test_index(zero_to_2p33m1, seed, "chm,rank3")
+test_index(zero_to_2p33m1, seed, "bdz,rank2,sparse")
+test_index(zero_to_2p33m1, seed, "bdz,rank3,sparse")
+test_index(zero_to_2p33m1, seed, "chm,rank2,sparse")
+test_index(zero_to_2p33m1, seed, "chm,rank3,sparse")
+test_index(zero_to_2p33m1, seed, "bdz,rank2,compact")
+test_index(zero_to_2p33m1, seed, "bdz,rank3,compact")
+test_index(zero_to_2p33m1, seed, "chm,rank2,compact")
+test_index(zero_to_2p33m1, seed, "chm,rank3,compact")
+
+test_index(zero_to_2p51m1, seed, "bdz,rank2")
+test_index(zero_to_2p51m1, seed, "bdz,rank3")
+test_index(zero_to_2p51m1, seed, "chm,rank2")
+test_index(zero_to_2p51m1, seed, "chm,rank3")
+test_index(zero_to_2p51m1, seed, "bdz,rank2,sparse")
+test_index(zero_to_2p51m1, seed, "bdz,rank3,sparse")
+test_index(zero_to_2p51m1, seed, "chm,rank2,sparse")
+test_index(zero_to_2p51m1, seed, "chm,rank3,sparse")
+test_index(zero_to_2p51m1, seed, "bdz,rank2,compact")
+test_index(zero_to_2p51m1, seed, "bdz,rank3,compact")
+test_index(zero_to_2p51m1, seed, "chm,rank2,compact")
+test_index(zero_to_2p51m1, seed, "chm,rank3,compact")
+
+test_index(one_to_2p31, seed, "bdz,rank2")
+test_index(one_to_2p31, seed, "bdz,rank3")
+test_index(one_to_2p31, seed, "chm,rank2")
+test_index(one_to_2p31, seed, "chm,rank3")
+test_index(one_to_2p31, seed, "bdz,rank2,sparse")
+test_index(one_to_2p31, seed, "bdz,rank3,sparse")
+test_index(one_to_2p31, seed, "chm,rank2,sparse")
+test_index(one_to_2p31, seed, "chm,rank3,sparse")
+test_index(one_to_2p31, seed, "bdz,rank2,compact")
+test_index(one_to_2p31, seed, "bdz,rank3,compact")
+test_index(one_to_2p31, seed, "chm,rank2,compact")
+test_index(one_to_2p31, seed, "chm,rank3,compact")
+
+test_index(one_to_2p32, seed, "bdz,rank2")
+test_index(one_to_2p32, seed, "bdz,rank3")
+test_index(one_to_2p32, seed, "chm,rank2")
+test_index(one_to_2p32, seed, "chm,rank3")
+test_index(one_to_2p32, seed, "bdz,rank2,sparse")
+test_index(one_to_2p32, seed, "bdz,rank3,sparse")
+test_index(one_to_2p32, seed, "chm,rank2,sparse")
+test_index(one_to_2p32, seed, "chm,rank3,sparse")
+test_index(one_to_2p32, seed, "bdz,rank2,compact")
+test_index(one_to_2p32, seed, "bdz,rank3,compact")
+test_index(one_to_2p32, seed, "chm,rank2,compact")
+test_index(one_to_2p32, seed, "chm,rank3,compact")
+
+test_index(one_to_2p33, seed, "bdz,rank2")
+test_index(one_to_2p33, seed, "bdz,rank3")
+test_index(one_to_2p33, seed, "chm,rank2")
+test_index(one_to_2p33, seed, "chm,rank3")
+test_index(one_to_2p33, seed, "bdz,rank2,sparse")
+test_index(one_to_2p33, seed, "bdz,rank3,sparse")
+test_index(one_to_2p33, seed, "chm,rank2,sparse")
+test_index(one_to_2p33, seed, "chm,rank3,sparse")
+test_index(one_to_2p33, seed, "bdz,rank2,compact")
+test_index(one_to_2p33, seed, "bdz,rank3,compact")
+test_index(one_to_2p33, seed, "chm,rank2,compact")
+test_index(one_to_2p33, seed, "chm,rank3,compact")
+
+test_index(one_to_2p51, seed, "bdz,rank2")
+test_index(one_to_2p51, seed, "bdz,rank3")
+test_index(one_to_2p51, seed, "chm,rank2")
+test_index(one_to_2p51, seed, "chm,rank3")
+test_index(one_to_2p51, seed, "bdz,rank2,sparse")
+test_index(one_to_2p51, seed, "bdz,rank3,sparse")
+test_index(one_to_2p51, seed, "chm,rank2,sparse")
+test_index(one_to_2p51, seed, "chm,rank3,sparse")
+test_index(one_to_2p51, seed, "bdz,rank2,compact")
+test_index(one_to_2p51, seed, "bdz,rank3,compact")
+test_index(one_to_2p51, seed, "chm,rank2,compact")
+test_index(one_to_2p51, seed, "chm,rank3,compact")
+
+test_index(one_to_2p31m1, seed, "bdz,rank2")
+test_index(one_to_2p31m1, seed, "bdz,rank3")
+test_index(one_to_2p31m1, seed, "chm,rank2")
+test_index(one_to_2p31m1, seed, "chm,rank3")
+test_index(one_to_2p31m1, seed, "bdz,rank2,sparse")
+test_index(one_to_2p31m1, seed, "bdz,rank3,sparse")
+test_index(one_to_2p31m1, seed, "chm,rank2,sparse")
+test_index(one_to_2p31m1, seed, "chm,rank3,sparse")
+test_index(one_to_2p31m1, seed, "bdz,rank2,compact")
+test_index(one_to_2p31m1, seed, "bdz,rank3,compact")
+test_index(one_to_2p31m1, seed, "chm,rank2,compact")
+test_index(one_to_2p31m1, seed, "chm,rank3,compact")
+
+test_index(one_to_2p32m1, seed, "bdz,rank2")
+test_index(one_to_2p32m1, seed, "bdz,rank3")
+test_index(one_to_2p32m1, seed, "chm,rank2")
+test_index(one_to_2p32m1, seed, "chm,rank3")
+test_index(one_to_2p32m1, seed, "bdz,rank2,sparse")
+test_index(one_to_2p32m1, seed, "bdz,rank3,sparse")
+test_index(one_to_2p32m1, seed, "chm,rank2,sparse")
+test_index(one_to_2p32m1, seed, "chm,rank3,sparse")
+test_index(one_to_2p32m1, seed, "bdz,rank2,compact")
+test_index(one_to_2p32m1, seed, "bdz,rank3,compact")
+test_index(one_to_2p32m1, seed, "chm,rank2,compact")
+test_index(one_to_2p32m1, seed, "chm,rank3,compact")
+
+test_index(one_to_2p33m1, seed, "bdz,rank2")
+test_index(one_to_2p33m1, seed, "bdz,rank3")
+test_index(one_to_2p33m1, seed, "chm,rank2")
+test_index(one_to_2p33m1, seed, "chm,rank3")
+test_index(one_to_2p33m1, seed, "bdz,rank2,sparse")
+test_index(one_to_2p33m1, seed, "bdz,rank3,sparse")
+test_index(one_to_2p33m1, seed, "chm,rank2,sparse")
+test_index(one_to_2p33m1, seed, "chm,rank3,sparse")
+test_index(one_to_2p33m1, seed, "bdz,rank2,compact")
+test_index(one_to_2p33m1, seed, "bdz,rank3,compact")
+test_index(one_to_2p33m1, seed, "chm,rank2,compact")
+test_index(one_to_2p33m1, seed, "chm,rank3,compact")
+
+test_index(one_to_2p51m1, seed, "bdz,rank2")
+test_index(one_to_2p51m1, seed, "bdz,rank3")
+test_index(one_to_2p51m1, seed, "chm,rank2")
+test_index(one_to_2p51m1, seed, "chm,rank3")
+test_index(one_to_2p51m1, seed, "bdz,rank2,sparse")
+test_index(one_to_2p51m1, seed, "bdz,rank3,sparse")
+test_index(one_to_2p51m1, seed, "chm,rank2,sparse")
+test_index(one_to_2p51m1, seed, "chm,rank3,sparse")
+test_index(one_to_2p51m1, seed, "bdz,rank2,compact")
+test_index(one_to_2p51m1, seed, "bdz,rank3,compact")
+test_index(one_to_2p51m1, seed, "chm,rank2,compact")
+test_index(one_to_2p51m1, seed, "chm,rank3,compact")
