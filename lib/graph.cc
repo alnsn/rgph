@@ -208,8 +208,8 @@ struct rgph_graph {
 		void    *chm_assignments; // and with chm/bdz assignments.
 		uint8_t *bdz_assignments;
 	} shared;
-	void *index; // Data index for chm algorithm.
-	int *assigned; // Use bitset when "unassigned" value isn't available.
+	void *index;             // Data index for chm algorithm.
+	unsigned long *assigned; // Use a bitset if need_assigned_bitset().
 	size_t core_size; // R-core size.
 	size_t datalenmin;
 	size_t datalenmax;
@@ -848,14 +848,16 @@ graph_nverts(int *flags, size_t nkeys)
 template<class G, class V, int R, class A>
 inline void
 assign(edge<V,R> const *edges, V const *order, size_t nkeys,
-    A assigner, G *g, size_t nverts, int *assigned)
+    A assigner, G *g, size_t nverts, unsigned long *assigned)
 {
-	size_t const wbits = sizeof(assigned[0]) * CHAR_BIT;
+	size_t constexpr wsize = sizeof(assigned[0]);
+	size_t constexpr wbits = wsize * CHAR_BIT;
+	size_t const nwords = (nverts - 1) / wbits + 1;
 
-#define ASSIGN(v) assigned[v / wbits] |= 1 << (v % wbits)
+#define ASSIGN(v) assigned[v / wbits] |= 1ul << (v % wbits)
 #define IS_ASSIGNED(v) (((assigned[v / wbits] >> (v % wbits)) & 1) != 0)
 
-	memset(assigned, 0, sizeof(assigned[0]) * ((nverts - 1) / wbits + 1));
+	memset(assigned, 0, wsize * nwords);
 
 	for (size_t i = 0; i < nkeys; i++) {
 		V const e = order[i];
@@ -880,7 +882,7 @@ assign(edge<V,R> const *edges, V const *order, size_t nkeys,
 					g[u] = 0;
 					ASSIGN(u);
 				} else {
-					// g[v] = (g[v] - g[u]) mod 2^(32|64)
+					// g[v] = (g[v] - g[u]) mod 2^(32|64):
 					g[v] -= g[u];
 				}
 			}
@@ -953,13 +955,10 @@ inline bool
 need_assigned_bitset(int flags, big_index_t indexmin, big_index_t indexmax)
 {
 	int const compact = flags & RGPH_INDEX_COMPACT;
+	bool const big = indexmax > INDEX_MAX;
+	big_index_t const max = (big ? BIG_INDEX_MAX :INDEX_MAX);
 
-	if ((compact && indexmax - indexmin < INDEX_MAX) ||
-	    indexmax <= INDEX_MAX / 2)
-		return false;
-
-	return (!compact && indexmax > BIG_INDEX_MAX / 2)
-	    || indexmax - indexmin == BIG_INDEX_MAX;
+	return compact ? indexmax - indexmin == max : indexmax > max / 2;
 }
 
 template<class V, int R>
@@ -1265,11 +1264,11 @@ graph_assign_chm(struct rgph_graph *g)
 
 	if (need_assigned_bitset(g->flags, g->indexmin, g->indexmax)) {
 		if (g->assigned == nullptr) {
-			size_t const wsize = sizeof(g->assigned[0]);
-			size_t const wbits = wsize * CHAR_BIT;
+			size_t constexpr wsize = sizeof(g->assigned[0]);
+			size_t constexpr wbits = wsize * CHAR_BIT;
 			size_t const nwords = (g->nverts - 1) / wbits + 1;
 
-			g->assigned = (int *)malloc(wsize * nwords);
+			g->assigned = (unsigned long *)malloc(wsize * nwords);
 			if (g->assigned == nullptr)
 				return RGPH_NOMEM;
 		}
