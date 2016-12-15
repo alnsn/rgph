@@ -769,25 +769,25 @@ local zcba = { z=2601, y=2502, x=2403, w=2304, v=2205, u=2106, t=2007,
 	       e=522, d=423, c=324, b=225, a=126 }
 
 -- XXX Test values greater than 2^51.
-local zero_to_2p31 = { a=0, b=2, c=3, d=4, e=5, f=6, g=7, z=2^31 }
-local zero_to_2p32 = { a=0, b=2, c=3, d=4, e=5, f=6, g=7, z=2^32 }
-local zero_to_2p33 = { a=0, b=2, c=3, d=4, e=5, f=6, g=7, z=2^33 }
-local zero_to_2p51 = { a=0, b=2, c=3, d=4, e=5, f=6, g=7, z=2^51 }
+local zero_to_2p31 = { a=0, b=2, c=3, d=4, e=5, f=6, g=7, h=8, i=9, z=2^31 }
+local zero_to_2p32 = { a=0, b=2, c=3, d=4, e=5, f=6, g=7, h=8, i=9, z=2^32 }
+local zero_to_2p33 = { a=0, b=2, c=3, d=4, e=5, f=6, g=7, h=8, i=9, z=2^33 }
+local zero_to_2p51 = { a=0, b=2, c=3, d=4, e=5, f=6, g=7, h=8, i=9, z=2^51 }
 
-local zero_to_2p31m1 = { a=0, b=2, c=3, d=4, e=5, f=6, z=2^31 - 1 }
-local zero_to_2p32m1 = { a=0, b=2, c=3, d=4, e=5, f=6, z=2^32 - 1 }
-local zero_to_2p33m1 = { a=0, b=2, c=3, d=4, e=5, f=6, z=2^33 - 1 }
-local zero_to_2p51m1 = { a=0, b=2, c=3, d=4, e=5, f=6, z=2^51 - 1 }
+local zero_to_2p31m1 = { a=0, b=2, c=3, d=4, e=5, f=6, g=7, h=8, z=2^31 - 1 }
+local zero_to_2p32m1 = { a=0, b=2, c=3, d=4, e=5, f=6, g=7, h=8, z=2^32 - 1 }
+local zero_to_2p33m1 = { a=0, b=2, c=3, d=4, e=5, f=6, g=7, h=8, z=2^33 - 1 }
+local zero_to_2p51m1 = { a=0, b=2, c=3, d=4, e=5, f=6, g=7, h=8, z=2^51 - 1 }
 
-local one_to_2p31 = { a=1, b=2, c=3, d=4, e=5, f=6, g=7, z=2^31 }
-local one_to_2p32 = { a=1, b=2, c=3, d=4, e=5, f=6, g=7, z=2^32 }
-local one_to_2p33 = { a=1, b=2, c=3, d=4, e=5, f=6, g=7, z=2^33 }
-local one_to_2p51 = { a=0, b=2, c=3, d=4, e=5, f=6, g=7, z=2^51 }
+local one_to_2p31 = { a=1, b=2, c=3, d=4, e=5, f=6, g=7, h=8, i=9, z=2^31 }
+local one_to_2p32 = { a=1, b=2, c=3, d=4, e=5, f=6, g=7, h=8, i=9, z=2^32 }
+local one_to_2p33 = { a=1, b=2, c=3, d=4, e=5, f=6, g=7, h=8, i=9, z=2^33 }
+local one_to_2p51 = { a=0, b=2, c=3, d=4, e=5, f=6, g=7, h=8, i=9, z=2^51 }
 
-local one_to_2p31m1 = { a=1, b=2, c=3, d=4, e=5, f=6, z=2^31 - 1 }
-local one_to_2p32m1 = { a=1, b=2, c=3, d=4, e=5, f=6, z=2^32 - 1 }
-local one_to_2p33m1 = { a=1, b=2, c=3, d=4, e=5, f=6, z=2^33 - 1 }
-local one_to_2p51m1 = { a=0, b=2, c=3, d=4, e=5, f=6, z=2^51 - 1 }
+local one_to_2p31m1 = { a=1, b=2, c=3, d=4, e=5, f=6, g=7, h=8, z=2^31 - 1 }
+local one_to_2p32m1 = { a=1, b=2, c=3, d=4, e=5, f=6, g=7, h=8, z=2^32 - 1 }
+local one_to_2p33m1 = { a=1, b=2, c=3, d=4, e=5, f=6, g=7, h=8, z=2^33 - 1 }
+local one_to_2p51m1 = { a=0, b=2, c=3, d=4, e=5, f=6, g=7, h=8, z=2^51 - 1 }
 
 
 -- for k,v,i in index_iter { K=3 } do print(k,v,i) end --> K	nil	3
