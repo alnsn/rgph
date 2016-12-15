@@ -768,25 +768,44 @@ local zcba = { z=2601, y=2502, x=2403, w=2304, v=2205, u=2106, t=2007,
 	       l=1215, k=1116, j=1017, i=918, h=819, g=720, f=621,
 	       e=522, d=423, c=324, b=225, a=126 }
 
-local zero_to_2p31 = { a=0, b=2, c=3, d=4, e=5, f=6, g=7, h=8, i=9, z=2^31 }
-local zero_to_2p32 = { a=0, b=2, c=3, d=4, e=5, f=6, g=7, h=8, i=9, z=2^32 }
-local zero_to_2p33 = { a=0, b=2, c=3, d=4, e=5, f=6, g=7, h=8, i=9, z=2^33 }
-local zero_to_2p51 = { a=0, b=2, c=3, d=4, e=5, f=6, g=7, h=8, i=9, z=2^51 }
-local zero_to_2p52 = { a=0, b=2, c=3, d=4, e=5, f=6, g=7, h=8, i=9, z=2^52 }
+local zero_to_2p31 = { a=0, b=1, c=2, d=3, e=4, f=5, g=6, h=7, i=8, z=2^31 }
+local zero_to_2p32 = { a=0, b=1, c=2, d=3, e=4, f=5, g=6, h=7, i=8, z=2^32 }
+local zero_to_2p33 = { a=0, b=1, c=2, d=3, e=4, f=5, g=6, h=7, i=8, z=2^33 }
+local zero_to_2p51 = { a=0, b=1, c=2, d=3, e=4, f=5, g=6, h=7, i=8, z=2^51 }
+local zero_to_2p52 = { a=0, b=1, c=2, d=3, e=4, f=5, g=6, h=7, i=8, z=2^52 }
+local zero_to_2p53 = { a=0, b=2, c=4, d=6, e=8, f=10, g=12, h=14, z=2^53 }
+local zero_to_2p54 = { a=0, b=4, c=8, d=12, e=16, f=20, g=24, h=28, z=2^54 }
+local zero_to_2p55 = { a=0, b=8, c=16, d=24, e=32, f=40, g=48, h=56, z=2^55 }
+local zero_to_2p56 = { a=0, b=16, c=32, d=48, e=64, f=80, g=96, h=112, z=2^56 }
+local zero_to_2p57 = { a=0, b=32, c=64, d=96, e=128, f=160, g=192, z=2^57 }
+local zero_to_2p58 = { a=0, b=64, c=128, d=192, e=256, f=320, g=384, z=2^58 }
+local zero_to_2p59 = { a=0, b=128, c=256, d=384, e=512, f=640, g=768, z=2^59 }
+local zero_to_2p60 = { a=0, b=256, c=512, d=768, e=1024, f=1280, z=2^60 }
+local zero_to_2p61 = { a=0, b=512, c=1024, d=1536, e=2048, f=2560, z=2^61 }
+local zero_to_2p62 = { a=0, b=1024, c=2048, d=3072, e=4096, f=5120, z=2^62 }
 
-local zero_to_2p31m1 = { a=0, b=2, c=3, d=4, e=5, f=6, g=7, h=8, z=2^31 - 1 }
-local zero_to_2p32m1 = { a=0, b=2, c=3, d=4, e=5, f=6, g=7, h=8, z=2^32 - 1 }
-local zero_to_2p33m1 = { a=0, b=2, c=3, d=4, e=5, f=6, g=7, h=8, z=2^33 - 1 }
-local zero_to_2p51m1 = { a=0, b=2, c=3, d=4, e=5, f=6, g=7, h=8, z=2^51 - 1 }
-local zero_to_2p52m1 = { a=0, b=2, c=3, d=4, e=5, f=6, g=7, h=8, z=2^52 - 1 }
-local zero_to_2p53m1 = { a=0, b=2, c=3, d=4, e=5, f=6, g=7, h=8, z=2^53 - 1 }
+local zero_to_2p31m1 = { a=0, b=1, c=2, d=3, e=4, f=5, g=6, h=7, z=2^31 - 1 }
+local zero_to_2p32m1 = { a=0, b=1, c=2, d=3, e=4, f=5, g=6, h=7, z=2^32 - 1 }
+local zero_to_2p33m1 = { a=0, b=1, c=2, d=3, e=4, f=5, g=6, h=7, z=2^33 - 1 }
+local zero_to_2p51m1 = { a=0, b=1, c=2, d=3, e=4, f=5, g=6, h=7, z=2^51 - 1 }
+local zero_to_2p52m1 = { a=0, b=1, c=2, d=3, e=4, f=5, g=6, h=7, z=2^52 - 1 }
+local zero_to_2p53m1 = { a=0, b=1, c=2, d=3, e=4, f=5, g=6, h=7, z=2^53 - 1 }
 
 local one_to_2p31 = { a=1, b=2, c=3, d=4, e=5, f=6, g=7, h=8, i=9, z=2^31 }
 local one_to_2p32 = { a=1, b=2, c=3, d=4, e=5, f=6, g=7, h=8, i=9, z=2^32 }
 local one_to_2p33 = { a=1, b=2, c=3, d=4, e=5, f=6, g=7, h=8, i=9, z=2^33 }
 local one_to_2p51 = { a=1, b=2, c=3, d=4, e=5, f=6, g=7, h=8, i=9, z=2^51 }
 local one_to_2p52 = { a=1, b=2, c=3, d=4, e=5, f=6, g=7, h=8, i=9, z=2^52 }
-local one_to_2p53 = { a=1, b=2, c=3, d=4, e=5, f=6, g=7, h=8, i=9, z=2^53 }
+local ulp_to_2p53 = { a=2, b=4, c=6, d=8, e=10, f=12, g=14, h=16, i=18, z=2^53 }
+local ulp_to_2p54 = { a=4, b=8, c=12, d=16, e=20, f=24, g=28, h=32, z=2^54 }
+local ulp_to_2p55 = { a=8, b=16, c=24, d=32, e=40, f=48, g=56, h=64, z=2^55 }
+local ulp_to_2p56 = { a=16, b=32, c=48, d=64, e=80, f=96, g=112, h=128, z=2^56 }
+local ulp_to_2p57 = { a=32, b=64, c=96, d=128, e=160, f=192, g=224, z=2^57 }
+local ulp_to_2p58 = { a=64, b=128, c=192, d=256, e=320, f=384, g=448, z=2^58 }
+local ulp_to_2p59 = { a=128, b=256, c=384, d=512, e=640, f=768, g=896, z=2^59 }
+local ulp_to_2p60 = { a=256, b=512, c=768, d=1024, e=1280, f=1536, z=2^60 }
+local ulp_to_2p61 = { a=512, b=1024, c=1536, d=2048, e=2560, f=3072, z=2^61 }
+local ulp_to_2p62 = { a=1024, b=2048, c=3072, d=4096, e=5120, f=6144, z=2^62 }
 
 local one_to_2p31m1 = { a=1, b=2, c=3, d=4, e=5, f=6, g=7, h=8, z=2^31 - 1 }
 local one_to_2p32m1 = { a=1, b=2, c=3, d=4, e=5, f=6, g=7, h=8, z=2^32 - 1 }
@@ -966,6 +985,56 @@ test_index(zero_to_2p52, seed, "bdz,rank3,compact")
 test_index(zero_to_2p52, seed, "chm,rank2,compact")
 test_index(zero_to_2p52, seed, "chm,rank3,compact")
 
+test_index(zero_to_2p53, seed, "bdz,rank2,sparse")
+test_index(zero_to_2p53, seed, "bdz,rank3,sparse")
+test_index(zero_to_2p53, seed, "chm,rank2,sparse")
+test_index(zero_to_2p53, seed, "chm,rank3,sparse")
+
+test_index(zero_to_2p54, seed, "bdz,rank2,sparse")
+test_index(zero_to_2p54, seed, "bdz,rank3,sparse")
+test_index(zero_to_2p54, seed, "chm,rank2,sparse")
+test_index(zero_to_2p54, seed, "chm,rank3,sparse")
+
+test_index(zero_to_2p55, seed, "bdz,rank2,sparse")
+test_index(zero_to_2p55, seed, "bdz,rank3,sparse")
+test_index(zero_to_2p55, seed, "chm,rank2,sparse")
+test_index(zero_to_2p55, seed, "chm,rank3,sparse")
+
+test_index(zero_to_2p56, seed, "bdz,rank2,sparse")
+test_index(zero_to_2p56, seed, "bdz,rank3,sparse")
+test_index(zero_to_2p56, seed, "chm,rank2,sparse")
+test_index(zero_to_2p56, seed, "chm,rank3,sparse")
+
+test_index(zero_to_2p57, seed, "bdz,rank2,sparse")
+test_index(zero_to_2p57, seed, "bdz,rank3,sparse")
+test_index(zero_to_2p57, seed, "chm,rank2,sparse")
+test_index(zero_to_2p57, seed, "chm,rank3,sparse")
+
+test_index(zero_to_2p58, seed, "bdz,rank2,sparse")
+test_index(zero_to_2p58, seed, "bdz,rank3,sparse")
+test_index(zero_to_2p58, seed, "chm,rank2,sparse")
+test_index(zero_to_2p58, seed, "chm,rank3,sparse")
+
+test_index(zero_to_2p59, seed, "bdz,rank2,sparse")
+test_index(zero_to_2p59, seed, "bdz,rank3,sparse")
+test_index(zero_to_2p59, seed, "chm,rank2,sparse")
+test_index(zero_to_2p59, seed, "chm,rank3,sparse")
+
+test_index(zero_to_2p60, seed, "bdz,rank2,sparse")
+test_index(zero_to_2p60, seed, "bdz,rank3,sparse")
+test_index(zero_to_2p60, seed, "chm,rank2,sparse")
+test_index(zero_to_2p60, seed, "chm,rank3,sparse")
+
+test_index(zero_to_2p61, seed, "bdz,rank2,sparse")
+test_index(zero_to_2p61, seed, "bdz,rank3,sparse")
+test_index(zero_to_2p61, seed, "chm,rank2,sparse")
+test_index(zero_to_2p61, seed, "chm,rank3,sparse")
+
+test_index(zero_to_2p62, seed, "bdz,rank2,sparse")
+test_index(zero_to_2p62, seed, "bdz,rank3,sparse")
+test_index(zero_to_2p62, seed, "chm,rank2,sparse")
+test_index(zero_to_2p62, seed, "chm,rank3,sparse")
+
 test_index(zero_to_2p31m1, seed, "bdz,rank2")
 test_index(zero_to_2p31m1, seed, "bdz,rank3")
 test_index(zero_to_2p31m1, seed, "chm,rank2")
@@ -1031,6 +1100,14 @@ test_index(zero_to_2p52m1, seed, "bdz,rank3,compact")
 test_index(zero_to_2p52m1, seed, "chm,rank2,compact")
 test_index(zero_to_2p52m1, seed, "chm,rank3,compact")
 
+test_index(zero_to_2p53m1, seed, "bdz,rank2")
+test_index(zero_to_2p53m1, seed, "bdz,rank3")
+test_index(zero_to_2p53m1, seed, "chm,rank2")
+test_index(zero_to_2p53m1, seed, "chm,rank3")
+test_index(zero_to_2p53m1, seed, "bdz,rank2,sparse")
+test_index(zero_to_2p53m1, seed, "bdz,rank3,sparse")
+test_index(zero_to_2p52m1, seed, "chm,rank2,sparse")
+test_index(zero_to_2p52m1, seed, "chm,rank3,sparse")
 test_index(zero_to_2p53m1, seed, "bdz,rank2,compact")
 test_index(zero_to_2p53m1, seed, "bdz,rank3,compact")
 test_index(zero_to_2p53m1, seed, "chm,rank2,compact")
@@ -1101,10 +1178,63 @@ test_index(one_to_2p52, seed, "bdz,rank3,compact")
 test_index(one_to_2p52, seed, "chm,rank2,compact")
 test_index(one_to_2p52, seed, "chm,rank3,compact")
 
-test_index(one_to_2p53, seed, "bdz,rank2,compact")
-test_index(one_to_2p53, seed, "bdz,rank3,compact")
-test_index(one_to_2p53, seed, "chm,rank2,compact")
-test_index(one_to_2p53, seed, "chm,rank3,compact")
+test_index(ulp_to_2p53, seed, "bdz,rank2")
+test_index(ulp_to_2p53, seed, "bdz,rank3")
+test_index(ulp_to_2p53, seed, "chm,rank2")
+test_index(ulp_to_2p53, seed, "chm,rank3")
+test_index(ulp_to_2p53, seed, "bdz,rank2,sparse")
+test_index(ulp_to_2p53, seed, "bdz,rank3,sparse")
+test_index(ulp_to_2p53, seed, "chm,rank2,sparse")
+test_index(ulp_to_2p53, seed, "chm,rank3,sparse")
+test_index(ulp_to_2p53, seed, "bdz,rank2,compact")
+test_index(ulp_to_2p53, seed, "bdz,rank3,compact")
+test_index(ulp_to_2p53, seed, "chm,rank2,compact")
+test_index(ulp_to_2p53, seed, "chm,rank3,compact")
+
+test_index(ulp_to_2p54, seed, "bdz,rank2,sparse")
+test_index(ulp_to_2p54, seed, "bdz,rank3,sparse")
+test_index(ulp_to_2p54, seed, "chm,rank2,sparse")
+test_index(ulp_to_2p54, seed, "chm,rank3,sparse")
+
+test_index(ulp_to_2p55, seed, "bdz,rank2,sparse")
+test_index(ulp_to_2p55, seed, "bdz,rank3,sparse")
+test_index(ulp_to_2p55, seed, "chm,rank2,sparse")
+test_index(ulp_to_2p55, seed, "chm,rank3,sparse")
+
+test_index(ulp_to_2p56, seed, "bdz,rank2,sparse")
+test_index(ulp_to_2p56, seed, "bdz,rank3,sparse")
+test_index(ulp_to_2p56, seed, "chm,rank2,sparse")
+test_index(ulp_to_2p56, seed, "chm,rank3,sparse")
+
+test_index(ulp_to_2p57, seed, "bdz,rank2,sparse")
+test_index(ulp_to_2p57, seed, "bdz,rank3,sparse")
+test_index(ulp_to_2p57, seed, "chm,rank2,sparse")
+test_index(ulp_to_2p57, seed, "chm,rank3,sparse")
+
+test_index(ulp_to_2p58, seed, "bdz,rank2,sparse")
+test_index(ulp_to_2p58, seed, "bdz,rank3,sparse")
+test_index(ulp_to_2p58, seed, "chm,rank2,sparse")
+test_index(ulp_to_2p58, seed, "chm,rank3,sparse")
+
+test_index(ulp_to_2p59, seed, "bdz,rank2,sparse")
+test_index(ulp_to_2p59, seed, "bdz,rank3,sparse")
+test_index(ulp_to_2p59, seed, "chm,rank2,sparse")
+test_index(ulp_to_2p59, seed, "chm,rank3,sparse")
+
+test_index(ulp_to_2p60, seed, "bdz,rank2,sparse")
+test_index(ulp_to_2p60, seed, "bdz,rank3,sparse")
+test_index(ulp_to_2p60, seed, "chm,rank2,sparse")
+test_index(ulp_to_2p60, seed, "chm,rank3,sparse")
+
+test_index(ulp_to_2p61, seed, "bdz,rank2,sparse")
+test_index(ulp_to_2p61, seed, "bdz,rank3,sparse")
+test_index(ulp_to_2p61, seed, "chm,rank2,sparse")
+test_index(ulp_to_2p61, seed, "chm,rank3,sparse")
+
+test_index(ulp_to_2p62, seed, "bdz,rank2,sparse")
+test_index(ulp_to_2p62, seed, "bdz,rank3,sparse")
+test_index(ulp_to_2p62, seed, "chm,rank2,sparse")
+test_index(ulp_to_2p62, seed, "chm,rank3,sparse")
 
 test_index(one_to_2p31m1, seed, "bdz,rank2")
 test_index(one_to_2p31m1, seed, "bdz,rank3")
@@ -1171,6 +1301,14 @@ test_index(one_to_2p52m1, seed, "bdz,rank3,compact")
 test_index(one_to_2p52m1, seed, "chm,rank2,compact")
 test_index(one_to_2p52m1, seed, "chm,rank3,compact")
 
+test_index(one_to_2p53m1, seed, "bdz,rank2")
+test_index(one_to_2p53m1, seed, "bdz,rank3")
+test_index(one_to_2p53m1, seed, "chm,rank2")
+test_index(one_to_2p53m1, seed, "chm,rank3")
+test_index(one_to_2p53m1, seed, "bdz,rank2,sparse")
+test_index(one_to_2p53m1, seed, "bdz,rank3,sparse")
+test_index(one_to_2p52m1, seed, "chm,rank2,sparse")
+test_index(one_to_2p52m1, seed, "chm,rank3,sparse")
 test_index(one_to_2p53m1, seed, "bdz,rank2,compact")
 test_index(one_to_2p53m1, seed, "bdz,rank3,compact")
 test_index(one_to_2p53m1, seed, "chm,rank2,compact")
