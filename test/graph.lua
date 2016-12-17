@@ -96,7 +96,41 @@ test_out_of_range(rank3_max.s32 + 1, "xxh32s,rank3,mod")
 test_out_of_range(rank3_max.s32 + 1, "xxh32s,rank3,mul")
 
 
-local function align_up_pow2_bit32(n)
+local function align_up_pow2(n)
+	-- Lua 5.3 returns these constants as integers.
+	if n >= 4611686018427387904 then return -1 -- Out of range.
+	elseif n >=  2305843009213693952 then return 4611686018427387904 -- 2^62
+	elseif n >=  1152921504606846976 then return 2305843009213693952 -- 2^61
+	elseif n >=  576460752303423488  then return 1152921504606846976 -- 2^60
+	elseif n >=  288230376151711744  then return 576460752303423488 -- 2^59
+	elseif n >=  144115188075855872  then return 288230376151711744 -- 2^58
+	elseif n >=  72057594037927936   then return 144115188075855872 -- 2^57
+	elseif n >=  36028797018963968   then return 72057594037927936 -- 2^56
+	elseif n >=  18014398509481984   then return 36028797018963968 -- 2^55
+	elseif n >=  9007199254740992    then return 18014398509481984 -- 2^54
+	elseif n >=  4503599627370496    then return 9007199254740992 -- 2^53
+	elseif n >=  2251799813685248    then return 4503599627370496 -- 2^52
+	elseif n >=  1125899906842624    then return 2251799813685248 -- 2^51
+	elseif n >=  562949953421312     then return 1125899906842624 -- 2^50
+	elseif n >=  281474976710656     then return 562949953421312 -- 2^49
+	elseif n >=  140737488355328     then return 281474976710656 -- 2^48
+	elseif n >=  70368744177664      then return 140737488355328 -- 2^47
+	elseif n >=  35184372088832      then return 70368744177664 -- 2^46
+	elseif n >=  17592186044416      then return 35184372088832 -- 2^45
+	elseif n >=  8796093022208       then return 17592186044416 -- 2^44
+	elseif n >=  4398046511104       then return 8796093022208 -- 2^43
+	elseif n >=  2199023255552       then return 4398046511104 -- 2^42
+	elseif n >=  1099511627776       then return 2199023255552 -- 2^41
+	elseif n >=  549755813888        then return 1099511627776 -- 2^40
+	elseif n >=  274877906944        then return 549755813888 -- 2^39
+	elseif n >=  137438953472        then return 274877906944 -- 2^38
+	elseif n >=  68719476736         then return 137438953472 -- 2^37
+	elseif n >=  34359738368         then return 68719476736 -- 2^36
+	elseif n >=  17179869184         then return 34359738368 -- 2^35
+	elseif n >=  8589934592          then return 17179869184 -- 2^34
+	elseif n >=  4294967296          then return 8589934592 -- 2^33
+	end
+
 	local r = 1
 	while n > 0 do
 		n = bit32.rshift(n, 1)
@@ -105,11 +139,6 @@ local function align_up_pow2_bit32(n)
 	return r
 end
 
-local function align_up_pow2(n)
-	local mod = 2^32
-	return n < mod and align_up_pow2_bit32(n) or
-	    align_up_pow2_bit32(math.floor(n / mod)) * mod
-end
 
 local abcz = { a=1, b=2, c=3, d=4, e=5, f=6, g=7, h=8, i=9, j=10,
                k=11, l=12, m=13, n=14, o=15, p=16, q=17, r=18,
@@ -782,7 +811,6 @@ local zero_to_2p58 = { a=0, b=64, c=128, d=192, e=256, f=320, g=384, z=2^58 }
 local zero_to_2p59 = { a=0, b=128, c=256, d=384, e=512, f=640, g=768, z=2^59 }
 local zero_to_2p60 = { a=0, b=256, c=512, d=768, e=1024, f=1280, z=2^60 }
 local zero_to_2p61 = { a=0, b=512, c=1024, d=1536, e=2048, f=2560, z=2^61 }
-local zero_to_2p62 = { a=0, b=1024, c=2048, d=3072, e=4096, f=5120, z=2^62 }
 
 local zero_to_2p31m1 = { a=0, b=1, c=2, d=3, e=4, f=5, g=6, h=7, z=2^31 - 1 }
 local zero_to_2p32m1 = { a=0, b=1, c=2, d=3, e=4, f=5, g=6, h=7, z=2^32 - 1 }
@@ -805,7 +833,6 @@ local ulp_to_2p58 = { a=64, b=128, c=192, d=256, e=320, f=384, g=448, z=2^58 }
 local ulp_to_2p59 = { a=128, b=256, c=384, d=512, e=640, f=768, g=896, z=2^59 }
 local ulp_to_2p60 = { a=256, b=512, c=768, d=1024, e=1280, f=1536, z=2^60 }
 local ulp_to_2p61 = { a=512, b=1024, c=1536, d=2048, e=2560, f=3072, z=2^61 }
-local ulp_to_2p62 = { a=1024, b=2048, c=3072, d=4096, e=5120, f=6144, z=2^62 }
 
 local one_to_2p31m1 = { a=1, b=2, c=3, d=4, e=5, f=6, g=7, h=8, z=2^31 - 1 }
 local one_to_2p32m1 = { a=1, b=2, c=3, d=4, e=5, f=6, g=7, h=8, z=2^32 - 1 }
@@ -863,6 +890,7 @@ local function test_index(keys, seed, flags)
 	local compact = g:index() == "compact"
 	local unassigned = compact and max - min + 1 or align_up_pow2(max)
 
+	assert(unassigned > 0, "unassigned wrapped around at 2^63")
 	assert(unassigned > max - min, "unassigned is rounded down")
 
 	assert(g:index_min() == min)
@@ -1029,11 +1057,6 @@ test_index(zero_to_2p61, seed, "bdz,rank2,sparse")
 test_index(zero_to_2p61, seed, "bdz,rank3,sparse")
 test_index(zero_to_2p61, seed, "chm,rank2,sparse")
 test_index(zero_to_2p61, seed, "chm,rank3,sparse")
-
-test_index(zero_to_2p62, seed, "bdz,rank2,sparse")
-test_index(zero_to_2p62, seed, "bdz,rank3,sparse")
-test_index(zero_to_2p62, seed, "chm,rank2,sparse")
-test_index(zero_to_2p62, seed, "chm,rank3,sparse")
 
 test_index(zero_to_2p31m1, seed, "bdz,rank2")
 test_index(zero_to_2p31m1, seed, "bdz,rank3")
@@ -1231,11 +1254,6 @@ test_index(ulp_to_2p61, seed, "bdz,rank3,sparse")
 test_index(ulp_to_2p61, seed, "chm,rank2,sparse")
 test_index(ulp_to_2p61, seed, "chm,rank3,sparse")
 
-test_index(ulp_to_2p62, seed, "bdz,rank2,sparse")
-test_index(ulp_to_2p62, seed, "bdz,rank3,sparse")
-test_index(ulp_to_2p62, seed, "chm,rank2,sparse")
-test_index(ulp_to_2p62, seed, "chm,rank3,sparse")
-
 test_index(one_to_2p31m1, seed, "bdz,rank2")
 test_index(one_to_2p31m1, seed, "bdz,rank3")
 test_index(one_to_2p31m1, seed, "chm,rank2")
@@ -1313,3 +1331,68 @@ test_index(one_to_2p53m1, seed, "bdz,rank2,compact")
 test_index(one_to_2p53m1, seed, "bdz,rank3,compact")
 test_index(one_to_2p53m1, seed, "chm,rank2,compact")
 test_index(one_to_2p53m1, seed, "chm,rank3,compact")
+
+
+local function has_idiv()
+	local ok, fn = pcall(load, "return 1//1")
+	return ok and fn ~= nil
+end
+
+-- Test that Lua 5.3 module doesn't round big numbers.
+if has_idiv() then
+	local big61 = {
+		a=1, b=3, c=13, d=137,
+		E = 2305843009213693815, -- 2^61-137
+		F = 2305843009213693939, -- 2^61-13
+		G = 2305843009213693949, -- 2^61-3
+	}
+
+	local big62 = {
+		a=1, b=3, c=13, d=137,
+		E = 4611686018427387767, -- 2^62-137
+		F = 4611686018427387891, -- 2^62-13
+		G = 4611686018427387901, -- 2^62-3
+	}
+
+	local big63 = {
+		a=1, b=3, c=13, d=137,
+		E = 9223372036854775671, -- 2^63-137
+		F = 9223372036854775795, -- 2^63-13
+		G = 9223372036854775805, -- 2^63-3
+	}
+
+	assert(big61.E ~= big61.E / 1)
+	assert(big61.F ~= big61.F / 1)
+	assert(big61.G ~= big61.G / 1)
+
+	assert(big62.E ~= big62.E / 1)
+	assert(big62.F ~= big62.F / 1)
+	assert(big62.G ~= big62.G / 1)
+
+	assert(big63.E ~= big63.E / 1)
+	assert(big63.F ~= big63.F / 1)
+	assert(big63.G ~= big63.G / 1)
+
+	test_index(big61, seed, "bdz,rank2")
+	test_index(big61, seed, "bdz,rank3")
+	test_index(big61, seed, "chm,rank2")
+	test_index(big61, seed, "chm,rank3")
+	test_index(big61, seed, "bdz,rank2,sparse")
+	test_index(big61, seed, "bdz,rank3,sparse")
+	test_index(big61, seed, "chm,rank2,sparse")
+	test_index(big61, seed, "chm,rank3,sparse")
+	test_index(big61, seed, "bdz,rank2,compact")
+	test_index(big61, seed, "bdz,rank3,compact")
+	test_index(big61, seed, "chm,rank2,compact")
+	test_index(big61, seed, "chm,rank3,compact")
+
+	test_index(big62, seed, "bdz,rank2,compact")
+	test_index(big62, seed, "bdz,rank3,compact")
+	test_index(big62, seed, "chm,rank2,compact")
+	test_index(big62, seed, "chm,rank3,compact")
+
+	test_index(big63, seed, "bdz,rank2,compact")
+	test_index(big63, seed, "bdz,rank3,compact")
+	test_index(big63, seed, "chm,rank2,compact")
+	test_index(big63, seed, "chm,rank3,compact")
+end
