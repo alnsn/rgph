@@ -573,6 +573,8 @@ init_graph(Iter &keys, Iter const &keys_end,
 	static_assert(sizeof(nullptr_index_t) < sizeof(index_t),
 	    "Impossible to detect nullptr index at compile-time.");
 
+	bool constexpr null_index = sizeof(X) == sizeof(nullptr_index_t);
+
 	for (; e < nkeys && keys != keys_end; ++e, ++keys) {
 		rgph_entry const &ent = *keys;
 		big_index_t const i = ent.has_index ? ent.index : e;
@@ -580,29 +582,17 @@ init_graph(Iter &keys, Iter const &keys_end,
 		if (i > *indexmax) {
 			*indexmax = i;
 
-			/*
-			 * Returns from this branch are rare:
-			 *  1. to allocate index when i != e for the first time
-			 *  2. to switch to the big index when i > INDEX_MAX
-			 *     for the first time.
-			 *
-			 * Compile-time checks help to reduce runtime overhead
-			 * to a single comparison.
-			 */
-			if (sizeof(X) == sizeof(nullptr_index_t)) {
-				if (i != e)
-					return e;
-			} else if (sizeof(X) == sizeof(index_t)) {
-				if (i > INDEX_MAX)
-					return e;
-			}
+			if (sizeof(X) == sizeof(index_t) && i > INDEX_MAX)
+				return e;
 		}
 
 		if (i < *indexmin)
 			*indexmin = i;
 
-		if (sizeof(X) > sizeof(nullptr_index_t))
+		if (!null_index)
 			index[e] = i;
+		else if (i != e)
+			return e;
 
 		if (ent.datalen > *datalenmax)
 			*datalenmax = ent.datalen;
@@ -956,7 +946,7 @@ need_assigned_bitset(int flags, big_index_t indexmin, big_index_t indexmax)
 {
 	int const compact = flags & RGPH_INDEX_COMPACT;
 	bool const big = indexmax > INDEX_MAX;
-	big_index_t const max = (big ? BIG_INDEX_MAX :INDEX_MAX);
+	big_index_t const max = (big ? BIG_INDEX_MAX : INDEX_MAX);
 
 	return compact ? indexmax - indexmin == max : indexmax > max / 2;
 }
