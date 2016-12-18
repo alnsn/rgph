@@ -61,7 +61,7 @@ local function build_graph(keys, flags, ntries, seed)
 	local g = rgph.new_graph(nkeys, flags)
 
 	for i = 1, ntries do
-		local ok, err = g:build(seed, index_iter(keys))
+		local ok, err = g:build(flags, seed, index_iter(keys))
 		if ok then break end
 		assert(not err, err) -- index_iter(keys) can't fail
 		seed = seed + 1
@@ -208,89 +208,48 @@ function emit_hash.xxh64s(Dst, g, const)
 	| xor   rcx, rdx
 end
 
--- Call emit_rem[g:division_hint()] to emit remainders.
--- Input register is eax/rax. Remainders are loaded to
+-- Call emit_rem[g:reduction()] to emit remainders.
+-- Input register is ecx/rcx. Results are loaded to
 -- ecx, edi and (when rank is 3) to esi.
 local emit_rem = {}
 
--- Emit remainders for a scalar hash when `g:vertices() / g:rank()`
--- is a power of 2.
-function emit_rem.pow2(Dst, g, hash_bits)
+-- Emit remainders for a scalar hash.
+function emit_rem.mul(Dst, g, hash_bits)
 	local nverts = g:vertices()
 	local rank = g:rank()
-	local div = nverts / rank
-	local mask  = div - 1
+	local partsz = nverts / rank
 	local rshift = math.floor(hash_bits / rank)
+	local mask = rshift == 32 and 0xffffffff or bit32.lshift(1, rshift) - 1
 
-	| mov rdi, rcx
-	| shr rdi, rshift
-
-	if rank == 3 then
+	if rank == 2 then
+		| mov rdi, rcx
+		if rshift == 16 then
+			| movzx ecx, cx
+		else
+			| mov ecx, ecx
+		end
+		| shr rdi, rshift
+		| imul rcx, rcx, partsz
+		| imul rdi, rdi, partsz
+		| shr rcx, rshift
+		| shr rdi, rshift
+		| add rdi, partsz
+	else -- rank == 3
+		| mov rdi, rcx
 		| mov rsi, rcx
-	end
-
-	| and rcx, mask
-	| and rdi, mask
-	| add edi, div
-
-	if rank == 3 then
-		| shr rsi, hash_bits - rshift
-		| and esi, mask
-		| add esi, 2 * div
-	end
-end
-
--- Emit remainders for a scalar hash when `g:vertices() / g:rank()`
--- is a fastdiv value.
--- XXX gcc 5.3 generates faster code
-function emit_rem.fastdiv(Dst, g, hash_bits)
-	local nverts = g:vertices()
-	local rank = g:rank()
-	local div = nverts / rank
-	local rshift = math.floor(hash_bits / rank)
-	local mask  = rshift == 32 and 0xffffffff or bit32.lshift(1, rshift) - 1
-	local fastdiv_bits = hash_bits >= 32 * rank and 32 or 31
-	local magic, s1, s2, inc = rgph.fastdiv_prepare(div, fastdiv_bits)
-	assert(s1 == 0 and not inc) -- fastdiv
-
-	| mov r8d, magic
-
-	if rank == 3 then
-		| mov  rsi, rcx
-		| shr  rsi, hash_bits - rshift
-		| mov  eax, esi
-		| mul  r8d
-		| shr  edx, s2
-		| imul edx, edx, div
-		| sub  esi, edx
-		| add  esi, 2 * div
-	end
-
-	| mov rdi, rcx
-	| shr rdi, rshift
-
-	if rank == 3 then
-		| and edi, mask
-	end
-
-	| mov  eax, edi
-	| mul  r8d
-	| shr  edx, s2
-	| imul edx, edx, div
-	| sub  edi, edx
-	| add  edi, div
-
-	if rshift == 16 then
-		| movzx ecx, cx
-	elseif rshift ~= 32 then
+		| shr rdi, rshift
 		| and rcx, mask
+		| and rdi, mask
+		| imul rcx, rcx, partsz
+		| shr rsi, hash_bits - rshift
+		| shr rcx, rshift
+		| imul rdi, rdi, partsz
+		| imul rsi, rsi, partsz
+		| shr rdi, rshift
+		| shr rsi, rshift
+		| add rdi, partsz
+		| add rsi, 2 * partsz
 	end
-
-	| mov  eax, ecx
-	| mul  r8d
-	| shr  edx, s2
-	| imul edx, edx, div
-	| sub  ecx, edx
 end
 
 -- Call emit_lookup[g:algo()] to emit a lookup.
@@ -427,9 +386,8 @@ function _M.generate(keys, flags, ntries, seed)
 	local hash_bits = g:hash_bits()
 	assert(hash_bits <= 64, "vector hashes aren't supported")
 
-	local hint = g:division_hint()
-	hint = hint == "" and "generic" or hint
-	local emit_rem_fn = assert(emit_rem[hint], "unsupported divisor")
+	local reduction = g:reduction()
+	local emit_rem_fn = assert(emit_rem[reduction], "unsupported reduction")
 
 	local hash = g:hash()
 	local emit_hash_fn = assert(emit_hash[hash], "unsupported hash")

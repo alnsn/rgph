@@ -7,21 +7,21 @@ local args = { ... }
 local ntries = 20
 local seed = tonumber(args[1] or 0xbb8bb8d2)
 local keys = {
-	-- FourCC codes
+	-- FourCC codes.
 	AIFF = 10,
 	DIVX = 1000,
 	GEOX = 2000,
 	H264 = 3000,
-	I420 = 4000, -- 0,
-	MRLE = 5000, -- 1,
-	MSVC = 6000, -- 2,
-	RIFF = 7000, -- 3,
-	SVID = 8000, -- 0,
-	XDIV = 9000, -- 1,
+	I420 = 4000,
+	MRLE = 5000,
+	MSVC = 6000,
+	RIFF = 7000,
+	SVID = 8000,
+	XDIV = 9000,
 }
 
 local code, buf, size = hash.generate(keys,
-    "xxh32s,chm,rank2,fastdiv", ntries, seed)
+    "xxh32s,bdz,rank2,mul", ntries, seed)
 
 local function fourCC(str)
 	local a,b,c,d = str:byte(1, 4)
