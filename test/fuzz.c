@@ -86,6 +86,8 @@ write_sample_input(void)
 	FILE *f;
 	size_t i;
 
+	memset(&h, 0, sizeof(h));
+
 	f = fopen("fuzz.dat", "w");
 	if (f == NULL)
 		return EXIT_FAILURE;
@@ -158,14 +160,13 @@ main(int argc, char *argv[])
 
 	seed = h->seed;
 	state.entries = h->entries;
+	state.nentries = min(h->nentries,
+	    (flen - sizeof(*h)) / sizeof(h->entries[0]));
 
 	while (true) {
 		size_t dup;
 
 		state.pos = 0;
-		state.nentries = min(h->nentries,
-		    (flen - sizeof(*h)) / sizeof(h->entries[0]));
-
 		res = rgph_build_graph(g, h->build_flags, seed++,
 		    &iterator_func, &state);
 		if (res == RGPH_SUCCESS || res != RGPH_AGAIN)
