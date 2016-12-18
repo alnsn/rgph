@@ -131,7 +131,7 @@ main(int argc, char *argv[])
 	void *buf;
 	size_t flen;
 	unsigned long seed;
-	int fd, res;
+	int build_flags, fd, i, res;
 
 	if (argc < 2)
 		return write_sample_input();
@@ -147,7 +147,7 @@ main(int argc, char *argv[])
 
 	flen = max(st.st_size, sizeof(*h));
 
-	buf = mmap(NULL, flen, PROT_READ, MAP_FILE, fd, 0);
+	buf = mmap(NULL, flen, PROT_READ, MAP_FILE | MAP_PRIVATE, fd, 0);
 	h = (struct fuzz_header *)buf;
 	close(fd);
 
@@ -159,15 +159,16 @@ main(int argc, char *argv[])
 		return EXIT_FAILURE;
 
 	seed = h->seed;
+	build_flags = h->build_flags;
 	state.entries = h->entries;
 	state.nentries = min(h->nentries,
 	    (flen - sizeof(*h)) / sizeof(h->entries[0]));
 
-	while (true) {
+	for (i = 0; true; i++) {
 		size_t dup;
 
 		state.pos = 0;
-		res = rgph_build_graph(g, h->build_flags, seed++,
+		res = rgph_build_graph(g, build_flags, seed++,
 		    &iterator_func, &state);
 		if (res == RGPH_SUCCESS || res != RGPH_AGAIN)
 			break;
@@ -176,6 +177,17 @@ main(int argc, char *argv[])
 		res = rgph_find_duplicates(g, &iterator_func, &state, &dup);
 		if (res == RGPH_SUCCESS)
 			break;
+
+		/* Some hashes are weak. Rotate them periodically. */
+		if ((i % 8) == 7) {
+			int next_hash = (build_flags & RGPH_HASH_MASK) + 1;
+
+			if (next_hash >= RGPH_HASH_LAST)
+				next_hash = 0;
+
+			build_flags &= ~RGPH_HASH_MASK;
+			build_flags |= next_hash;
+		}
 	}
 
 	res = rgph_assign(g, h->assign_flags);
