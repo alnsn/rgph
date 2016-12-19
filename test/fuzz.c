@@ -165,7 +165,7 @@ main(int argc, char *argv[])
 	    (flen - sizeof(*h)) / sizeof(h->entries[0]));
 
 	for (i = 0; true; i++) {
-		size_t dup;
+		size_t dup[2];
 
 		state.pos = 0;
 		res = rgph_build_graph(g, build_flags, seed++,
@@ -174,7 +174,7 @@ main(int argc, char *argv[])
 			break;
 
 		state.pos = 0;
-		res = rgph_find_duplicates(g, &iterator_func, &state, &dup);
+		res = rgph_find_duplicates(g, &iterator_func, &state, dup);
 		if (res == RGPH_SUCCESS)
 			break;
 
