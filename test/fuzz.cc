@@ -7,7 +7,6 @@
  */
 
 #include <fcntl.h>
-#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -16,6 +15,9 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
+
+#include <set>
+#include <string>
 
 #include "rgph_defs.h"
 #include "rgph_graph.h"
@@ -79,6 +81,22 @@ iterator_func(void *state)
 	return out;
 }
 
+static bool
+has_duplicates(const struct fuzz_entry *entries, size_t nentries)
+{
+	std::set<std::string> keys;
+
+	for (size_t i = 0; i < nentries; i++) {
+		size_t keylen = min(entries[i].keylen,
+		    sizeof(entries[i].key));
+
+		if (!keys.insert(std::string(entries[i].key, keylen)).second)
+			return true;
+	}
+
+	return false;
+}
+
 int
 write_sample_input(void)
 {
@@ -132,6 +150,7 @@ main(int argc, char *argv[])
 	size_t flen;
 	unsigned long seed;
 	int build_flags, fd, i, res;
+	bool dup_checked = false;
 
 	if (argc < 2)
 		return write_sample_input();
@@ -178,8 +197,14 @@ main(int argc, char *argv[])
 		if (res == RGPH_SUCCESS)
 			break;
 
+		if (res == RGPH_AGAIN && !dup_checked) {
+			if (has_duplicates(state.entries, state.nentries))
+				break;
+			dup_checked = true;
+		}
+
 		/* Some hashes are weak. Rotate them periodically. */
-		if ((i % 8) == 7) {
+		if ((i % 128) == 127) {
 			int next_hash = (build_flags & RGPH_HASH_MASK) + 1;
 
 			if (next_hash >= RGPH_HASH_LAST)
