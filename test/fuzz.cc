@@ -1,6 +1,6 @@
 /*
  * (cd ../lib && make all-c)
- * afl-g++ -std=gnu++11 -fPIC -O -I../lib fuzz.c ../lib/graph.cc ../lib/murmur32s.pico ../lib/murmur32v.pico ../lib/xxh32s.pico ../lib/xxh64s.pico ../lib/fastdiv.pico ../lib/jenkins2v.pico
+ * afl-g++ -std=gnu++11 -fPIC -O -I../lib fuzz.cc ../lib/graph.cc ../lib/murmur32s.pico ../lib/murmur32v.pico ../lib/xxh32s.pico ../lib/xxh64s.pico ../lib/fastdiv.pico ../lib/jenkins2v.pico
  *
  * ./a.out && mv fuzz.dat ${INPUTDIR:?}
  * afl-fuzz -i ${INPUTDIR:?} -o ${OUTPUTDIR:?} ./a.out @@
