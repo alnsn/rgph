@@ -896,7 +896,7 @@ assign(edge<V,R> const *edges, V const *order, size_t nkeys,
     A assigner, G *g, size_t nverts, size_t min, size_t max)
 {
 	G const unassigned = max - min + 1;
-	assert(unassigned != min);
+	assert(unassigned != 0);
 
 	for (size_t v = 0; v < nverts; v++)
 		g[v] = unassigned;
