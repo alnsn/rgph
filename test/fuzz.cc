@@ -6,6 +6,7 @@
  * afl-fuzz -i ${INPUTDIR:?} -o ${OUTPUTDIR:?} ./a.out @@
  */
 
+#include <assert.h>
 #include <fcntl.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -32,17 +33,19 @@ struct fuzz_entry {
 };
 
 struct fuzz_header {
-	size_t nverts;
+	size_t alloc_nkeys;
+	size_t build_nkeys;
 	unsigned long seed;
 	int alloc_flags;
 	int build_flags;
 	int assign_flags;
-	unsigned int nentries;
 	struct fuzz_entry entries[];
 };
 
 struct iterator_state {
 	size_t pos;
+	size_t alloc_nkeys;
+	size_t build_nkeys;
 	size_t nentries;
 	struct fuzz_entry *entries;
 	struct rgph_entry out;
@@ -66,10 +69,10 @@ static const struct rgph_entry *
 iterator_func(void *state)
 {
 	struct iterator_state *s = (struct iterator_state *)state;
-	struct fuzz_entry *in = &s->entries[s->pos];
+	struct fuzz_entry *in = &s->entries[s->pos % s->nentries];
 	struct rgph_entry *out = &s->out;
 
-	if (s->pos == s->nentries)
+	if (s->pos == s->build_nkeys)
 		return NULL;
 
 	out->key = out->data = in->key;
@@ -110,7 +113,7 @@ write_sample_input(void)
 	if (f == NULL)
 		return EXIT_FAILURE;
 
-	h.nverts = h.nentries = sizeof(letters) - 1;
+	h.alloc_nkeys = h.build_nkeys = sizeof(letters) - 1;
 	h.seed = 123456789;
 	h.alloc_flags = 0;
 	h.build_flags = 0;
@@ -149,7 +152,7 @@ main(int argc, char *argv[])
 	void *buf;
 	size_t flen;
 	unsigned long seed;
-	int build_flags, fd, i, res;
+	int build_flags, fd, res;
 	bool dup_checked = false;
 
 	if (argc < 2)
@@ -164,7 +167,7 @@ main(int argc, char *argv[])
 		return EXIT_FAILURE;
 	}
 
-	flen = max(st.st_size, sizeof(*h));
+	flen = max(st.st_size, sizeof(*h) + sizeof(h->entries[0]));
 
 	buf = mmap(NULL, flen, PROT_READ, MAP_FILE | MAP_PRIVATE, fd, 0);
 	h = (struct fuzz_header *)buf;
@@ -173,17 +176,20 @@ main(int argc, char *argv[])
 	if (buf == MAP_FAILED)
 		return EXIT_FAILURE;
 
-	g = rgph_alloc_graph(h->nverts, h->alloc_flags);
+	g = rgph_alloc_graph(h->alloc_nkeys, h->alloc_flags);
 	if (g == NULL)
 		return EXIT_FAILURE;
 
 	seed = h->seed;
 	build_flags = h->build_flags;
 	state.entries = h->entries;
-	state.nentries = min(h->nentries,
-	    (flen - sizeof(*h)) / sizeof(h->entries[0]));
+	state.alloc_nkeys = h->alloc_nkeys;
+	state.build_nkeys = h->build_nkeys;
+	state.nentries = (flen - sizeof(*h)) / sizeof(h->entries[0]);
 
-	for (i = 0; true; i++) {
+	assert(state.nentries != 0);
+
+	for (size_t i = 0; true; i++) {
 		size_t dup[2];
 
 		state.pos = 0;
@@ -198,6 +204,8 @@ main(int argc, char *argv[])
 			break;
 
 		if (res == RGPH_AGAIN && !dup_checked) {
+			if (state.build_nkeys > state.nentries)
+				break;
 			if (has_duplicates(state.entries, state.nentries))
 				break;
 			dup_checked = true;
