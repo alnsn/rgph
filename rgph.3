@@ -1,0 +1,98 @@
+.\" Copyright (c) 2016, Alexander Nasonov
+.\" All rights reserved.
+.\"
+.\" Redistribution and use in source and binary forms, with or without
+.\" modification, are permitted provided that the following conditions
+.\" are met:
+.\" 
+.\" * Redistributions of source code must retain the above copyright
+.\"   notice, this list of conditions and the following disclaimer.
+.\" 
+.\" * Redistributions in binary form must reproduce the above copyright
+.\"   notice, this list of conditions and the following disclaimer in
+.\"   the documentation and/or other materials provided with the
+.\"   distribution.
+.\" 
+.\" THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+.\" "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+.\" LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+.\" FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+.\" COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+.\" INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+.\" BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+.\" LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+.\" CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+.\" LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+.\" ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+.\" POSSIBILITY OF SUCH DAMAGE.
+.Dd Dec 25, 2016
+.Dt RGPH 3
+.Os
+.Sh NAME
+.Nm rgph
+.Nd random graph perfect hashing library
+.Sh LIBRARY
+.Lb rgph
+.Sh SYNOPSIS
+.In rgph.h
+.Ft struct rgph_graph *
+.Fn rgph_alloc_graph "size_t nverts" "int flags"
+.Ft void
+.Fn rgph_free_graph "struct rgph_graph *graph"
+.Ft int
+.Fn rgph_build_graph "struct rgph_graph *graph" "int flags" \
+    "unsigned long seed"  "rgph_entry_iterator_t keys" "void void *state"
+.Ft int
+.Fn rgph_assign "struct rgph_graph *graph" "int flags"
+.Ft int
+.Fn rgph_find_duplicates "struct rgph_graph *graph" \
+    "rgph_entry_iterator_t keys" "void *state" "size_t dup[2]"
+.Ft int
+.Fn rgph_flags "struct rgph_graph *graph"
+.Ft int
+.Fn rgph_rank "struct rgph_graph *graph"
+.Ft size_t
+.Fn rgph_entries "struct rgph_graph *graph"
+.Ft size_t
+.Fn rgph_vertices "struct rgph_graph *graph"
+.Ft size_t
+.Fn rgph_datalen_min "struct rgph_graph *graph"
+.Ft size_t
+.Fn rgph_datalen_max "struct rgph_graph *graph"
+.Ft uint64_t
+.Fn rgph_index_min "struct rgph_graph *graph"
+.Ft uint64_t
+.Fn rgph_index_max "struct rgph_graph *graph"
+.Ft size_t
+.Fn rgph_core_size "struct rgph_graph *graph"
+.Ft unsigned long
+.Fn rgph_seed "struct rgph_graph *graph"
+.Ft size_t
+.Fn rgph_hash_bits "struct rgph_graph *graph"
+.Ft int
+.Fn rgph_is_built "struct rgph_graph *graph"
+.Ft int
+.Fn rgph_is_assigned "struct rgph_graph *graph"
+.Ft size_t
+.Fn rgph_count_keys(rgph_entry_iterator_t, void *);
+.Ft int
+.Fn rgph_copy_edge "struct rgph_graph *graph" "size_t edge" \
+    "unsigned long *to" "size_t *peel_order"
+.Ft const void *
+.Fn rgph_assignments "struct rgph_graph *graph" "size_t *width"
+.Ft int
+.Fn rgph_copy_assignment "struct rgph_graph *graph" "size_t index" \
+    "unsigned long long *to"
+.Sh DESCRIPTION
+Not yet available.
+.Sh RETURN VALUES
+Not yet available.
+.Sh EXAMPLES
+Not yet available.
+.Sh SEE ALSO
+Not yet available.
+.Sh AUTHORS
+The
+.Nm
+library is written by
+.An Alexander Nasonov Aq Mt alnsn@yandex.ru
