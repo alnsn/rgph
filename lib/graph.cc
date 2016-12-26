@@ -974,9 +974,14 @@ build_graph(struct rgph_graph *g,
 		memset(oedges, 0, sizeof(oedge_t) * nverts);
 	}
 
+	// Unlike g->indexmin and g->indexmax which can't be reset
+	// because a state of g->index depends on their values,
+	// g->datalenmin and g->datalenmax can be reset.
+	// They aren't reset because it improves branch prediction
+	// if rgph_build_graph() is called multiple times.
+	//g->datalenmin = SIZE_MAX;
+	//g->datalenmax = 0;
 	g->core_size = nkeys;
-	g->datalenmin = SIZE_MAX;
-	g->datalenmax = 0;
 	g->seed = seed;
 	g->flags &= PUBLIC_FLAGS; // Reset internal flags.
 
@@ -1434,12 +1439,14 @@ void
 rgph_free_graph(struct rgph_graph *g)
 {
 
-	free(g->assigned);
-	free(g->index);
-	free(g->shared.oedges);
-	free(g->edges);
-	free(g->order);
-	free(g);
+	if (g != nullptr) {
+		free(g->assigned);
+		free(g->index);
+		free(g->shared.oedges);
+		free(g->edges);
+		free(g->order);
+		free(g);
+	}
 }
 
 extern "C"
@@ -1519,7 +1526,7 @@ err:
 
 extern "C"
 int
-rgph_flags(struct rgph_graph *g)
+rgph_flags(struct rgph_graph const *g)
 {
 
 	return g->flags & PUBLIC_FLAGS;
@@ -1527,7 +1534,7 @@ rgph_flags(struct rgph_graph *g)
 
 extern "C"
 int
-rgph_rank(struct rgph_graph *g)
+rgph_rank(struct rgph_graph const *g)
 {
 
 	return graph_rank(g->flags);
@@ -1535,7 +1542,7 @@ rgph_rank(struct rgph_graph *g)
 
 extern "C"
 size_t
-rgph_entries(struct rgph_graph *g)
+rgph_entries(struct rgph_graph const *g)
 {
 
 	return g->nkeys;
@@ -1543,7 +1550,7 @@ rgph_entries(struct rgph_graph *g)
 
 extern "C"
 size_t
-rgph_vertices(struct rgph_graph *g)
+rgph_vertices(struct rgph_graph const *g)
 {
 
 	return g->nverts;
@@ -1551,7 +1558,7 @@ rgph_vertices(struct rgph_graph *g)
 
 extern "C"
 size_t
-rgph_datalen_min(struct rgph_graph *g)
+rgph_datalen_min(struct rgph_graph const *g)
 {
 
 	return g->datalenmin;
@@ -1559,7 +1566,7 @@ rgph_datalen_min(struct rgph_graph *g)
 
 extern "C"
 size_t
-rgph_datalen_max(struct rgph_graph *g)
+rgph_datalen_max(struct rgph_graph const *g)
 {
 
 	return g->datalenmax;
@@ -1567,7 +1574,7 @@ rgph_datalen_max(struct rgph_graph *g)
 
 extern "C"
 uint64_t
-rgph_index_min(struct rgph_graph *g)
+rgph_index_min(struct rgph_graph const *g)
 {
 
 	return g->indexmin;
@@ -1575,7 +1582,7 @@ rgph_index_min(struct rgph_graph *g)
 
 extern "C"
 uint64_t
-rgph_index_max(struct rgph_graph *g)
+rgph_index_max(struct rgph_graph const *g)
 {
 
 	return g->indexmax;
@@ -1583,7 +1590,7 @@ rgph_index_max(struct rgph_graph *g)
 
 extern "C"
 size_t
-rgph_core_size(struct rgph_graph *g)
+rgph_core_size(struct rgph_graph const *g)
 {
 
 	return g->core_size;
@@ -1591,7 +1598,7 @@ rgph_core_size(struct rgph_graph *g)
 
 extern "C"
 unsigned long
-rgph_seed(struct rgph_graph *g)
+rgph_seed(struct rgph_graph const *g)
 {
 
 	return g->seed;
@@ -1599,7 +1606,7 @@ rgph_seed(struct rgph_graph *g)
 
 extern "C"
 size_t
-rgph_hash_bits(struct rgph_graph *g)
+rgph_hash_bits(struct rgph_graph const *g)
 {
 
 	return hash_bits(g->flags);
@@ -1607,7 +1614,7 @@ rgph_hash_bits(struct rgph_graph *g)
 
 extern "C"
 int
-rgph_is_built(struct rgph_graph *g)
+rgph_is_built(struct rgph_graph const *g)
 {
 
 	return (g->flags & BUILT) != 0;
@@ -1615,7 +1622,7 @@ rgph_is_built(struct rgph_graph *g)
 
 extern "C"
 int
-rgph_is_assigned(struct rgph_graph *g)
+rgph_is_assigned(struct rgph_graph const *g)
 {
 	int const res = (g->flags & ASSIGNED) != 0;
 
@@ -1712,7 +1719,7 @@ rgph_assign(struct rgph_graph *g, int flags)
 
 extern "C"
 void const *
-rgph_assignments(struct rgph_graph *g, size_t *width)
+rgph_assignments(struct rgph_graph const *g, size_t *width)
 {
 	bool const big = (g->indexmax > INDEX_MAX);
 	bool const bdz = (g->flags & RGPH_ALGO_BDZ) != 0;
@@ -1728,7 +1735,8 @@ rgph_assignments(struct rgph_graph *g, size_t *width)
 
 extern "C"
 int
-rgph_copy_assignment(struct rgph_graph *g, size_t n, unsigned long long *to)
+rgph_copy_assignment(struct rgph_graph const *g,
+    size_t n, unsigned long long *to)
 {
 	unsigned int const flags = g->flags;
 	bool const assigned = (flags & ASSIGNED) != 0;

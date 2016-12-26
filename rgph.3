@@ -48,40 +48,40 @@
 .Fn rgph_find_duplicates "struct rgph_graph *graph" \
     "rgph_entry_iterator_t keys" "void *state" "size_t dup[2]"
 .Ft int
-.Fn rgph_flags "struct rgph_graph *graph"
+.Fn rgph_flags "struct rgph_graph const *graph"
 .Ft int
-.Fn rgph_rank "struct rgph_graph *graph"
+.Fn rgph_rank "struct rgph_graph const *graph"
 .Ft size_t
-.Fn rgph_entries "struct rgph_graph *graph"
+.Fn rgph_entries "struct rgph_graph const *graph"
 .Ft size_t
-.Fn rgph_vertices "struct rgph_graph *graph"
+.Fn rgph_vertices "struct rgph_graph const *graph"
 .Ft size_t
-.Fn rgph_datalen_min "struct rgph_graph *graph"
+.Fn rgph_datalen_min "struct rgph_graph const *graph"
 .Ft size_t
-.Fn rgph_datalen_max "struct rgph_graph *graph"
+.Fn rgph_datalen_max "struct rgph_graph const *graph"
 .Ft uint64_t
-.Fn rgph_index_min "struct rgph_graph *graph"
+.Fn rgph_index_min "struct rgph_graph const *graph"
 .Ft uint64_t
-.Fn rgph_index_max "struct rgph_graph *graph"
+.Fn rgph_index_max "struct rgph_graph const *graph"
 .Ft size_t
-.Fn rgph_core_size "struct rgph_graph *graph"
+.Fn rgph_core_size "struct rgph_graph const *graph"
 .Ft unsigned long
-.Fn rgph_seed "struct rgph_graph *graph"
+.Fn rgph_seed "struct rgph_graph const *graph"
 .Ft size_t
-.Fn rgph_hash_bits "struct rgph_graph *graph"
+.Fn rgph_hash_bits "struct rgph_graph const *graph"
 .Ft int
-.Fn rgph_is_built "struct rgph_graph *graph"
+.Fn rgph_is_built "struct rgph_graph const *graph"
 .Ft int
-.Fn rgph_is_assigned "struct rgph_graph *graph"
+.Fn rgph_is_assigned "struct rgph_graph const *graph"
 .Ft size_t
 .Fn rgph_count_keys(rgph_entry_iterator_t, void *);
 .Ft int
 .Fn rgph_copy_edge "struct rgph_graph *graph" "size_t edge" \
     "unsigned long *to" "size_t *peel_order"
 .Ft const void *
-.Fn rgph_assignments "struct rgph_graph *graph" "size_t *width"
+.Fn rgph_assignments "struct rgph_graph const *graph" "size_t *width"
 .Ft int
-.Fn rgph_copy_assignment "struct rgph_graph *graph" "size_t index" \
+.Fn rgph_copy_assignment "struct rgph_graph const *graph" "size_t index" \
     "unsigned long long *to"
 .Sh DESCRIPTION
 Not yet available.
