@@ -100,6 +100,38 @@ has_duplicates(const struct fuzz_entry *entries, size_t nentries)
 	return false;
 }
 
+static void
+check_bdz(struct rgph_graph *g)
+{
+	size_t const nkeys = rgph_entries(g);
+	int const rank = (rgph_flags(g) & RGPH_RANK3) ? 3 : 2;
+	std::set<uint32_t> hashes;
+	size_t width = 0;
+	int res;
+	uint8_t const *assign;
+
+	assign = (uint8_t const *)rgph_assignments(g, &width);
+	assert(assign != nullptr && width == 1);
+
+	for (size_t i = 0; i < nkeys; i++) {
+		unsigned long edge[3];
+		int h = 0;
+
+		res = rgph_copy_edge(g, i, edge, nullptr);
+		assert(res == RGPH_SUCCESS);
+
+		for (int j = 0; j < rank; j++) {
+			assert(edge[j] < nkeys && assign[edge[j]] < rank);
+			h += assign[edge[j]];
+			if (h >= rank)
+				h -= rank;
+		}
+
+		bool inserted = hashes.insert(edge[h]).second;
+		assert(inserted);
+	}
+}
+
 int
 write_sample_input(void)
 {
@@ -224,6 +256,10 @@ main(int argc, char *argv[])
 	}
 
 	res = rgph_assign(g, h->assign_flags);
+	assert(res != RGPH_SUCCESS || rgph_core_size(g) == 0);
+
+	if (res == RGPH_SUCCESS && (rgph_flags(g) & RGPH_ALGO_BDZ))
+		check_bdz(g);
 
 	rgph_free_graph(g);
 
