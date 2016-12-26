@@ -104,6 +104,7 @@ static void
 check_bdz(struct rgph_graph *g)
 {
 	size_t const nkeys = rgph_entries(g);
+	size_t const nverts = rgph_vertices(g);
 	int const rank = (rgph_flags(g) & RGPH_RANK3) ? 3 : 2;
 	std::set<uint32_t> hashes;
 	size_t width = 0;
@@ -121,7 +122,7 @@ check_bdz(struct rgph_graph *g)
 		assert(res == RGPH_SUCCESS);
 
 		for (int j = 0; j < rank; j++) {
-			assert(edge[j] < nkeys && assign[edge[j]] < rank);
+			assert(edge[j] < nverts && assign[edge[j]] < rank);
 			h += assign[edge[j]];
 			if (h >= rank)
 				h -= rank;
