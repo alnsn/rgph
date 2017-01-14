@@ -48,14 +48,15 @@ int main(int argc, char *argv[])
 	if (state.file == NULL)
 		return EXIT_FAILURE;
 
-	g = rgph_alloc_graph(nkeys, RGPH_HASH_JENKINS2V | rank);
+	g = rgph_alloc_graph(nkeys, rank);
 	if (g == NULL) {
 		fclose(state.file);
 		return EXIT_FAILURE;
 	}
 
 #if 1
-	res = rgph_build_graph(g, 0, NULL, seed, &iterator_func, &state);
+	res = rgph_build_graph(g, RGPH_HASH_CUSTOM,
+	    &rgph_u32x3_jenkins2v_data, seed, &iterator_func, &state);
 	core = rgph_core_size(g);
 	printf("nkeys=%zu seed=%lu res=%d core=%zu\n", nkeys, seed, res, core);
 #else
