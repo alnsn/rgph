@@ -133,7 +133,7 @@ template<class V, int R, class H>
 struct vector_hash {
 	static bool constexpr zerocopy = sizeof(H) == sizeof(V);
 
-	typedef void (*func_t)(void const *, size_t, uint32_t, H *);
+	typedef void (*func_t)(void const *, size_t, uintptr_t, H *);
 
 	func_t const func;
 	uintptr_t const seed;
@@ -150,7 +150,7 @@ struct vector_hash {
 // Scalar hash splits a scalar hash of type H into R hashes of type V.
 template<class V, int R, class H>
 struct scalar_hash {
-	typedef H (*func_t)(void const *, size_t, uint32_t);
+	typedef H (*func_t)(void const *, size_t, uintptr_t);
 
 	func_t const func;
 	uintptr_t const seed;
@@ -500,7 +500,7 @@ chm_assigner<X>::operator()(vert_t e, size_t) const
 
 template<class V, int R, class H>
 inline scalar_hash<V,R,H>
-make_hash(H (*func)(void const *, size_t, uint32_t), uintptr_t seed)
+make_hash(H (*func)(void const *, size_t, uintptr_t), uintptr_t seed)
 {
 
 	return scalar_hash<V,R,H>(func, seed);
@@ -508,7 +508,7 @@ make_hash(H (*func)(void const *, size_t, uint32_t), uintptr_t seed)
 
 template<class V, int R, class H>
 inline vector_hash<V,R,H>
-make_hash(void (*func)(void const *, size_t, uint32_t, H *), uintptr_t seed)
+make_hash(void (*func)(void const *, size_t, uintptr_t, H *), uintptr_t seed)
 {
 
 	return vector_hash<V,R,H>(func, seed);

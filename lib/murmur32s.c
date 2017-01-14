@@ -38,7 +38,7 @@
 
 
 uint32_t
-rgph_u32_murmur32s_data(const void *data, size_t len, uint32_t seed)
+rgph_u32_murmur32s_data(const void *data, size_t len, uintptr_t seed)
 {
 	const uint8_t *key = data;
 	const uint8_t *end = key + len;

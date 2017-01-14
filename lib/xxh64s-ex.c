@@ -39,13 +39,13 @@
 
 #if defined(WEAK_ALIASES) && !defined(__STRICT_ANSI__)
 /* Non-public external symbols for aliasing. */
-uint64_t rgph_u64_xxh64s_data32(const void *, size_t, uint32_t);
-uint64_t rgph_u64_xxh64s_data64(const void *, size_t, uint32_t);
+uint64_t rgph_u64_xxh64s_data32(const void *, size_t, uintptr_t);
+uint64_t rgph_u64_xxh64s_data64(const void *, size_t, uintptr_t);
 #endif
 
 
 uint64_t
-rgph_u64_xxh64s_u8(uint8_t value, uint32_t seed)
+rgph_u64_xxh64s_u8(uint8_t value, uintptr_t seed)
 {
 	uint64_t h[4];
 
@@ -59,7 +59,7 @@ rgph_u64_xxh64s_u8(uint8_t value, uint32_t seed)
 }
 
 uint64_t
-rgph_u64_xxh64s_u16(uint16_t value, uint32_t seed)
+rgph_u64_xxh64s_u16(uint16_t value, uintptr_t seed)
 {
 	uint64_t h[4];
 
@@ -74,7 +74,7 @@ rgph_u64_xxh64s_u16(uint16_t value, uint32_t seed)
 }
 
 inline uint64_t
-rgph_u64_xxh64s_u32(uint32_t value, uint32_t seed)
+rgph_u64_xxh64s_u32(uint32_t value, uintptr_t seed)
 {
 	uint64_t h[4];
 
@@ -88,7 +88,7 @@ rgph_u64_xxh64s_u32(uint32_t value, uint32_t seed)
 }
 
 inline uint64_t
-rgph_u64_xxh64s_u64(uint64_t value, uint32_t seed)
+rgph_u64_xxh64s_u64(uint64_t value, uintptr_t seed)
 {
 	uint64_t h[4];
 
@@ -102,21 +102,21 @@ rgph_u64_xxh64s_u64(uint64_t value, uint32_t seed)
 }
 
 uint64_t
-rgph_u64_xxh64s_f32(float value, uint32_t seed)
+rgph_u64_xxh64s_f32(float value, uintptr_t seed)
 {
 
 	return rgph_u64_xxh64s_u32(rgph_f2u32(value), seed);
 }
 
 uint64_t
-rgph_u64_xxh64s_f64(double value, uint32_t seed)
+rgph_u64_xxh64s_f64(double value, uintptr_t seed)
 {
 
 	return rgph_u64_xxh64s_u64(rgph_d2u64(value), seed);
 }
 
 inline uint64_t
-rgph_u64_xxh64s_data32(const void *data, size_t len, uint32_t seed)
+rgph_u64_xxh64s_data32(const void *data, size_t len, uintptr_t seed)
 {
 	const uint32_t *key = data;
 	const uint32_t *end = key + len;
@@ -147,7 +147,7 @@ rgph_u64_xxh64s_data32(const void *data, size_t len, uint32_t seed)
 }
 
 inline uint64_t
-rgph_u64_xxh64s_data64(const void *data, size_t len, uint32_t seed)
+rgph_u64_xxh64s_data64(const void *data, size_t len, uintptr_t seed)
 {
 	const uint64_t *key = data;
 	const uint64_t *end = key + len;
@@ -173,14 +173,14 @@ rgph_u64_xxh64s_data64(const void *data, size_t len, uint32_t seed)
 }
 
 uint64_t
-rgph_u64_xxh64s_u8a(const uint8_t *key, size_t len, uint32_t seed)
+rgph_u64_xxh64s_u8a(const uint8_t *key, size_t len, uintptr_t seed)
 {
 
 	return rgph_u64_xxh64s_data(key, len, seed);
 }
 
 uint64_t
-rgph_u64_xxh64s_u16a(const uint16_t *key, size_t len, uint32_t seed)
+rgph_u64_xxh64s_u16a(const uint16_t *key, size_t len, uintptr_t seed)
 {
 	const uint8_t *arg = rgph_unalias(const uint8_t *, key);
 
@@ -189,10 +189,10 @@ rgph_u64_xxh64s_u16a(const uint16_t *key, size_t len, uint32_t seed)
 
 #if defined(WEAK_ALIASES) && !defined(__STRICT_ANSI__)
 uint64_t rgph_u64_xxh64s_u32a(const uint32_t *, size_t,
-    uint32_t) __attribute__((weak,alias("rgph_u64_xxh64s_data32")));
+    uintptr_t) __attribute__((weak,alias("rgph_u64_xxh64s_data32")));
 #else
 uint64_t
-rgph_u64_xxh64s_u32a(const uint32_t *key, size_t len, uint32_t seed)
+rgph_u64_xxh64s_u32a(const uint32_t *key, size_t len, uintptr_t seed)
 {
 
 	return rgph_u64_xxh64s_data32(key, len, seed);
@@ -201,10 +201,10 @@ rgph_u64_xxh64s_u32a(const uint32_t *key, size_t len, uint32_t seed)
 
 #if defined(WEAK_ALIASES) && !defined(__STRICT_ANSI__)
 uint64_t rgph_u64_xxh64s_u64a(const uint64_t *, size_t,
-    uint32_t) __attribute__((weak,alias("rgph_u64_xxh64s_data64")));
+    uintptr_t) __attribute__((weak,alias("rgph_u64_xxh64s_data64")));
 #else
 uint64_t
-rgph_u64_xxh64s_u64a(const uint64_t *key, size_t len, uint32_t seed)
+rgph_u64_xxh64s_u64a(const uint64_t *key, size_t len, uintptr_t seed)
 {
 
 	return rgph_u64_xxh64s_data64(key, len, seed);
@@ -213,10 +213,10 @@ rgph_u64_xxh64s_u64a(const uint64_t *key, size_t len, uint32_t seed)
 
 #if defined(WEAK_ALIASES) && !defined(__STRICT_ANSI__)
 uint64_t rgph_u64_xxh64s_f32a(const float *, size_t,
-    uint32_t) __attribute__((weak,alias("rgph_u64_xxh64s_data32")));
+    uintptr_t) __attribute__((weak,alias("rgph_u64_xxh64s_data32")));
 #else
 uint64_t
-rgph_u64_xxh64s_f32a(const float *key, size_t len, uint32_t seed)
+rgph_u64_xxh64s_f32a(const float *key, size_t len, uintptr_t seed)
 {
 
 	return rgph_u64_xxh64s_data32(key, len, seed);
@@ -225,10 +225,10 @@ rgph_u64_xxh64s_f32a(const float *key, size_t len, uint32_t seed)
 
 #if defined(WEAK_ALIASES) && !defined(__STRICT_ANSI__)
 uint64_t rgph_u64_xxh64s_f64a(const double *, size_t,
-    uint32_t) __attribute__((weak,alias("rgph_u64_xxh64s_data64")));
+    uintptr_t) __attribute__((weak,alias("rgph_u64_xxh64s_data64")));
 #else
 uint64_t
-rgph_u64_xxh64s_f64a(const double *key, size_t len, uint32_t seed)
+rgph_u64_xxh64s_f64a(const double *key, size_t len, uintptr_t seed)
 {
 
 	return rgph_u64_xxh64s_data64(key, len, seed);

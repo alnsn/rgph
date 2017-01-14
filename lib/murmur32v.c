@@ -39,7 +39,7 @@
 
 void
 rgph_u32x4_murmur32v_data(const void *data,
-    size_t len, uint32_t seed, uint32_t * restrict h)
+    size_t len, uintptr_t seed, uint32_t * restrict h)
 {
 	const uint8_t * restrict key = data;
 	const uint8_t *end = key + len;

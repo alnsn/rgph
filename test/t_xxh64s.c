@@ -3277,7 +3277,7 @@ rgph_test_xxh64s_types(void)
 	const uint64_t u64[24] = { UINT64_C(0x6446644664466446), 1, 2, 3 };
 	const float    f32[24] = { 32e23, 1, 2, 3 };
 	const double   f64[24] = { 64e46, 1, 2, 3 };
-	const uint32_t seed = 123456789;
+	const uintptr_t seed = 123456789;
 
 	uint64_t h;
 	size_t i;
