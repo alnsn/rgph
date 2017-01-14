@@ -773,16 +773,18 @@ hash_bits(unsigned int flags)
 {
 
 	switch (flags & RGPH_HASH_MASK) {
+	case RGPH_HASH_MURMUR32S:
+	case RGPH_HASH_XXH32S:
+	case RGPH_HASH_CUSTOM32S:
+		return 32;
+	case RGPH_HASH_XXH64S:
+	case RGPH_HASH_CUSTOM64S:
+		return 64;
 	case RGPH_HASH_JENKINS2V:
+	case RGPH_HASH_CUSTOM:
 		return 96;
 	case RGPH_HASH_MURMUR32V:
 		return 128;
-	case RGPH_HASH_MURMUR32S:
-		return 32;
-	case RGPH_HASH_XXH32S:
-		return 32;
-	case RGPH_HASH_XXH64S:
-		return 64;
 	default:
 		assert(0 && "rgph_alloc_graph() should have caught it");
 		return 0;
@@ -953,8 +955,8 @@ need_assigned_bitset(int flags, big_index_t indexmin, big_index_t indexmax)
 
 template<class V, int R>
 int
-build_graph(struct rgph_graph *g,
-    rgph_entry_iterator_t keys, void *state, uintptr_t seed)
+build_graph(struct rgph_graph *g, rgph_entry_iterator_t keys,
+    void *state, rgph_vector_hash_t hash, uintptr_t seed)
 {
 	typedef edge<V,R> edge_t;
 	typedef oedge<V,R> oedge_t;
@@ -1028,6 +1030,16 @@ build_graph(struct rgph_graph *g,
 		    &g->datalenmin, &g->datalenmax,
 		    &g->index, &g->indexmin, &g->indexmax);
 		break;
+	case RGPH_HASH_CUSTOM|RGPH_REDUCE_MOD:
+	case RGPH_HASH_CUSTOM32S|RGPH_REDUCE_MOD:
+	case RGPH_HASH_CUSTOM64S|RGPH_REDUCE_MOD:
+		res = init_graph(keys_start, keys_end,
+		    fastrem_partition(nverts, R),
+		    make_hash<V,R>(hash, seed),
+		    edges, nkeys, oedges,
+		    &g->datalenmin, &g->datalenmax,
+		    &g->index, &g->indexmin, &g->indexmax);
+		break;
 	case RGPH_HASH_JENKINS2V|RGPH_REDUCE_MUL:
 		res = init_graph(keys_start, keys_end,
 		    lemire_partition(nverts, R, nbits),
@@ -1064,6 +1076,16 @@ build_graph(struct rgph_graph *g,
 		res = init_graph(keys_start, keys_end,
 		    lemire_partition(nverts, R, nbits),
 		    make_hash<V,R>(&rgph_u64_xxh64s_data, seed),
+		    edges, nkeys, oedges,
+		    &g->datalenmin, &g->datalenmax,
+		    &g->index, &g->indexmin, &g->indexmax);
+		break;
+	case RGPH_HASH_CUSTOM|RGPH_REDUCE_MUL:
+	case RGPH_HASH_CUSTOM32S|RGPH_REDUCE_MUL:
+	case RGPH_HASH_CUSTOM64S|RGPH_REDUCE_MUL:
+		res = init_graph(keys_start, keys_end,
+		    lemire_partition(nverts, R, nbits),
+		    make_hash<V,R>(hash, seed),
 		    edges, nkeys, oedges,
 		    &g->datalenmin, &g->datalenmax,
 		    &g->index, &g->indexmin, &g->indexmax);
@@ -1316,8 +1338,10 @@ set_default_flags(int *flags)
 		return false;
 
 	// Don't accept bad hash flags.
-	if ((*flags & RGPH_HASH_MASK) > RGPH_HASH_LAST)
+	if ((*flags & RGPH_HASH_MASK) > RGPH_HASH_LAST &&
+	    (*flags & RGPH_HASH_MASK) < RGPH_HASH_CUSTOM) {
 		return false;
+	}
 
 	// Fail if both RGPH_ALGO_CHM and RGPH_ALGO_BDZ are passed.
 	if ((*flags & RGPH_ALGO_MASK) == RGPH_ALGO_MASK)
@@ -1632,7 +1656,7 @@ rgph_is_assigned(struct rgph_graph const *g)
 
 extern "C"
 int
-rgph_build_graph(struct rgph_graph *g, int flags,
+rgph_build_graph(struct rgph_graph *g, int flags, rgph_vector_hash_t hash,
     uintptr_t seed, rgph_entry_iterator_t keys, void *state)
 {
 	int res = update_flags_for_build(&g->flags, flags, g->nkeys);
@@ -1642,9 +1666,9 @@ rgph_build_graph(struct rgph_graph *g, int flags,
 
 	switch (graph_rank(g->flags)) {
 	case 2:
-		return build_graph<vert_t,2>(g, keys, state, seed);
+		return build_graph<vert_t,2>(g, keys, state, hash, seed);
 	case 3:
-		return build_graph<vert_t,3>(g, keys, state, seed);
+		return build_graph<vert_t,3>(g, keys, state, hash, seed);
 	default:
 		assert(0 && "rgph_alloc_graph() should have caught it");
 		return RGPH_INVAL;

@@ -48,6 +48,7 @@ struct rgph_entry {
 };
 
 typedef const struct rgph_entry * (*rgph_entry_iterator_t)(void *);
+typedef void (*rgph_vector_hash_t)(void const *, size_t, uintptr_t, uint32_t *);
 
 struct rgph_graph *rgph_alloc_graph(size_t, int);
 void rgph_free_graph(struct rgph_graph *);
@@ -65,7 +66,7 @@ uintptr_t rgph_seed(struct rgph_graph const *);
 size_t rgph_hash_bits(struct rgph_graph const *);
 
 int rgph_build_graph(struct rgph_graph *, int,
-    uintptr_t, rgph_entry_iterator_t, void *);
+    rgph_vector_hash_t hash, uintptr_t, rgph_entry_iterator_t, void *);
 int rgph_is_built(struct rgph_graph const *);
 
 int rgph_copy_edge(struct rgph_graph *, size_t, uint32_t *, size_t *);

@@ -601,7 +601,8 @@ graph_build(lua_State *L)
 	state.L = L;
 	state.top = nargs + 2; /* Iterator state and the first var. */
 
-	res = rgph_build_graph(*pg, flags, seed, &graph_build_iter, &state);
+	res = rgph_build_graph(*pg, flags,
+	    NULL, seed, &graph_build_iter, &state);
 
 	lua_pushboolean(L, res == RGPH_SUCCESS);
 	switch (res) {

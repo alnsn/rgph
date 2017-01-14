@@ -41,7 +41,8 @@
 .Fn rgph_free_graph "struct rgph_graph *graph"
 .Ft int
 .Fn rgph_build_graph "struct rgph_graph *graph" "int flags" \
-    "uintptr_t seed"  "rgph_entry_iterator_t keys" "void void *state"
+    "rgph_vector_hash_t hash" "uintptr_t seed"  \
+    "rgph_entry_iterator_t keys" "void *state"
 .Ft int
 .Fn rgph_assign "struct rgph_graph *graph" "int flags"
 .Ft int
