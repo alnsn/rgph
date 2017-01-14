@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -10,7 +11,7 @@ struct iterator_state {
 	struct rgph_entry entry;
 };
 
-struct rgph_entry *iterator_func(void *state)
+const struct rgph_entry *iterator_func(void *state)
 {
 	struct iterator_state *s = (struct iterator_state *)state;
 	struct rgph_entry *res = &s->entry;
@@ -54,7 +55,7 @@ int main(int argc, char *argv[])
 	}
 
 #if 1
-	res = rgph_build_graph(g, seed, &iterator_func, &state);
+	res = rgph_build_graph(g, 0, NULL, seed, &iterator_func, &state);
 	core = rgph_core_size(g);
 	printf("nkeys=%zu seed=%lu res=%d core=%zu\n", nkeys, seed, res, core);
 #else
