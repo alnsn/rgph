@@ -41,7 +41,7 @@
 .Fn rgph_free_graph "struct rgph_graph *graph"
 .Ft int
 .Fn rgph_build_graph "struct rgph_graph *graph" "int flags" \
-    "unsigned long seed"  "rgph_entry_iterator_t keys" "void void *state"
+    "uintptr_t seed"  "rgph_entry_iterator_t keys" "void void *state"
 .Ft int
 .Fn rgph_assign "struct rgph_graph *graph" "int flags"
 .Ft int
@@ -65,7 +65,7 @@
 .Fn rgph_index_max "struct rgph_graph const *graph"
 .Ft size_t
 .Fn rgph_core_size "struct rgph_graph const *graph"
-.Ft unsigned long
+.Ft uintptr_t
 .Fn rgph_seed "struct rgph_graph const *graph"
 .Ft size_t
 .Fn rgph_hash_bits "struct rgph_graph const *graph"
