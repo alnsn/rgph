@@ -61,14 +61,14 @@ size_t rgph_datalen_max(struct rgph_graph const *);
 uint64_t rgph_index_min(struct rgph_graph const *);
 uint64_t rgph_index_max(struct rgph_graph const *);
 size_t rgph_core_size(struct rgph_graph const *);
-unsigned long rgph_seed(struct rgph_graph const *);
+uintptr_t rgph_seed(struct rgph_graph const *);
 size_t rgph_hash_bits(struct rgph_graph const *);
 
 int rgph_build_graph(struct rgph_graph *, int,
-    unsigned long, rgph_entry_iterator_t, void *);
+    uintptr_t, rgph_entry_iterator_t, void *);
 int rgph_is_built(struct rgph_graph const *);
 
-int rgph_copy_edge(struct rgph_graph *, size_t, unsigned long *, size_t *);
+int rgph_copy_edge(struct rgph_graph *, size_t, uint32_t *, size_t *);
 
 size_t rgph_count_keys(rgph_entry_iterator_t, void *);
 
@@ -78,8 +78,7 @@ int rgph_find_duplicates(struct rgph_graph *,
 int rgph_assign(struct rgph_graph *, int);
 int rgph_is_assigned(struct rgph_graph const *);
 const void *rgph_assignments(struct rgph_graph const *, size_t *);
-int rgph_copy_assignment(struct rgph_graph const *,
-    size_t, unsigned long long *);
+int rgph_copy_assignment(struct rgph_graph const *, size_t, uint64_t *);
 
 #ifdef __cplusplus
 }

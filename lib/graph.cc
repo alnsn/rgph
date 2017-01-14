@@ -136,10 +136,10 @@ struct vector_hash {
 	typedef void (*func_t)(void const *, size_t, uint32_t, H *);
 
 	func_t const func;
-	unsigned long const seed;
+	uintptr_t const seed;
 	mutable V hashes[zerocopy ? 4 : R]; // Some hashes are x4.
 
-	inline vector_hash(func_t f, unsigned long seed);
+	inline vector_hash(func_t f, uintptr_t seed);
 
 	inline V const *operator()(void const *, size_t) const;
 
@@ -153,10 +153,10 @@ struct scalar_hash {
 	typedef H (*func_t)(void const *, size_t, uint32_t);
 
 	func_t const func;
-	unsigned long const seed;
+	uintptr_t const seed;
 	mutable V hashes[R];
 
-	inline scalar_hash(func_t f, unsigned long seed);
+	inline scalar_hash(func_t f, uintptr_t seed);
 
 	inline V const *operator()(void const *, size_t) const;
 };
@@ -215,7 +215,7 @@ struct rgph_graph {
 	size_t datalenmax;
 	big_index_t indexmin;
 	big_index_t indexmax;
-	unsigned long seed;
+	uintptr_t seed;
 	unsigned int flags;
 };
 
@@ -388,7 +388,7 @@ operator!=(entry_iterator const &a, entry_iterator const &b)
 
 template<class V, int R, class H>
 inline
-vector_hash<V,R,H>::vector_hash(func_t f, unsigned long seed)
+vector_hash<V,R,H>::vector_hash(func_t f, uintptr_t seed)
 	: func(f)
 	, seed(seed)
 {}
@@ -427,7 +427,7 @@ vector_hash<V,R,H>::operator()(void const *key, size_t keylen) const
 
 template<class V, int R, class H>
 inline
-scalar_hash<V,R,H>::scalar_hash(func_t f, unsigned long seed)
+scalar_hash<V,R,H>::scalar_hash(func_t f, uintptr_t seed)
 	: func(f)
 	, seed(seed)
 {}
@@ -500,7 +500,7 @@ chm_assigner<X>::operator()(vert_t e, size_t) const
 
 template<class V, int R, class H>
 inline scalar_hash<V,R,H>
-make_hash(H (*func)(void const *, size_t, uint32_t), unsigned long seed)
+make_hash(H (*func)(void const *, size_t, uint32_t), uintptr_t seed)
 {
 
 	return scalar_hash<V,R,H>(func, seed);
@@ -508,7 +508,7 @@ make_hash(H (*func)(void const *, size_t, uint32_t), unsigned long seed)
 
 template<class V, int R, class H>
 inline vector_hash<V,R,H>
-make_hash(void (*func)(void const *, size_t, uint32_t, H *), unsigned long seed)
+make_hash(void (*func)(void const *, size_t, uint32_t, H *), uintptr_t seed)
 {
 
 	return vector_hash<V,R,H>(func, seed);
@@ -954,7 +954,7 @@ need_assigned_bitset(int flags, big_index_t indexmin, big_index_t indexmax)
 template<class V, int R>
 int
 build_graph(struct rgph_graph *g,
-    rgph_entry_iterator_t keys, void *state, unsigned long seed)
+    rgph_entry_iterator_t keys, void *state, uintptr_t seed)
 {
 	typedef edge<V,R> edge_t;
 	typedef oedge<V,R> oedge_t;
@@ -1109,7 +1109,7 @@ build_peel_index(struct rgph_graph *g)
 
 template<class V, int R>
 int
-copy_edge(struct rgph_graph *g, size_t e, unsigned long *to, size_t *peel_order)
+copy_edge(struct rgph_graph *g, size_t e, uint32_t *to, size_t *peel_order)
 {
 	typedef edge<V,R> edge_t;
 
@@ -1597,7 +1597,7 @@ rgph_core_size(struct rgph_graph const *g)
 }
 
 extern "C"
-unsigned long
+uintptr_t
 rgph_seed(struct rgph_graph const *g)
 {
 
@@ -1633,7 +1633,7 @@ rgph_is_assigned(struct rgph_graph const *g)
 extern "C"
 int
 rgph_build_graph(struct rgph_graph *g, int flags,
-    unsigned long seed, rgph_entry_iterator_t keys, void *state)
+    uintptr_t seed, rgph_entry_iterator_t keys, void *state)
 {
 	int res = update_flags_for_build(&g->flags, flags, g->nkeys);
 
@@ -1653,8 +1653,8 @@ rgph_build_graph(struct rgph_graph *g, int flags,
 
 extern "C"
 int
-rgph_copy_edge(struct rgph_graph *g, size_t edge,
-    unsigned long *to, size_t *peel_order)
+rgph_copy_edge(struct rgph_graph *g,
+    size_t edge, uint32_t *to, size_t *peel_order)
 {
 
 	if (!(g->flags & BUILT))
@@ -1735,8 +1735,7 @@ rgph_assignments(struct rgph_graph const *g, size_t *width)
 
 extern "C"
 int
-rgph_copy_assignment(struct rgph_graph const *g,
-    size_t n, unsigned long long *to)
+rgph_copy_assignment(struct rgph_graph const *g, size_t n, uint64_t *to)
 {
 	unsigned int const flags = g->flags;
 	bool const assigned = (flags & ASSIGNED) != 0;

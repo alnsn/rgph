@@ -493,7 +493,8 @@ fastdiv_prepare_fn(lua_State *L)
 static int
 jenkins2v_fn(lua_State *L)
 {
-	uint32_t h[3], seed;
+	uint32_t h[3];
+	lua_Integer seed;
 	const char *str;
 	size_t len;
 
@@ -512,7 +513,8 @@ jenkins2v_fn(lua_State *L)
 static int
 murmur32v_fn(lua_State *L)
 {
-	uint32_t h[4], seed;
+	uint32_t h[4];
+	lua_Integer seed;
 	const char *str;
 	size_t len;
 
@@ -532,7 +534,7 @@ murmur32v_fn(lua_State *L)
 static int
 murmur32s_fn(lua_State *L)
 {
-	uint32_t seed;
+	lua_Integer seed;
 	const char *str;
 	size_t len;
 
@@ -547,7 +549,7 @@ murmur32s_fn(lua_State *L)
 static int
 xxh32s_fn(lua_State *L)
 {
-	uint32_t seed;
+	lua_Integer seed;
 	const char *str;
 	size_t len;
 
@@ -563,7 +565,7 @@ static int
 xxh64s_fn(lua_State *L)
 {
 	uint64_t h;
-	uint32_t seed;
+	lua_Integer seed;
 	const char *str;
 	size_t len;
 
@@ -583,7 +585,7 @@ graph_build(lua_State *L)
 {
 	struct build_iter_state state;
 	struct rgph_graph **pg;
-	unsigned long seed;
+	lua_Integer seed;
 	int flags;
 	const int nargs = 4;
 	int res;
@@ -718,7 +720,7 @@ static int
 assign_get(lua_State *L)
 {
 	struct rgph_graph **pg;
-	unsigned long long val;
+	uint64_t val;
 	int res;
 
 	pg = (struct rgph_graph **)luaL_checkudata(L, 1, ASSIGN_MT);
@@ -783,7 +785,7 @@ parse_edges_arg(lua_State *L, int n)
 static int
 graph_edges_iter(lua_State *L)
 {
-	unsigned long edge[3];
+	uint32_t edge[3];
 	struct rgph_graph **pg;
 	size_t at, peel = 0;
 	int flags, nflags, res, rank;
@@ -905,7 +907,7 @@ graph_edges(lua_State *L)
 static int
 graph_edge(lua_State *L)
 {
-	unsigned long edge[3];
+	uint32_t edge[3];
 	struct rgph_graph **pg;
 	int rank, res;
 
