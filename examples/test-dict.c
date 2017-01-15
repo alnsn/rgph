@@ -11,7 +11,8 @@ struct iterator_state {
 	struct rgph_entry entry;
 };
 
-const struct rgph_entry *iterator_func(void *state)
+static const struct rgph_entry *
+iterator_func(void *state)
 {
 	struct iterator_state *s = (struct iterator_state *)state;
 	struct rgph_entry *res = &s->entry;
