@@ -197,7 +197,7 @@ rgph_test_jenkins2(void)
 	}
 
 	/* Test data of different lengths with different alignments. */
-	for (i = 0; i < 4; i++) {
+	for (i = 0; i < 8; i++) {
 		uint32_t h[6];
 		char *s;
 		size_t l;

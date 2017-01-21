@@ -8,7 +8,7 @@ static const char msg[] =
 	"Ryanair Offers You Great Breaks In Venice.";
 
 /* MurmurHash3_x86_32 output for msg substrings. */
-static const uint32_t msg_seed = 0xbb8bb8d2;
+static const uintptr_t msg_seed = 0xbb8bb8d2;
 static const uint32_t msg_hashes[] = {
 	0x18781a2e, /* empty string */
 	0x129aa54a,
@@ -3337,7 +3337,7 @@ rgph_test_murmur32s_types(void)
 	}
 
 	/* Test data of different lengths with different alignments. */
-	for (i = 0; i < 4; i++) {
+	for (i = 0; i < 8; i++) {
 		char *s;
 		size_t l;
 

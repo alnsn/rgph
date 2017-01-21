@@ -8,7 +8,7 @@ static const char msg[] =
 	"Ryanair Offers You Great Breaks In Venice.";
 
 /* XXH64 output for msg substrings. */
-static const uint32_t msg_seed = 0xbb8bb8d2;
+static const uintptr_t msg_seed = 0xbb8bb8d2;
 static const uint64_t msg_hashes[] = {
 	UINT64_C(0x7eb62947507e7ee0), /* empty string */
 	UINT64_C(0x267804786b92aef8),
@@ -3337,7 +3337,7 @@ rgph_test_xxh64s_types(void)
 	}
 
 	/* Test data of different lengths with different alignments. */
-	for (i = 0; i < 4; i++) {
+	for (i = 0; i < 8; i++) {
 		char *s;
 		size_t l;
 
