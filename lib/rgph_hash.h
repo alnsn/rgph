@@ -135,6 +135,26 @@ uint64_t rgph_u64_xxh64s_u64a(const uint64_t *, size_t, uintptr_t);
 uint64_t rgph_u64_xxh64s_f32a(const float *,  size_t, uintptr_t);
 uint64_t rgph_u64_xxh64s_f64a(const double *, size_t, uintptr_t);
 
+
+/* 64bit t1ha (short) generic scalar hash for any data. */
+uint64_t rgph_u64_t1ha64s_data(const void *, size_t, uintptr_t);
+
+/* 64bit t1ha (short) scalar 64bit hashes for fixed width types. */
+uint64_t rgph_u64_t1ha64s_u8 (uint8_t,  uintptr_t);
+uint64_t rgph_u64_t1ha64s_u16(uint16_t, uintptr_t);
+uint64_t rgph_u64_t1ha64s_u32(uint32_t, uintptr_t);
+uint64_t rgph_u64_t1ha64s_u64(uint64_t, uintptr_t);
+uint64_t rgph_u64_t1ha64s_f32(float,  uintptr_t);
+uint64_t rgph_u64_t1ha64s_f64(double, uintptr_t);
+
+/* 64bit t1ha (short) scalar 64bit hashes for arrays. */
+uint64_t rgph_u64_t1ha64s_u8a (const uint8_t *,  size_t, uintptr_t);
+uint64_t rgph_u64_t1ha64s_u16a(const uint16_t *, size_t, uintptr_t);
+uint64_t rgph_u64_t1ha64s_u32a(const uint32_t *, size_t, uintptr_t);
+uint64_t rgph_u64_t1ha64s_u64a(const uint64_t *, size_t, uintptr_t);
+uint64_t rgph_u64_t1ha64s_f32a(const float *,  size_t, uintptr_t);
+uint64_t rgph_u64_t1ha64s_f64a(const double *, size_t, uintptr_t);
+
 #ifdef __cplusplus
 }
 #endif

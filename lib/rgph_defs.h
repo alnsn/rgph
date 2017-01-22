@@ -1,5 +1,5 @@
 /*-
- * Copyright (c) 2015-2016 Alexander Nasonov.
+ * Copyright (c) 2015-2017 Alexander Nasonov.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -50,7 +50,8 @@
 #define	RGPH_HASH_MURMUR32S    3
 #define	RGPH_HASH_XXH32S       4
 #define	RGPH_HASH_XXH64S       5
-#define	RGPH_HASH_LAST         5
+#define	RGPH_HASH_T1HA64S      6
+#define	RGPH_HASH_LAST         6
 #define	RGPH_HASH_CUSTOM       0xfd
 #define	RGPH_HASH_CUSTOM32S    0xfe
 #define	RGPH_HASH_CUSTOM64S    0xff

@@ -8,7 +8,11 @@
  * Copyright (C) 2012-2014, Yann Collet.
  * BSD 2-Clause License (http://www.opensource.org/licenses/bsd-license.php)
  *
- * Copyright (c) 2014-2016 Alexander Nasonov.
+ * t1ha - Fast Positive Hash
+ * Portions Copyright (c) 2010-2017 Leonid Yuriev <leo@yuriev.ru>,
+ * The 1Hippeus project (t1h).
+ *
+ * Copyright (c) 2014-2017 Alexander Nasonov.
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -87,6 +91,18 @@
 #define RGPH_XXH64S_PRIME3 UINT64_C(0x165667b19e3779f9)
 #define RGPH_XXH64S_PRIME4 UINT64_C(0x85ebca77c2b2ae63)
 #define RGPH_XXH64S_PRIME5 UINT64_C(0x27d4eb2f165667c5)
+
+#define RGPH_T1HA64S_PRIME0 UINT64_C(0xec99bf0d8372caab)
+#define RGPH_T1HA64S_PRIME1 UINT64_C(0x82434fe90edcef39)
+#define RGPH_T1HA64S_PRIME2 UINT64_C(0xd4f06db99d67be4b)
+#define RGPH_T1HA64S_PRIME3 UINT64_C(0xbd9cacc22c6e9571)
+#define RGPH_T1HA64S_PRIME4 UINT64_C(0x9c06faf4d023e3ab)
+#define RGPH_T1HA64S_PRIME5 UINT64_C(0xc060724a8424f345)
+#define RGPH_T1HA64S_PRIME6 UINT64_C(0xcb5af53ae3aaac31)
+
+#define RGPH_T1HA64S_ROT0 41
+#define RGPH_T1HA64S_ROT1 17
+#define RGPH_T1HA64S_ROT2 31
 
 /* XXX Check with the C99 standard. */
 #define rgph_unalias(T, p) ((T)(const char *)(p))
@@ -520,6 +536,107 @@ rgph_xxh64s_finalise(uint64_t h[/* static 1 */])
 	h[0] ^= h[0] >> 29;
 	h[0] *= RGPH_XXH64S_PRIME3;
 	h[0] ^= h[0] >> 32;
+}
+
+static inline void
+rgph_t1ha64s_init(uint64_t len, uint64_t seed, uint64_t h[/* static 4 */])
+{
+
+	h[0] = seed;
+	h[1] = len;
+
+	if (len > 32) {
+		h[2] = rgph_rotr(len, RGPH_T1HA64S_ROT1) + seed;
+		h[3] = len ^ rgph_rotr(seed, RGPH_T1HA64S_ROT1);
+	}
+}
+
+static inline void
+rgph_t1ha64s_mix(const uint64_t w[/* static 4 */], uint64_t h[/* static 4 */])
+{
+	uint64_t x0 = w[0] ^ rgph_rotr(w[2] + h[3], RGPH_T1HA64S_ROT1);
+	uint64_t x1 = w[1] ^ rgph_rotr(w[3] + h[2], RGPH_T1HA64S_ROT1);
+
+	h[2] += h[0] ^ rgph_rotr(w[0], RGPH_T1HA64S_ROT0);
+	h[3] -= h[1] ^ rgph_rotr(w[1], RGPH_T1HA64S_ROT2);
+	h[0] ^= RGPH_T1HA64S_PRIME1 * (x0 + w[3]);
+	h[1] ^= RGPH_T1HA64S_PRIME0 * (x1 + w[2]);
+}
+
+static inline void
+rgph_t1ha64s_fold(uint64_t h[/* static 4 */])
+{
+	uint64_t x0 = h[3] + rgph_rotr(h[2], RGPH_T1HA64S_ROT1);
+	uint64_t x1 = h[2] + rgph_rotr(h[3], RGPH_T1HA64S_ROT1);
+
+	h[0] ^= x0 * RGPH_T1HA64S_PRIME6;
+	h[1] ^= x1 * RGPH_T1HA64S_PRIME5;
+}
+
+static inline uint64_t
+rgph_t1ha64s_mux(uint64_t a, uint64_t b)
+{
+#if !defined(__STRICT_ANSI__) && defined(__SIZEOF_INT128__)
+	__uint128_t m = (__uint128_t)a * (__uint128_t)b;
+
+	return m ^ (m >> 64);
+#else
+	uint64_t hh = (a >> 32) * (b >> 32);
+	uint64_t hl = (a >> 32) * (b & UINT32_MAX);
+	uint64_t lh = (b >> 32) * (a & UINT32_MAX);
+	uint64_t low = (a & UINT32_MAX) * (b & UINT32_MAX);
+	uint64_t hlc, lhc, high;
+
+	low += (hl << 32);
+	hlc = low < (hl << 32) ? 1 : 0;
+
+	low += (lh << 32);
+	lhc = low < (lh << 32) ? 1 : 0;
+
+	high = hh + (hl >> 32) + (lh >> 32) + hlc + lhc;
+
+	return high ^ low;
+#endif
+}
+
+static inline void
+rgph_t1ha64s_fmix4(uint64_t k, uint64_t h[/* static 2 */])
+{
+
+	h[1] += rgph_t1ha64s_mux(k, RGPH_T1HA64S_PRIME4);
+}
+
+static inline void
+rgph_t1ha64s_fmix3(uint64_t k, uint64_t h[/* static 2 */])
+{
+
+	h[0] += rgph_t1ha64s_mux(k, RGPH_T1HA64S_PRIME3);
+}
+
+static inline void
+rgph_t1ha64s_fmix2(uint64_t k, uint64_t h[/* static 2 */])
+{
+
+	h[1] += rgph_t1ha64s_mux(k, RGPH_T1HA64S_PRIME2);
+}
+
+static inline void
+rgph_t1ha64s_fmix1(uint64_t k, uint64_t h[/* static 2 */])
+{
+
+	h[0] += rgph_t1ha64s_mux(k, RGPH_T1HA64S_PRIME1);
+}
+
+static inline uint64_t
+rgph_t1ha64s_finalise(uint64_t h[/* static 2 */])
+{
+	uint64_t r, x;
+
+	r = rgph_rotr(h[0] + h[1], RGPH_T1HA64S_ROT1);
+	r = rgph_t1ha64s_mux(r, RGPH_T1HA64S_PRIME4);
+	x = (h[0] ^ h[1]) * RGPH_T1HA64S_PRIME0;
+	x = x ^ rgph_rotr(x, RGPH_T1HA64S_ROT0);
+	return r + x;
 }
 
 #endif /* FILE_RGPH_HASH_IMPL_H_INCLUDED */

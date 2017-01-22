@@ -778,6 +778,7 @@ hash_bits(unsigned int flags)
 	case RGPH_HASH_CUSTOM32S:
 		return 32;
 	case RGPH_HASH_XXH64S:
+	case RGPH_HASH_T1HA64S:
 	case RGPH_HASH_CUSTOM64S:
 		return 64;
 	case RGPH_HASH_JENKINS2V:
@@ -1030,6 +1031,14 @@ build_graph(struct rgph_graph *g, rgph_entry_iterator_t keys,
 		    &g->datalenmin, &g->datalenmax,
 		    &g->index, &g->indexmin, &g->indexmax);
 		break;
+	case RGPH_HASH_T1HA64S|RGPH_REDUCE_MOD:
+		res = init_graph(keys_start, keys_end,
+		    fastrem_partition(nverts, R),
+		    make_hash<V,R>(&rgph_u64_t1ha64s_data, seed),
+		    edges, nkeys, oedges,
+		    &g->datalenmin, &g->datalenmax,
+		    &g->index, &g->indexmin, &g->indexmax);
+		break;
 	case RGPH_HASH_CUSTOM|RGPH_REDUCE_MOD:
 	case RGPH_HASH_CUSTOM32S|RGPH_REDUCE_MOD:
 	case RGPH_HASH_CUSTOM64S|RGPH_REDUCE_MOD:
@@ -1076,6 +1085,14 @@ build_graph(struct rgph_graph *g, rgph_entry_iterator_t keys,
 		res = init_graph(keys_start, keys_end,
 		    lemire_partition(nverts, R, nbits),
 		    make_hash<V,R>(&rgph_u64_xxh64s_data, seed),
+		    edges, nkeys, oedges,
+		    &g->datalenmin, &g->datalenmax,
+		    &g->index, &g->indexmin, &g->indexmax);
+		break;
+	case RGPH_HASH_T1HA64S|RGPH_REDUCE_MUL:
+		res = init_graph(keys_start, keys_end,
+		    lemire_partition(nverts, R, nbits),
+		    make_hash<V,R>(&rgph_u64_t1ha64s_data, seed),
 		    edges, nkeys, oedges,
 		    &g->datalenmin, &g->datalenmax,
 		    &g->index, &g->indexmin, &g->indexmax);

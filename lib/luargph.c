@@ -68,6 +68,7 @@ static const struct flag_str flag_strings[] = {
 	{ RGPH_HASH_MURMUR32S, RGPH_HASH_MASK,   "murmur32s" },
 	{ RGPH_HASH_XXH32S,    RGPH_HASH_MASK,   "xxh32s"    },
 	{ RGPH_HASH_XXH64S,    RGPH_HASH_MASK,   "xxh64s"    },
+	{ RGPH_HASH_T1HA64S,   RGPH_HASH_MASK,   "t1ha64s"   },
 	{ RGPH_RANK2,          RGPH_RANK_MASK,   "rank2"     },
 	{ RGPH_RANK3,          RGPH_RANK_MASK,   "rank3"     },
 	{ RGPH_ALGO_CHM,       RGPH_ALGO_MASK,   "chm"       },
