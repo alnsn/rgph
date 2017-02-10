@@ -233,14 +233,6 @@ add_remove_oedge(oedge<V,2> *oedges, int delta, V e, V v0, V v1)
 
 template<class V>
 inline void
-remove_edge(oedge<V,2> *oedges, V e, V v0, V v1)
-{
-
-	return add_remove_oedge(oedges, -1, e, v0, v1);
-}
-
-template<class V>
-inline void
 add_remove_oedge(oedge<V,3> *oedges, int delta, V e, V v0, V v1, V v2)
 {
 
