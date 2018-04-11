@@ -656,7 +656,7 @@ init_graph(Iter &keys, Iter const &keys_end,
 
 template<class V, int R>
 size_t
-peel_graph(edge<V,R> *edges, size_t nkeys,
+peel_graph(edge<V,R> const *edges, size_t nkeys,
     oedge<V,R> *oedges, size_t nverts, V *order)
 {
 	size_t top = nkeys;
